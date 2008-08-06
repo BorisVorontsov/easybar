@@ -32,7 +32,7 @@ INT_PTR CALLBACK AboutDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam
 				(WPARAM)GetSysColor(COLOR_WINDOW), 0);
 			swprintf(lpwAbout, L"E-mail: %s", APP_EMAIL);
 			SetDlgItemText(hWnd, IDC_STCEM, lpwAbout);
-			swprintf(lpwAbout, APP_LICENSE, APP_NAME);
+			swprintf(lpwAbout, APP_LICENSE, APP_LICENSE_FILE);
 			SetDlgItemText(hWnd, IDC_STCLIC, lpwAbout);
 			return TRUE;
 		}
