@@ -16,8 +16,8 @@ INT_PTR CALLBACK AboutDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam
 		{
 			//Инициализация диалога
 			//--------------------------------------------------------------------
-			WCHAR lpwTitle[64];
-			WCHAR lpwAbout[128];
+			WCHAR lpwTitle[64] = { 0 };
+			WCHAR lpwAbout[128] = { 0 };
 			HMENU hSysMenu = GetSystemMenu(hWnd, FALSE);
 			EnableMenuItem(hSysMenu, SC_CLOSE, MF_DISABLED | MF_GRAYED);
 			swprintf(lpwTitle, L"About %s", APP_NAME);
