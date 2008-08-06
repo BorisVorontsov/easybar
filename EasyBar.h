@@ -9,9 +9,13 @@
 #define APP_NAME				L"EasyBar"
 #define APP_COPYRIGHT			L"Copyright © Boris Vorontsov, 2007 - 2008"
 #define APP_EMAIL				L"borisvorontsov@gmail.com"
-#define APP_LICENSE	\
-	L"%s is freeware and released for non-commercial use only. " \
-	L"You may freely use and distribute this software."
+
+#define APP_LICENSE \
+	L"This program comes with NO WARRANTY, to the extent permitted by law. " \
+	L"You may redistribute it under the terms of the GNU General Public License. " \
+	L"See the file named '%s' for details."
+
+#define APP_LICENSE_FILE		L"License.txt"
 
 #define APP_PLAYLIST_FILE		L"EasyBar.ebl"
 
