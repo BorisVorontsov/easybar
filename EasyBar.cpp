@@ -1338,13 +1338,14 @@ INT_PTR CALLBACK PlayerDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 					WCHAR lpwExt[64] = { 0 };
 					DWORD dwFilterIndex = 1;
 					ENGINESTATE eState = pEngine->GetState();
+					wcscpy(lpwSDFile, lpwCurFileTitle);
 					if (eState != E_STATE_PAUSED)
 					{
 						PI.psSource = PS_OTHER;
 						pEngine->Pause();
 					}
 					if (GetSaveDialog(hAppInstance, hWnd, L"Save Frame As", lpwSDFile,
-						MAX_PATH - 1, L"Windows Bitmap\0*.bmp;\0", &dwFilterIndex, 0))
+						MAX_PATH - 1, L"Windows Bitmap\0*.bmp;\0", &dwFilterIndex, L".bmp"))
 					{
 						SP_ExtractRightPart(lpwSDFile, lpwExt, '.');
 						if (_wcsicmp(lpwExt, L"bmp") != 0)
