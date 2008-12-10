@@ -421,6 +421,8 @@ INT_PTR CALLBACK PlayerDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 			//--------------------------------------------------------------------
 			SendMessage(hWnd, WM_SETICON, ICON_SMALL,
 				(LPARAM)LoadImage(hAppInstance, MAKEINTRESOURCE(IDI_MAIN), IMAGE_ICON, 16, 16, 0));
+			SendMessage(hWnd, WM_SETICON, ICON_BIG,
+				(LPARAM)LoadImage(hAppInstance, MAKEINTRESOURCE(IDI_MAIN), IMAGE_ICON, 32, 32, 0));
 			//Инициализация элементов управления
 			//--------------------------------------------------------------------
 			SendDlgItemMessage(hWnd, IDC_EBBPF, EBBM_SETBITMAP, 0,
