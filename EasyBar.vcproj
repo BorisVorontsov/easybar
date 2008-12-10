@@ -1,11 +1,10 @@
 <?xml version="1.0" encoding="windows-1251"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="9,00"
+	Version="8,00"
 	Name="EasyBar"
 	ProjectGUID="{1823ADEE-EF14-4C5B-BCA0-D2425B734A35}"
 	RootNamespace="EasyBar"
-	TargetFrameworkVersion="0"
 	>
 	<Platforms>
 		<Platform
@@ -59,7 +58,7 @@
 				ObjectFile=".\Debug/"
 				ProgramDataBaseFileName=".\Debug/"
 				BrowseInformation="1"
-				WarningLevel="3"
+				WarningLevel="0"
 				SuppressStartupBanner="true"
 				Detect64BitPortabilityProblems="false"
 				DebugInformationFormat="4"
@@ -86,8 +85,6 @@
 				GenerateDebugInformation="true"
 				ProgramDatabaseFile=".\Debug/EasyBar.pdb"
 				SubSystem="2"
-				RandomizedBaseAddress="1"
-				DataExecutionPrevention="0"
 				TargetMachine="1"
 			/>
 			<Tool
@@ -109,6 +106,9 @@
 			/>
 			<Tool
 				Name="VCAppVerifierTool"
+			/>
+			<Tool
+				Name="VCWebDeploymentTool"
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
@@ -185,8 +185,6 @@
 				DelayLoadDLLs="uxtheme.dll"
 				ProgramDatabaseFile=".\Release/EasyBar.pdb"
 				SubSystem="2"
-				RandomizedBaseAddress="1"
-				DataExecutionPrevention="0"
 				TargetMachine="1"
 			/>
 			<Tool
@@ -208,6 +206,9 @@
 			/>
 			<Tool
 				Name="VCAppVerifierTool"
+			/>
+			<Tool
+				Name="VCWebDeploymentTool"
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
