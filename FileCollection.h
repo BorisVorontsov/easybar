@@ -8,13 +8,13 @@
 //Максимальное количество файлов в программе
 #define FC_MAX_FILES		1024
 
-#define FCF_FIRST			0x00000010
-#define FCF_FORWARD			0x00000020
-#define FCF_BACKWARD		0x00000030
-#define FCF_RANDOM			0x00000040
-#define FCF_RECENT			0x00000050
-#define FCF_BYINDEX			0x00000060
-#define FCF_BYFILENAME		0x00000070
+#define FCF_FIRST			0x00000000
+#define FCF_FORWARD			0x00000001
+#define FCF_BACKWARD		0x00000002
+#define FCF_RANDOM			0x00000004
+#define FCF_RECENT			0x00000008
+#define FCF_BYINDEX			0x00000010
+#define FCF_BYFILENAME		0x00000020
 
 typedef struct _FCSTRUCT
 {

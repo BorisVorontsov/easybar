@@ -167,9 +167,10 @@ BOOL GetAppPath(HINSTANCE hApp,
 	return TRUE;
 }
 
-DWORD ReadFileVersion(LPWSTR lpwFileName,
-					  LPWSTR Result,
-					  BOOL bMMOnly)
+DWORD ReadFileVersion(LPCWSTR lpwFileName,
+					  LPWSTR lpwResult,
+					  UINT uResultSize,
+					  DWORD dwFlags)
 {
     DWORD dwDummy;
 	BYTE *bBuffer;
@@ -177,28 +178,45 @@ DWORD ReadFileVersion(LPWSTR lpwFileName,
     DWORD dwBufferLen;
     UINT uVerBufferLen;
 	WCHAR lpwTmp[8] = { 0 };
+	UINT uRLen;
     dwBufferLen = GetFileVersionInfoSize(lpwFileName, &dwDummy);
     if (dwBufferLen < 1)
 	{
-		Result = L"None";
+		wcscpy(lpwResult, L"None");
 		return 0;
 	}
     bBuffer = new BYTE[dwBufferLen];
     GetFileVersionInfo(lpwFileName, 0, dwBufferLen, &bBuffer[0]);
     VerQueryValue(&bBuffer[0], L"\\", (PVOID *)&VS_BUFF, &uVerBufferLen);
-	_itow(HIWORD(VS_BUFF->dwProductVersionMS), lpwTmp, 10);
-	wcscpy(Result, lpwTmp);
-	wcscat(Result, L".");
-	_itow(LOWORD(VS_BUFF->dwProductVersionMS), lpwTmp, 10);
-	wcscat(Result, lpwTmp);
-	if (!bMMOnly)
+	ZeroMemory(lpwResult, uResultSize);
+	if ((dwFlags & RFV_MAJOR) == RFV_MAJOR)
 	{
-		wcscat(Result, L".");
+		_itow(HIWORD(VS_BUFF->dwProductVersionMS), lpwTmp, 10);
+		wcscpy(lpwResult, lpwTmp);
+	}
+	if ((dwFlags & RFV_MINOR) == RFV_MINOR)
+	{
+		uRLen = wcslen(lpwResult);
+		if (uRLen && (lpwResult[uRLen - 1] != '\0'))
+			wcscat(lpwResult, L".");
+		_itow(LOWORD(VS_BUFF->dwProductVersionMS), lpwTmp, 10);
+		wcscat(lpwResult, lpwTmp);
+	}
+	if ((dwFlags & RFV_RELEASE) == RFV_RELEASE)
+	{
+		uRLen = wcslen(lpwResult);
+		if (uRLen && (lpwResult[uRLen - 1] != '\0'))
+			wcscat(lpwResult, L".");
 		_itow(HIWORD(VS_BUFF->dwProductVersionLS), lpwTmp, 10);
-		wcscat(Result, lpwTmp);
-		wcscat(Result, L".");
+		wcscat(lpwResult, lpwTmp);
+	}
+	if ((dwFlags & RFV_BUILD) == RFV_BUILD)
+	{
+		uRLen = wcslen(lpwResult);
+		if (uRLen && (lpwResult[uRLen - 1] != '\0'))
+			wcscat(lpwResult, L".");
 		_itow(LOWORD(VS_BUFF->dwProductVersionLS), lpwTmp, 10);
-		wcscat(Result, lpwTmp);
+		wcscat(lpwResult, lpwTmp);
 	}
 	delete[] bBuffer;
 	return 1;

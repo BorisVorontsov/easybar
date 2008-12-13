@@ -23,7 +23,7 @@ public:
 
 #define DS_CB_WND_CLASS		L"DSCB_"
 
-#define DS_MEDIAEVENTEX		WM_USER + 0x800
+#define DS_MEDIAEVENTEX		WM_APP + 0x800
 #define E_MAX_ARR_SIZE		1024
 
 //Состояния "движка"
