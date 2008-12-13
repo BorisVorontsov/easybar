@@ -557,54 +557,70 @@ BOOL CEBMenu::DrawMenuString(HDC hDC, LPCTSTR lpString, RECT RCT, BOOL bDisabled
 		}
 		if (bSelected)
 		{
-			if (bDisabled)
+			if (!bInactive)
 			{
-				SetTextColor(hDC, GetSysColor(COLOR_3DHIGHLIGHT));
+				if (bDisabled)
+				{
+					SetTextColor(hDC, GetSysColor(COLOR_3DHIGHLIGHT));
+				}
+				else
+				{
+					SetTextColor(hDC, crFontColorTwo);
+				}
+				OffsetRect(&RCT, 1, 1);
+				DrawText(hDC, lpItem, -1, &RCT, DT_VCENTER | ((bTLMenu)?DT_CENTER:DT_LEFT) | DT_SINGLELINE);
+				if (_tcslen(lpAccel))
+				{
+					DrawText(hDC, lpAccel, -1, &RCT, DT_VCENTER | DT_RIGHT | DT_SINGLELINE);
+				}
+				if (bDisabled)
+				{
+					SetTextColor(hDC, GetSysColor(COLOR_3DSHADOW));
+				}
+				else
+				{
+					SetTextColor(hDC, crFontColorOne);
+				}
+				OffsetRect(&RCT, -1, -1);
+				DrawText(hDC, lpItem, -1, &RCT, DT_VCENTER | ((bTLMenu)?DT_CENTER:DT_LEFT) | DT_SINGLELINE);
+				if (_tcslen(lpAccel))
+				{
+					DrawText(hDC, lpAccel, -1, &RCT, DT_VCENTER | DT_RIGHT | DT_SINGLELINE);
+				}
 			}
 			else
 			{
-				SetTextColor(hDC, crFontColorTwo);
-			}
-			OffsetRect(&RCT, 1, 1);
-			DrawText(hDC, lpItem, -1, &RCT, DT_VCENTER | ((bTLMenu)?DT_CENTER:DT_LEFT) | DT_SINGLELINE);
-			if (_tcslen(lpAccel))
-			{
-				DrawText(hDC, lpAccel, -1, &RCT, DT_VCENTER | DT_RIGHT | DT_SINGLELINE);
-			}
-			if (bDisabled)
-			{
-				SetTextColor(hDC, GetSysColor(COLOR_3DSHADOW));
-			}
-			else
-			{
-				SetTextColor(hDC, crFontColorOne);
-			}
-			OffsetRect(&RCT, -1, -1);
-			DrawText(hDC, lpItem, -1, &RCT, DT_VCENTER | ((bTLMenu)?DT_CENTER:DT_LEFT) | DT_SINGLELINE);
-			if (_tcslen(lpAccel))
-			{
-				DrawText(hDC, lpAccel, -1, &RCT, DT_VCENTER | DT_RIGHT | DT_SINGLELINE);
+				SetTextColor(hDC, GetSysColor(COLOR_GRAYTEXT));
+				DrawText(hDC, lpItem, -1, &RCT, DT_VCENTER | DT_CENTER | DT_SINGLELINE);
 			}
 		}
 		else
 		{
-			if (bDisabled)
+			if (!bInactive)
 			{
-				SetTextColor(hDC, GetSysColor(COLOR_GRAYTEXT));
-				DrawText(hDC, lpItem, -1, &RCT, DT_VCENTER | ((bTLMenu)?DT_CENTER:DT_LEFT) | DT_SINGLELINE);
-				if (_tcslen(lpAccel))
+				if (bDisabled)
 				{
-					DrawText(hDC, lpAccel, -1, &RCT, DT_VCENTER | DT_RIGHT | DT_SINGLELINE);
+					SetTextColor(hDC, GetSysColor(COLOR_GRAYTEXT));
+					DrawText(hDC, lpItem, -1, &RCT, DT_VCENTER | ((bTLMenu)?DT_CENTER:DT_LEFT) | DT_SINGLELINE);
+					if (_tcslen(lpAccel))
+					{
+						DrawText(hDC, lpAccel, -1, &RCT, DT_VCENTER | DT_RIGHT | DT_SINGLELINE);
+					}
+				}
+				else
+				{
+					SetTextColor(hDC, crFontColorThree);
+					DrawText(hDC, lpItem, -1, &RCT, DT_VCENTER | ((bTLMenu)?DT_CENTER:DT_LEFT) | DT_SINGLELINE);
+					if (_tcslen(lpAccel))
+					{
+						DrawText(hDC, lpAccel, -1, &RCT, DT_VCENTER | DT_RIGHT | DT_SINGLELINE);
+					}
 				}
 			}
 			else
 			{
-				SetTextColor(hDC, crFontColorThree);
-				DrawText(hDC, lpItem, -1, &RCT, DT_VCENTER | ((bTLMenu)?DT_CENTER:DT_LEFT) | DT_SINGLELINE);
-				if (_tcslen(lpAccel))
-				{
-					DrawText(hDC, lpAccel, -1, &RCT, DT_VCENTER | DT_RIGHT | DT_SINGLELINE);
-				}
+				SetTextColor(hDC, GetSysColor(COLOR_GRAYTEXT));
+				DrawText(hDC, lpItem, -1, &RCT, DT_VCENTER | DT_CENTER | DT_SINGLELINE);
 			}
 		}
 		SelectObject(hDC, hOldFont);
