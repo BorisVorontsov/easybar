@@ -69,7 +69,9 @@ DWORD CEBMenu::MeasureItem(WPARAM wParam, LPARAM lParam)
 	MENUITEMINFO MII = { 0 };
 	MII.cbSize = sizeof(MII);
 	MII.fMask = MIIM_TYPE;
+
 	GetMenuItemInfo(GetMenu(m_hMenuOwner), pMIS->itemID, FALSE, &MII);
+
 	if ((MII.fType & MFT_SEPARATOR) == MFT_SEPARATOR)
 	{
 		pMIS->itemWidth = 1;
@@ -146,6 +148,7 @@ DWORD CEBMenu::DrawItem(WPARAM wParam, LPARAM lParam)
 	TCHAR lpText[MAX_PATH] = { 0 };
 	MII.cbSize = sizeof(MII);
 	MII.fMask = MIIM_TYPE;
+
 	GetMenuItemInfo(GetMenu(m_hMenuOwner), pDIS->itemID, FALSE, &MII);
 	if ((MII.fType & MFT_SEPARATOR) == MFT_SEPARATOR)
 	{
@@ -160,6 +163,7 @@ DWORD CEBMenu::DrawItem(WPARAM wParam, LPARAM lParam)
 	}
 	MII.fMask = MIIM_DATA;
 	GetMenuItemInfo(GetMenu(m_hMenuOwner), pDIS->itemID, FALSE, &MII);
+
 	if ((MII.dwItemData & EBM_ITEM_DATA_TLMENU) == EBM_ITEM_DATA_TLMENU)
 	{
 		HBRUSH hBk3Brush;
@@ -228,8 +232,10 @@ DWORD CEBMenu::DrawItem(WPARAM wParam, LPARAM lParam)
 		DeleteObject(hBk1Brush);
 		DeleteObject(hBk2Brush);
 	}
-	if (((pDIS->itemState & ODS_SELECTED) == ODS_SELECTED) || ((pDIS->itemState & ODS_HOTLIGHT) ==
-		ODS_HOTLIGHT) || ((pDIS->itemState & ODS_FOCUS) == ODS_FOCUS))
+
+	if ((((pDIS->itemAction & ODA_DRAWENTIRE) == ODA_DRAWENTIRE) || ((pDIS->itemAction & ODA_SELECT) == ODA_SELECT)) &&
+		(((pDIS->itemState & ODS_SELECTED) == ODS_SELECTED) || (((pDIS->itemState & ODS_HOTLIGHT) == ODS_HOTLIGHT) &&
+		((pDIS->itemState & ODS_INACTIVE) != ODS_INACTIVE))))
 	{
 		if (!bSeparator)
 		{

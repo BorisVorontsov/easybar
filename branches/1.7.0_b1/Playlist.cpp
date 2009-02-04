@@ -15,6 +15,8 @@
 #include "easybar.h"
 #include "playlist.h"
 
+extern WCHAR lpwAppVersionMM[10];
+
 //Общая функция загрузки списков
 //В зависимости от расширения файла функция вызывает соответствующие подфункции
 DWORD LoadPlaylist(LPCWSTR lpwFileName)

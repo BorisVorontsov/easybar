@@ -402,6 +402,10 @@
 				</FileConfiguration>
 			</File>
 			<File
+				RelativePath=".\EBListBox.cpp"
+				>
+			</File>
+			<File
 				RelativePath="EBMenu.cpp"
 				>
 				<FileConfiguration
@@ -620,6 +624,10 @@
 						PreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
+			</File>
+			<File
+				RelativePath=".\PlaylistDlg.cpp"
+				>
 			</File>
 			<File
 				RelativePath="PPContentDlg.cpp"
@@ -879,6 +887,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\EBListBox.h"
+				>
+			</File>
+			<File
 				RelativePath="EBMenu.h"
 				>
 			</File>
@@ -924,6 +936,10 @@
 			</File>
 			<File
 				RelativePath="Playlist.h"
+				>
+			</File>
+			<File
+				RelativePath=".\PlaylistDlg.h"
 				>
 			</File>
 			<File
@@ -976,7 +992,15 @@
 			Filter="ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe"
 			>
 			<File
+				RelativePath=".\ActiveItem.bmp"
+				>
+			</File>
+			<File
 				RelativePath="BalanceNormal.bmp"
+				>
+			</File>
+			<File
+				RelativePath=".\bitmap1.bmp"
 				>
 			</File>
 			<File

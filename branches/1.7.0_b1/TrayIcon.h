@@ -2,6 +2,7 @@
 #define TRAYICON_H
 
 #define IDM_TRAY_HIDESHOW		0x00001004
+#define IDM_TRAY_EXIT			0x00001005
 
 #define TRAY_ICON_ID			0x00000C94
 

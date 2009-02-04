@@ -10,11 +10,12 @@
 #include "easybar.h"
 #include "filepropdlg.h"
 
-HWND hPPGeneral		= 0; //Property Page: 'General'
-HWND hPPContent		= 0; //Property Page: '[Media] Content'
-HWND hPPFilters		= 0; //Property Page: '[DirectShow] Filters'
+static HWND hPPGeneral		= 0; //Property Page: 'General'
+static HWND hPPContent		= 0; //Property Page: '[Media] Content'
+static HWND hPPFilters		= 0; //Property Page: '[DirectShow] Filters'
 
 extern OSVERSIONINFO OSVI;
+extern HINSTANCE hAppInstance;
 
 INT_PTR CALLBACK FilePropDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {

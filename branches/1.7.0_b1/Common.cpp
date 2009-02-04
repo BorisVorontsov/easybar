@@ -107,7 +107,7 @@ void MoveToCenter(HWND hWnd,
 	intSY = GetSystemMetrics(SM_CYSCREEN);
 	intNL = ((intSX / 2) - ((RC.right - RC.left) / 2)) + lXOffset;
 	intNT = ((intSY / 2) - ((RC.bottom - RC.top) / 2)) + lYOffset;
-	SetWindowPos(hWnd, HWND_TOP, intNL, intNT, 0, 0, SWP_NOSIZE);
+	SetWindowPos(hWnd, 0, intNL, intNT, 0, 0, SWP_NOSIZE | SWP_NOZORDER);
 }
 
 //Прилипание к краям экрана
@@ -229,7 +229,8 @@ DWORD GetOpenDialog(HINSTANCE hInstance,
 					DWORD dwFNSize,
 					LPCWSTR lpwFilter,
 					DWORD dwFilterIndex,
-					BOOL bMultiSelect)
+					BOOL bMultiSelect,
+					LPCWSTR lpwInitialDir)
 {
 	OPENFILENAME OFN = { 0 };
 	OFN.lStructSize = sizeof(OFN);
@@ -243,6 +244,7 @@ DWORD GetOpenDialog(HINSTANCE hInstance,
 	OFN.nMaxFile = dwFNSize;
 	OFN.lpstrFilter = lpwFilter;
 	OFN.nFilterIndex = dwFilterIndex;
+	OFN.lpstrInitialDir = lpwInitialDir;
 	if (GetOpenFileName(&OFN))
 	{
 		return wcslen(lpwFileName);
@@ -257,7 +259,8 @@ DWORD GetSaveDialog(HINSTANCE hInstance,
 					DWORD dwFNSize,
 					LPCWSTR lpwFilter,
 					LPDWORD pFilterIndex,
-					LPCWSTR lpwDefExt)
+					LPCWSTR lpwDefExt,
+					LPCWSTR lpwInitialDir)
 {
 	OPENFILENAME OFN = { 0 };
 	OFN.lStructSize = sizeof(OFN);
@@ -271,6 +274,7 @@ DWORD GetSaveDialog(HINSTANCE hInstance,
 	OFN.lpstrFilter = lpwFilter;
 	OFN.nFilterIndex = *pFilterIndex;
 	OFN.lpstrDefExt = lpwDefExt;
+	OFN.lpstrInitialDir = lpwInitialDir;
 	if (GetSaveFileName(&OFN))
 	{
 		*pFilterIndex = OFN.nFilterIndex;
@@ -305,15 +309,17 @@ BOOL GetColorDialog(HINSTANCE hInstance,
 	return FALSE;
 }
 
-DWORD GetBrowseForFolderDialog(HWND hWnd, LPWSTR lpwFolder, LPCWSTR lpwTitle)
+DWORD GetBrowseForFolderDialog(HWND hWnd, LPWSTR lpwFolder, LPCWSTR lpwTitle, LPCWSTR lpwInitialDir)
 {
-	CoInitialize(0);
+	CoInitialize(NULL);
 	DWORD dwResult = 0;
     BROWSEINFO BI = { 0 };
     LPITEMIDLIST pIIDL;
     BI.hwndOwner = hWnd;
 	BI.ulFlags = BIF_RETURNONLYFSDIRS | BIF_NEWDIALOGSTYLE | BIF_EDITBOX;
 	BI.lpszTitle = lpwTitle;
+	BI.lpfn = BFFCallbackProc;
+	BI.lParam = (LPARAM)lpwInitialDir;
     pIIDL = SHBrowseForFolder(&BI);
 	if (!pIIDL)
 	{
@@ -329,6 +335,16 @@ DWORD GetBrowseForFolderDialog(HWND hWnd, LPWSTR lpwFolder, LPCWSTR lpwTitle)
 	return dwResult;
 }
 
+int CALLBACK BFFCallbackProc(HWND hWnd, UINT uMsg, LPARAM lParam, LPARAM lpData)
+{
+	if (uMsg == BFFM_INITIALIZED)
+	{
+		if (lpData)
+			SendMessage(hWnd, BFFM_SETSELECTION, TRUE, lpData);
+	}
+	return 0;
+}
+
 void AdjustPrivilege(LPWSTR lpwPrivilege)
 {
 	HANDLE hToken;
@@ -337,10 +353,10 @@ void AdjustPrivilege(LPWSTR lpwPrivilege)
 	DWORD dwPSLength;
     if (OpenProcessToken(GetCurrentProcess(), TOKEN_ADJUST_PRIVILEGES | TOKEN_QUERY, &hToken))
 	{
-        LookupPrivilegeValue(0, lpwPrivilege, &TKP.Privileges[0].Luid);
+        LookupPrivilegeValue(NULL, lpwPrivilege, &TKP.Privileges[0].Luid);
         TKP.PrivilegeCount = 1;
         TKP.Privileges[0].Attributes = SE_PRIVILEGE_ENABLED;
-        AdjustTokenPrivileges(hToken, 0, &TKP, sizeof(TKPOLD), &TKPOLD, &dwPSLength);
+        AdjustTokenPrivileges(hToken, FALSE, &TKP, sizeof(TKPOLD), &TKPOLD, &dwPSLength);
     }
 }
 
@@ -354,8 +370,8 @@ BOOL IsFile(LPWSTR lpwPath)
 		lpwTmp++;
 		lpwTmp[wcslen(lpwTmp) - 1] = '\0';
 	}
-	HANDLE hFile = CreateFile(lpwTmp, GENERIC_READ, 0, 0, OPEN_EXISTING,
-		FILE_ATTRIBUTE_NORMAL, 0);
+	HANDLE hFile = CreateFile(lpwTmp, GENERIC_READ, 0, NULL, OPEN_EXISTING,
+		FILE_ATTRIBUTE_NORMAL, NULL);
 	delete[] lpwTmp;
 	if (hFile == INVALID_HANDLE_VALUE)
 	{	
@@ -388,9 +404,11 @@ BOOL IsDirectory(LPWSTR lpwPath)
 	{
 		if ((FAD.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) == FILE_ATTRIBUTE_DIRECTORY)
 		{
+			delete[] lpwTmp;
 			return TRUE;
 		}
 	}
+	delete[] lpwTmp;
 	return FALSE;
 }
 
@@ -439,12 +457,22 @@ BOOL IsURL(LPCWSTR lpwText)
 	return FALSE;
 }
 
+void ProcessMessages()
+{
+	MSG Msg;
+    if (PeekMessage(&Msg, 0, 0, 0, PM_REMOVE))
+	{
+		TranslateMessage(&Msg);
+		DispatchMessage(&Msg);
+	}
+}
+
 DWORD WinAPIErrMsg(DWORD dwCode, LPCWSTR lpwComment)
 {
 	WCHAR lpwError[MAX_PATH] = { 0 };
 	WCHAR lpwMsg[512] = { 0 };
-    DWORD dwResult = FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM, 0, dwCode, 0,
-		lpwError, MAX_PATH, 0);
+    DWORD dwResult = FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM, NULL, dwCode, 0,
+		lpwError, MAX_PATH, NULL);
 	if (dwResult)
 	{
 		if (lpwComment)
@@ -457,7 +485,7 @@ DWORD WinAPIErrMsg(DWORD dwCode, LPCWSTR lpwComment)
 		{
 			wcscpy(lpwMsg, lpwError);
 		}
-		MessageBox(0, lpwMsg, L"Error", MB_ICONEXCLAMATION);
+		MessageBox(NULL, lpwMsg, L"Error", MB_ICONEXCLAMATION);
 	}
 	return dwResult;
 }
@@ -466,7 +494,7 @@ DWORD DebugMsgLngA(long Value)
 {
 	char lpDbgMsg[64] = { 0 };
 	_ltoa(Value, lpDbgMsg, 10);
-	return MessageBoxA(0, lpDbgMsg, "Debug", MB_OKCANCEL |
+	return MessageBoxA(NULL, lpDbgMsg, "Debug", MB_OKCANCEL |
 		MB_DEFBUTTON1 | MB_ICONEXCLAMATION);
 }
 
@@ -474,18 +502,18 @@ DWORD DebugMsgLngW(long Value)
 {
 	WCHAR lpwDbgMsg[64] = { 0 };
 	_ltow(Value, lpwDbgMsg, 10);
-	return MessageBoxW(0, lpwDbgMsg, L"Debug", MB_OKCANCEL |
+	return MessageBoxW(NULL, lpwDbgMsg, L"Debug", MB_OKCANCEL |
 		MB_DEFBUTTON1 | MB_ICONEXCLAMATION);
 }
 
 DWORD DebugMsgStrA(LPSTR String)
 {
-	return MessageBoxA(0, String, "Debug", MB_OKCANCEL |
+	return MessageBoxA(NULL, String, "Debug", MB_OKCANCEL |
 		MB_DEFBUTTON1 | MB_ICONEXCLAMATION);
 }
 
 DWORD DebugMsgStrW(LPWSTR String)
 {
-	return MessageBoxW(0, String, L"Debug", MB_OKCANCEL |
+	return MessageBoxW(NULL, String, L"Debug", MB_OKCANCEL |
 		MB_DEFBUTTON1 | MB_ICONEXCLAMATION);
 }
