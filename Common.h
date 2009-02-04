@@ -1,8 +1,8 @@
 #ifndef COMMON_H
 #define COMMON_H
 
-#define SDA(x)			if(x) {delete[] x; x = 0;}
-#define SDO(x)			if(x) {delete x; x = 0;}
+#define SDA(x)			if(x) {delete[] x; x = NULL;}
+#define SDO(x)			if(x) {delete x; x = NULL;}
 
 void Draw3DText(HWND hWnd, LPWSTR lpwText, COLORREF crBkColorOne, COLORREF crBkColorTwo,
 				DWORD dwBkDirection, COLORREF crFontColor, COLORREF crShadowColor,
@@ -21,11 +21,14 @@ BOOL GetAppPath(HINSTANCE hApp, LPWSTR lpwPath, DWORD dwPathLen, BOOL bAddQuotes
 DWORD ReadFileVersion(LPCWSTR lpwFileName, LPWSTR lpwResult, UINT uResultSize, DWORD dwFlags);
 
 DWORD GetOpenDialog(HINSTANCE hInstance, HWND hWnd, LPCWSTR lpwTitle, LPWSTR lpwFileName,
-					DWORD dwFNSize, LPCWSTR lpwFilter, DWORD dwFilterIndex, BOOL bMultiSelect = FALSE);
+					DWORD dwFNSize, LPCWSTR lpwFilter, DWORD dwFilterIndex, BOOL bMultiSelect = FALSE,
+					LPCWSTR lpwInitialDir = NULL);
 DWORD GetSaveDialog(HINSTANCE hInstance, HWND hWnd, LPCWSTR lpwTitle, LPWSTR lpwFileName,
-					DWORD dwFNSize, LPCWSTR lpwFilter, LPDWORD pFilterIndex, LPCWSTR lpwDefExt);
+					DWORD dwFNSize, LPCWSTR lpwFilter, LPDWORD pFilterIndex, LPCWSTR lpwDefExt,
+					LPCWSTR lpwInitialDir = NULL);
 BOOL GetColorDialog(HINSTANCE hInstance, HWND hWnd, LPCOLORREF crColor);
-DWORD GetBrowseForFolderDialog(HWND hWnd, LPWSTR lpwFolder, LPCWSTR lpwTitle);
+DWORD GetBrowseForFolderDialog(HWND hWnd, LPWSTR lpwFolder, LPCWSTR lpwTitle, LPCWSTR lpwInitDir = NULL);
+static int CALLBACK BFFCallbackProc(HWND hWnd, UINT uMsg, LPARAM lParam, LPARAM lpData);
 void AdjustPrivilege(LPWSTR lpwPrivilege);
 BOOL IsFile(LPWSTR lpwPath);
 BOOL IsDirectory(LPWSTR lpwPath);
@@ -33,8 +36,8 @@ COLORREF Blend(COLORREF crFrColor, COLORREF crBkColor, const double dblLevel);
 void CheckBounds(long *Value, long Min, long Max);
 BOOL IsNumeric(LPCWSTR lpwText);
 BOOL IsURL(LPCWSTR lpwText);
-
-DWORD WinAPIErrMsg(DWORD dwCode, LPCWSTR lpwComment = 0);
+void ProcessMessages();
+DWORD WinAPIErrMsg(DWORD dwCode, LPCWSTR lpwComment = NULL);
 
 DWORD DebugMsgLngA(long Value);
 DWORD DebugMsgLngW(long Value);

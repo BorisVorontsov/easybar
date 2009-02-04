@@ -32,6 +32,7 @@ CDirectShow::CDirectShow()
 	m_lDSFilCount = 0;
 	m_lFGFilCount = 0;
 	m_lDMOCount = 0;
+	m_pAMStreamSelect = NULL;
 	m_pGraphBuilder = NULL;
 	m_pMediaControl = NULL;
 	m_pMediaSeeking = NULL;
@@ -83,7 +84,7 @@ void CDirectShow::InitDSCBWnd(BOOL bCreate)
 		WCEX.lpszClassName = DS_CB_WND_CLASS;
 		RegisterClassEx(&WCEX);
 		m_hDSCBWnd = CreateWindow(WCEX.lpszClassName, NULL, WS_POPUP,
-			16, 16, 32, 32, NULL, NULL, hInstance, (LPVOID)this);
+			16, 16, 32, 32, HWND_MESSAGE, NULL, hInstance, (LPVOID)this);
 	}
 	else DestroyWindow(m_hDSCBWnd);
 }
@@ -238,6 +239,7 @@ void CDirectShow::Close()
 		m_pMediaEventEx->SetNotifyWindow(NULL, DS_MEDIAEVENTEX, 0);
 	if (m_pVideoWindow)
 		m_pVideoWindow->put_Visible(OAFALSE);
+	SR(m_pAMStreamSelect);
 	for (m_lCounter = 0; m_lCounter < E_MAX_ARR_SIZE; m_lCounter++)
 		SR(m_pFGBaseFilter[m_lCounter]);
 	if (m_dwROTRegister)
@@ -558,10 +560,11 @@ void CDirectShow::SetFullscreen(int intMode)
 
 //Копирует текущий кадр в буфер обмена
 //В случае ошибки функция вернет значение меньше нуля
-int CDirectShow::CopyCurrentFrame()
+int CDirectShow::CopyCurrentFrame() //*доработанная версия функции от Jenya
 {
 	if (m_pBasicVideo2)
 	{
+		HGLOBAL hGbCopy;
 		LPBYTE pImage;
 		long lArrSize;
 		OAFilterState fTmp;
@@ -572,12 +575,19 @@ int CDirectShow::CopyCurrentFrame()
 				m_pMediaControl->Pause();
 		}
 		if (FAILED(m_pBasicVideo2->GetCurrentImage(&lArrSize, NULL))) return -1;
-		pImage = new BYTE[lArrSize];
+
+		if (!OpenClipboard(NULL)) return -1;
+		EmptyClipboard();
+
+		hGbCopy = GlobalAlloc(GMEM_MOVEABLE, lArrSize);
+		pImage = (LPBYTE)GlobalLock(hGbCopy);
+		GlobalUnlock(hGbCopy);
+
 		m_pBasicVideo2->GetCurrentImage(&lArrSize, (long *)pImage);
-		OpenClipboard(NULL);
+		
 		SetClipboardData(CF_DIB, pImage);
 		CloseClipboard();
-		delete[] pImage;
+		
 		if (m_pMediaControl)
 			if (fTmp == 2) m_pMediaControl->Run();
 		return 0;
@@ -586,15 +596,18 @@ int CDirectShow::CopyCurrentFrame()
 
 //Сохраняет текущий кадр в файл (Windows Bitmap)
 //В случае ошибки функция вернет значение меньше нуля
-int CDirectShow::SaveCurrentFrame(LPCWSTR lpwFileName)
+int CDirectShow::SaveCurrentFrame(LPCWSTR lpwFileName) //*доработанная версия функции от Jenya
 {
 	if (m_pBasicVideo2)
 	{
 		HANDLE hFile;
 		BITMAPFILEHEADER BFH = { 0 };
-		LPBYTE pImage, pFileData;
+		LPBITMAPINFOHEADER LPBI;
+		LPBITMAPCOREHEADER LPBC;
+		LPBYTE pImage;
 		DWORD dwWritten;
 		long lArrSize;
+		DWORD dwColors, dwPaletteSize;
 		OAFilterState fTmp;
 		if (m_pMediaControl)
 		{
@@ -608,21 +621,135 @@ int CDirectShow::SaveCurrentFrame(LPCWSTR lpwFileName)
 		hFile = CreateFile(lpwFileName, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
 		if (hFile != INVALID_HANDLE_VALUE)
 		{
+            LPBI = (LPBITMAPINFOHEADER)pImage;
+            LPBC = (LPBITMAPCOREHEADER)pImage;
+            if (LPBI->biSize == sizeof(BITMAPCOREHEADER))
+            {
+                if (LPBC->bcBitCount > 8)
+                    dwColors = 0;
+                else
+                    dwColors =  (2 ^ LPBC->bcBitCount);
+                dwPaletteSize = (dwColors * sizeof(RGBTRIPLE));
+            }
+            else
+            {
+                 if (LPBI->biClrUsed != 0)
+                     dwColors = LPBI->biClrUsed;
+                 else if (LPBI->biBitCount > 8)
+                     dwColors = 0;
+                 else
+                     dwColors =  (2 ^ LPBI->biBitCount);
+                 dwPaletteSize = (dwColors * sizeof(RGBQUAD));
+            }
 			BFH.bfType = 0x4D42; //0x42 -- 'B', 0x4D -- 'M'
 			BFH.bfOffBits = sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFO);
-			BFH.bfSize = sizeof(BITMAPFILEHEADER) + lArrSize;
-			pFileData = new BYTE[BFH.bfSize];
-			CopyMemory(pFileData, &BFH, sizeof(BITMAPFILEHEADER));
-			CopyMemory(pFileData + sizeof(BITMAPFILEHEADER), pImage, lArrSize);
-			WriteFile(hFile, pFileData, BFH.bfSize, &dwWritten, NULL);
+			BFH.bfSize = sizeof(BITMAPFILEHEADER) + lArrSize + dwPaletteSize;
+			if (WriteFile(hFile, &BFH, sizeof(BITMAPFILEHEADER), &dwWritten, NULL))
+				WriteFile(hFile, pImage, lArrSize, &dwWritten, NULL);
+			SetEndOfFile(hFile);
 			CloseHandle(hFile);
-			delete[] pFileData;
 		}
 		delete[] pImage;
 		if (m_pMediaControl)
 			if (fTmp == 2) m_pMediaControl->Run();
 		return 0;
 	} else return -1;
+}
+
+//Возвращает массив имен (имена опциональны) доступных потоков заданного типа
+//Что бы узнать требуемую размерность массива , достаточно вызвать функцию
+//с lpwASArr равным NULL - значение вернется в pArrSize.
+//В случае ошибки функция вернет значение меньше нуля
+int CDirectShow::GetAvailableStreams(DSSTREAMTYPE dStreamType, LPWSTR *lpwStmArr, LPDWORD pArrSize, DWORD dwBuffSize)
+{
+	if (!m_pAMStreamSelect) return -1;
+	DWORD dwStmCnt = 0, dwStmCnt2 = 0;
+	AM_MEDIA_TYPE *pMT = NULL;
+	LPWSTR lpwName = NULL;
+	m_pAMStreamSelect->Count(&dwStmCnt);
+	for (m_lCounter = 0; m_lCounter < dwStmCnt; m_lCounter++)
+	{
+		if (SUCCEEDED(m_pAMStreamSelect->Info(m_lCounter, &pMT, NULL, NULL, NULL, &lpwName, NULL, NULL)))
+		{
+			if ((pMT->majortype == MEDIATYPE_Audio) && (dStreamType == DSST_AUDIO))
+			{
+				if (lpwStmArr)
+					wcsncpy(lpwStmArr[dwStmCnt2++], lpwName, dwBuffSize);
+				else (*pArrSize)++;
+			}
+			else if ((pMT->majortype == MEDIATYPE_Video) && (dStreamType == DSST_VIDEO))
+			{
+				if (lpwStmArr)
+					wcsncpy(lpwStmArr[dwStmCnt2++], lpwName, dwBuffSize);
+				else (*pArrSize)++;
+			}
+			FreeMediaType(pMT);
+			CoTaskMemFree(lpwName);
+		}
+	}
+	m_pAMStreamSelect->Release();
+	return 0;
+}
+
+//Включает/выключает поток
+//В случае ошибки функция вернет значение меньше нуля
+int CDirectShow::EnableStream(DSSTREAMTYPE dStreamType, LPCWSTR lpwStmName, BOOL bEnable)
+{
+	if (!m_pAMStreamSelect) return -1;
+	DWORD dwStmCnt = 0;
+	AM_MEDIA_TYPE *pMT = NULL;
+	LPWSTR lpwName = NULL;
+	m_pAMStreamSelect->Count(&dwStmCnt);
+	for (m_lCounter = 0; m_lCounter < dwStmCnt; m_lCounter++)
+	{
+		if (SUCCEEDED(m_pAMStreamSelect->Info(m_lCounter, &pMT, NULL, NULL, NULL, &lpwName, NULL, NULL)))
+		{
+			if ((pMT->majortype == MEDIATYPE_Audio) && (dStreamType == DSST_AUDIO))
+			{
+				if (_wcsicmp(lpwName, lpwStmName) == 0)
+					m_pAMStreamSelect->Enable(m_lCounter, (bEnable)?AMSTREAMSELECTENABLE_ENABLE:0);
+			}
+			else if ((pMT->majortype == MEDIATYPE_Video) && (dStreamType == DSST_VIDEO))
+			{
+				if (_wcsicmp(lpwName, lpwStmName) == 0)
+					m_pAMStreamSelect->Enable(m_lCounter, (bEnable)?AMSTREAMSELECTENABLE_ENABLE:0);
+			}
+			FreeMediaType(pMT);
+			CoTaskMemFree(lpwName);
+		}
+	}
+	return 0;
+}
+
+//Позволяет узнать, включен ли поток
+BOOL CDirectShow::IsStreamEnabled(DSSTREAMTYPE dStreamType, LPCWSTR lpwStmName)
+{
+	if (!m_pAMStreamSelect) return FALSE;
+	DWORD dwStmCnt = 0;
+	AM_MEDIA_TYPE *pMT = NULL;
+	LPWSTR lpwName = NULL;
+	DWORD dwFlags;
+	BOOL bResult = FALSE;
+	m_pAMStreamSelect->Count(&dwStmCnt);
+	for (m_lCounter = 0; m_lCounter < dwStmCnt; m_lCounter++)
+	{
+		if (SUCCEEDED(m_pAMStreamSelect->Info(m_lCounter, &pMT, &dwFlags, NULL, NULL, &lpwName, NULL, NULL)))
+		{
+			if ((pMT->majortype == MEDIATYPE_Audio) && (dStreamType == DSST_AUDIO))
+			{
+				if (_wcsicmp(lpwName, lpwStmName) == 0)
+					bResult = (dwFlags != 0);
+			}
+			else if ((pMT->majortype == MEDIATYPE_Video) && (dStreamType == DSST_VIDEO))
+			{
+				if (_wcsicmp(lpwName, lpwStmName) == 0)
+					bResult = (dwFlags != 0);
+			}
+			FreeMediaType(pMT);
+			CoTaskMemFree(lpwName);
+		}
+	}
+	return bResult;
 }
 
 //Добавляет текущий Filter Graph в ROT (Running Object Table)
@@ -666,7 +793,7 @@ int CDirectShow::GetDSFiltersNames(LPWSTR *lpwDSFilArr, LPDWORD pArrSize, DWORD 
 			m_pDSFMoniker[m_lCounter]->BindToStorage(NULL, NULL, IID_IPropertyBag, (LPVOID *)&pPropBag);
 			if (SUCCEEDED(pPropBag->Read(L"FriendlyName", &varDSFName, NULL)))
 			{
-				wcscpy(lpwDSFilArr[m_lCounter], varDSFName.bstrVal);
+				wcsncpy(lpwDSFilArr[m_lCounter], varDSFName.bstrVal, dwBuffSize);
 				SysFreeString(varDSFName.bstrVal);
 			}
 			else
@@ -950,6 +1077,7 @@ int CDirectShow::FGFiltersPropertyPages(LPCWSTR lpwFGFilName, BOOL bCheck)
 }
 
 //Обновляет массив m_pFGBaseFilter[], хранящий список фильтров DirectShow в текущем Filter Graph
+//А так же инициализирует интерфейс m_pAMStreamSelect
 //Функция Open() вызывает эту функцию автоматически
 //Однако, крайне желательно вызывать её повторно перед вызовом функций,
 //работающих с m_pFGBaseFilter[] массивом
@@ -965,6 +1093,11 @@ void CDirectShow::UpdateFGFiltersArray()
 	pEnumFilters->Reset();
 	pEnumFilters->Next(E_MAX_ARR_SIZE, &m_pFGBaseFilter[0], &m_lFGFilCount);
 	pEnumFilters->Release();
+	for (m_lCounter = 0; m_lCounter < m_lFGFilCount; m_lCounter++)
+	{
+		m_pFGBaseFilter[m_lCounter]->QueryInterface(IID_IAMStreamSelect, (LPVOID *)&m_pAMStreamSelect);
+		if (m_pAMStreamSelect) break;
+	}
 }
 
 //Возвращает массив имен DMO (DirectX Media Objects)
@@ -1155,4 +1288,16 @@ void CDirectShow::DSErrorMsg(HRESULT hr, LPCWSTR lpwEM)
 		lpwEM, hr, wcslen(lpwErrDesc)?lpwErrDesc:L"None");
 	MessageBox(m_hAppWnd, lpwMsg, (m_lpwAppName)?m_lpwAppName:L"Error",
 		MB_ICONEXCLAMATION);
+}
+
+//Приватная функция. Освобождает структуру AM_MEDIA_TYPE
+void CDirectShow::FreeMediaType(AM_MEDIA_TYPE *pMT)
+{
+    if (pMT->cbFormat != 0)
+    {
+        CoTaskMemFree((LPVOID)pMT->pbFormat);
+        pMT->cbFormat = 0;
+        pMT->pbFormat = NULL;
+    }
+    SR(pMT->pUnk);
 }

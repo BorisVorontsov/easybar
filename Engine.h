@@ -34,6 +34,13 @@ typedef enum _ENGINESTATE
 	E_STATE_PLAYING = 2
 } ENGINESTATE;
 
+//Тип потока (для переключения)
+typedef enum _DSSTREAMTYPE
+{
+	DSST_AUDIO = 0,
+	DSST_VIDEO = 1
+} DSSTREAMTYPE;
+
 //Категории фильтров DirectShow
 typedef enum _DSFCATEGORY
 {
@@ -131,6 +138,15 @@ public:
 	int SaveCurrentFrame(LPCWSTR lpwFileName);
 	//Дополнительные функции
 	//-----------------------------------------------------------
+	int GetAvailableStreams(DSSTREAMTYPE dStreamType,
+	                        LPWSTR *lpwStmArr,
+		                    LPDWORD pArrSize,
+							DWORD dwBuffSize);
+	int EnableStream(DSSTREAMTYPE dStreamType,
+		             LPCWSTR lpwStmName,
+					 BOOL bEnable);
+	BOOL IsStreamEnabled(DSSTREAMTYPE dStreamType,
+		                 LPCWSTR lpwStmName);
 	int AddFGToROT();
 	int GetDSFiltersNames(LPWSTR *lpwDSFilArr,
 		                  LPDWORD pArrSize,
@@ -157,6 +173,7 @@ protected:
 private:
 	void RemoveFGFromROT();
 	void DSErrorMsg(HRESULT hr, LPCWSTR lpwEM);
+	void FreeMediaType(AM_MEDIA_TYPE *pMT);
 	void InitDSCBWnd(BOOL bCreate = TRUE);
 	static LRESULT CALLBACK DSCBWndProc(HWND hWnd,
 		                                UINT uMsg,
@@ -170,6 +187,7 @@ private:
 	ULONG m_lFGFilCount;
 	ULONG m_lDMOCount;
 	int m_intPrevVol;
+	IAMStreamSelect *m_pAMStreamSelect;
 	IGraphBuilder *m_pGraphBuilder;
 	IMediaControl *m_pMediaControl;
 	IMediaSeeking *m_pMediaSeeking;
