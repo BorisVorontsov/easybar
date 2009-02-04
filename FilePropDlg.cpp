@@ -109,9 +109,9 @@ INT_PTR CALLBACK FilePropDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPa
 			}
 			return TRUE;
 		case WM_CLOSE:
-			DestroyWindow(hPPGeneral);
-			DestroyWindow(hPPContent);
-			DestroyWindow(hPPFilters);
+			//DestroyWindow(hPPGeneral);
+			//DestroyWindow(hPPContent);
+			//DestroyWindow(hPPFilters);
 			EndDialog(hWnd, 0);
 			return TRUE;
 	}

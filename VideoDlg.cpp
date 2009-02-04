@@ -104,6 +104,7 @@ INT_PTR CALLBACK VideoDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam
 			}
 			return TRUE;
 		}
+		case VWM_UPDATEASPECTRATIO:
 		case WM_WINDOWPOSCHANGED:
 		{
 			RECT RCW = { 0 }, RCS = { 0 }, RCV = { 0 };

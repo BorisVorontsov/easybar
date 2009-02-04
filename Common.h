@@ -1,8 +1,8 @@
 #ifndef COMMON_H
 #define COMMON_H
 
-#define SDA(x) if(x) {delete[] x; x = 0;}
-#define SDO(x) if(x) {delete x; x = 0;}
+#define SDA(x)			if(x) {delete[] x; x = 0;}
+#define SDO(x)			if(x) {delete x; x = 0;}
 
 void Draw3DText(HWND hWnd, LPWSTR lpwText, COLORREF crBkColorOne, COLORREF crBkColorTwo,
 				DWORD dwBkDirection, COLORREF crFontColor, COLORREF crShadowColor,
@@ -12,7 +12,14 @@ void MoveToCenter(HWND hWnd, LONG lXOffset, LONG lYOffset);
 void StickyWindow(HWND hWnd, LPRECT pCRC);
 void ShowMousePointer(BOOL bShow);
 BOOL GetAppPath(HINSTANCE hApp, LPWSTR lpwPath, DWORD dwPathLen, BOOL bAddQuotes);
-DWORD ReadFileVersion(LPWSTR lpwFileName, LPWSTR Result, BOOL bMMOnly = FALSE);
+
+#define RFV_MAJOR		0x10
+#define RFV_MINOR		0x20
+#define RFV_RELEASE		0x40
+#define RFV_BUILD		0x80
+
+DWORD ReadFileVersion(LPCWSTR lpwFileName, LPWSTR lpwResult, UINT uResultSize, DWORD dwFlags);
+
 DWORD GetOpenDialog(HINSTANCE hInstance, HWND hWnd, LPCWSTR lpwTitle, LPWSTR lpwFileName,
 					DWORD dwFNSize, LPCWSTR lpwFilter, DWORD dwFilterIndex, BOOL bMultiSelect = FALSE);
 DWORD GetSaveDialog(HINSTANCE hInstance, HWND hWnd, LPCWSTR lpwTitle, LPWSTR lpwFileName,

@@ -1,7 +1,7 @@
 /////////////////////////////////////////////////////////////////////////////
 //		Проект: EasyBar - media player
 //		Автор: Борис Воронцов
-//		Последнее обновление: 06.08.2008
+//		Последнее обновление: 12.12.2008
 /////////////////////////////////////////////////////////////////////////////
 
 #define _WIN32_WINNT	0x0501
@@ -67,8 +67,8 @@ static BOOL bSeekFlag = FALSE; //Временно отключает обновление полосы поиска
 CURRENTINFO CI = { 0 };
 PAUSEINFO PI = { PS_OTHER, 0 };
 
-CEBMenu *pEBMenuMain = new CEBMenu;
-CToolTips *pToolTipsMain = new CToolTips;
+static CEBMenu *pEBMenuMain = new CEBMenu;
+static CToolTips *pToolTipsMain = new CToolTips;
 CFileCollection *pFileCollection = new CFileCollection;
 CDirectShow *pEngine = new CDirectShow;
 CVideoMode *pVideoMode = new CVideoMode;
@@ -124,8 +124,8 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, LPWSTR lpwCmdLine, int nShow
 		InitEBSlider(hAppInstance);
 		InitLabelEx(hAppInstance);
 		GetAppPath(hAppInstance, lpwAppPath, MAX_PATH, FALSE);
-		ReadFileVersion(lpwAppPath, lpwAppVersion);
-		ReadFileVersion(lpwAppPath, lpwAppVersionMM, TRUE);
+		ReadFileVersion(lpwAppPath, lpwAppVersion, sizeof(lpwAppVersion), RFV_MAJOR | RFV_MINOR | RFV_RELEASE);
+		ReadFileVersion(lpwAppPath, lpwAppVersionMM, sizeof(lpwAppVersionMM), RFV_MAJOR | RFV_MINOR);
 		swprintf(lpwStdWndTitle, L"%s %s", APP_NAME, lpwAppVersionMM);
 		hAccel = LoadAccelerators(hAppInstance, MAKEINTRESOURCE(IDR_MAINACCEL));
 		InitMainWnd();
@@ -136,7 +136,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, LPWSTR lpwCmdLine, int nShow
 				IMAGE_BITMAP, 16, 16, 0);
 			pEBMenuMain->hBmpRadioCheck = (HBITMAP)LoadImage(hAppInstance, MAKEINTRESOURCE(IDB_RADIOCHECKMARK),
 				IMAGE_BITMAP, 16, 16, 0);
-			pEBMenuMain->InitEBMenu(hMainWnd);
+			pEBMenuMain->InitEBMenu(hMainWnd, FALSE);
 		}
 		pToolTipsMain->m_hInstance = hAppInstance;
 		pToolTipsMain->m_hOwner = hMainWnd;
@@ -299,10 +299,7 @@ ExitFunction:
 		dwSFState = E_STATE_STOPPED;
 	}
 	if (pEngine->m_lpwFileName) CloseTrack();
-	pToolTipsMain->Destroy();
 	if (!dwNoOwnerDrawMenu) pEBMenuMain->InitEBMenu(0);
-	if (hMainWnd) InitMainWnd(FALSE);
-	if (dwTrayIcon) RemoveTrayIcon();
 	SaveSettings();
 	ReleaseMutex(hMutex);
 	SDO(pEBMenuMain);
@@ -419,6 +416,8 @@ INT_PTR CALLBACK PlayerDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 		case WM_INITDIALOG:
 			//Инициализация диалога
 			//--------------------------------------------------------------------
+			SendMessage(hWnd, WM_SETICON, ICON_BIG,
+				(LPARAM)LoadImage(hAppInstance, MAKEINTRESOURCE(IDI_MAIN), IMAGE_ICON, 32, 32, 0));
 			SendMessage(hWnd, WM_SETICON, ICON_SMALL,
 				(LPARAM)LoadImage(hAppInstance, MAKEINTRESOURCE(IDI_MAIN), IMAGE_ICON, 16, 16, 0));
 			//Инициализация элементов управления
@@ -1359,31 +1358,31 @@ INT_PTR CALLBACK PlayerDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 					dwKeepAspectRatio = !dwKeepAspectRatio;
 					CheckMenuItem(GetMenu(hWnd), IDM_AR_KEEPASPECTRATIO, MF_BYCOMMAND |
 						(dwKeepAspectRatio)?MF_CHECKED:MF_UNCHECKED);
-					SendMessage(hVideoWnd, WM_WINDOWPOSCHANGED, 0, 0);
+					SendMessage(hVideoWnd, VWM_UPDATEASPECTRATIO, 0, 0);
 					break;
 				case IDM_AR_DEFAULT:
 					dwAspectRatioIndex = 0;
 					CheckMenuRadioItem(GetMenu(hWnd), IDM_AR_DEFAULT,
 						IDM_AR_169, IDM_AR_DEFAULT, MF_BYCOMMAND);
-					SendMessage(hVideoWnd, WM_WINDOWPOSCHANGED, 0, 0);
+					SendMessage(hVideoWnd, VWM_UPDATEASPECTRATIO, 0, 0);
 					break;
 				case IDM_AR_43:
 					dwAspectRatioIndex = 1;
 					CheckMenuRadioItem(GetMenu(hWnd), IDM_AR_DEFAULT,
 						IDM_AR_169, IDM_AR_43, MF_BYCOMMAND);
-					SendMessage(hVideoWnd, WM_WINDOWPOSCHANGED, 0, 0);
+					SendMessage(hVideoWnd, VWM_UPDATEASPECTRATIO, 0, 0);
 					break;
 				case IDM_AR_54:
 					dwAspectRatioIndex = 2;
 					CheckMenuRadioItem(GetMenu(hWnd), IDM_AR_DEFAULT,
 						IDM_AR_169, IDM_AR_54, MF_BYCOMMAND);
-					SendMessage(hVideoWnd, WM_WINDOWPOSCHANGED, 0, 0);
+					SendMessage(hVideoWnd, VWM_UPDATEASPECTRATIO, 0, 0);
 					break;
 				case IDM_AR_169:
 					dwAspectRatioIndex = 3;
 					CheckMenuRadioItem(GetMenu(hWnd), IDM_AR_DEFAULT,
 						IDM_AR_169, IDM_AR_169, MF_BYCOMMAND);
-					SendMessage(hVideoWnd, WM_WINDOWPOSCHANGED, 0, 0);
+					SendMessage(hVideoWnd, VWM_UPDATEASPECTRATIO, 0, 0);
 					break;
 				case IDM_ZOOM_HALFSIZE:
 					ScaleVideoWindow(hVideoWnd, 0);
@@ -2280,6 +2279,11 @@ Seek_SetPosition:
 			}
 			RemoveProp(GetDlgItem(hWnd, IDC_EBBPP), L"_icon_");
 			KillTimer(hWnd, 1);
+
+			pToolTipsMain->Destroy();
+			if (hMainWnd) InitMainWnd(FALSE);
+			if (dwTrayIcon) RemoveTrayIcon();
+
 			PostQuitMessage(0);
 			return TRUE;
 		}
@@ -2823,6 +2827,7 @@ void UpdateEBColors()
 			pEBMenuMain->crSelColorTwo = Blend(GetSysColor(COLOR_WINDOW), GetSysColor(COLOR_HIGHLIGHT), 0.1);
 			pEBMenuMain->crBrColorOne = Blend(GetSysColor(COLOR_HIGHLIGHT), GetSysColor(COLOR_BTNTEXT), 0.1);
 			pEBMenuMain->crBrColorTwo = Blend(GetSysColor(COLOR_3DHIGHLIGHT), GetSysColor(COLOR_HIGHLIGHT), 0.1);
+			pEBMenuMain->UpdateMenuBar();
 			DrawMenuBar(hMainWnd);
 			UpdateTrayMenuColors();
 		}
@@ -2894,6 +2899,7 @@ void UpdateEBColors()
 			pEBMenuMain->crSelColorTwo = dwGradientColor2;
 			pEBMenuMain->crBrColorOne = dwBorderColor1;
 			pEBMenuMain->crBrColorTwo = dwBorderColor2;
+			pEBMenuMain->UpdateMenuBar();
 			DrawMenuBar(hMainWnd);
 			UpdateTrayMenuColors();
 		}
