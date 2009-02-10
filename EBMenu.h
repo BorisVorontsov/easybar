@@ -30,14 +30,15 @@ public:
 	DWORD MeasureItem(WPARAM wParam, LPARAM lParam);
 	DWORD DrawItem(WPARAM wParam, LPARAM lParam);
 	HMENU GetCurrentMenu();
+	BOOL UpdateMenuBar();
 	COLORREF crFontColorOne; //Цвет текста выделенного пункта
 	COLORREF crFontColorTwo; //Цвет тени у текста выделенного пункта
 	COLORREF crFontColorThree; //Цвет текста обычного пункта
 	COLORREF crBkColorOne; //Цвет левой панели меню (область для изображений)
 	COLORREF crBkColorTwo; //Цвет фона для обычных пунктов меню
 	COLORREF crBkColorThree; //Цвет фона для пунктов меню верхнего уровня (панель меню)
-	COLORREF crSelColorOne; //Первый увет у градиентного фона выделенного пункта
-	COLORREF crSelColorTwo; //Второй увет у градиентного фона выделенного пункта
+	COLORREF crSelColorOne; //Первый цвет у градиентного фона выделенного пункта
+	COLORREF crSelColorTwo; //Второй цвет у градиентного фона выделенного пункта
 	COLORREF crBrColorOne; //Первый цвет рамки выделенного пункта
 	COLORREF crBrColorTwo; //Второй цвет рамки выделенного пункта
 	COLORREF crTrColor; //Прозрачный цвет, который будет игнорироваться при рисовании изображений
@@ -52,8 +53,10 @@ private:
 	BOOL DrawCheckMark(HDC hDC, LONG lX, LONG lY, BOOL bDisabled, BOOL bSelected,
 		               BOOL bRadioCheck);
 	BOOL DrawMenuString(HDC hDC, LPCWSTR lpwString, RECT RCT,
-		                BOOL bDisabled, BOOL bSelected, BOOL bDefault, BOOL bTLMenu);
-	HWND m_MenuOwner;
+		                BOOL bDisabled, BOOL bSelected, BOOL bDefault, BOOL bInactive,
+						BOOL bTLMenu);
+	HWND m_hMenuOwner;
+	BOOL m_bPopupMenu;
 };
 
 #endif

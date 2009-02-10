@@ -12,12 +12,16 @@
 #include "easybar.h"
 #include "trayicon.h"
 
-WNDCLASSEX WCEX = { 0 };
-HWND hTrayCBWnd = 0;
-HMENU hTrayMenu = 0;
-NOTIFYICONDATA NID = { 0 };
+extern HINSTANCE hAppInstance;
+extern HWND hMainWnd;
 
-CEBMenu *pEBMenuTray = 0;
+static CEBMenu *pEBMenuTray = 0;
+
+HWND hTrayCBWnd = 0;
+
+static WNDCLASSEX WCEX = { 0 };
+static HMENU hTrayMenu = 0;
+static NOTIFYICONDATA NID = { 0 };
 
 void InitTrayCBWnd(BOOL bCreate)
 {
@@ -35,6 +39,8 @@ void InitTrayCBWnd(BOOL bCreate)
 			AppendMenu(hTrayMenu, MF_STRING | MF_POPUP, (UINT_PTR)GetSubMenu(GetMenu(hMainWnd),
 				i), lpwText);
 		}
+		AppendMenu(hTrayMenu, MF_SEPARATOR, 0, 0);
+		AppendMenu(hTrayMenu, MF_STRING, IDM_TRAY_EXIT, L"&Exit");
 		SetMenuDefaultItem(hTrayMenu, IDM_TRAY_HIDESHOW, FALSE);
 		WCEX.cbSize = sizeof(WNDCLASSEX); 
 		WCEX.lpfnWndProc = (WNDPROC)TrayCBWndProc;
@@ -109,6 +115,24 @@ static LRESULT CALLBACK TrayCBWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARA
 						ShowWindow(hMainWnd, SW_RESTORE);
 						SetForegroundWindow(hMainWnd);
 					}
+					break;
+				case IDM_TRAY_EXIT:
+					if (dwMultipleInstances)
+					{
+						HANDLE hMtx = CreateMutex(0, TRUE, APP_NAME);
+						if (GetLastError() == ERROR_ALREADY_EXISTS)
+						{
+							if (MessageBox(hWnd, L"Close all instances?", APP_NAME, MB_YESNO | MB_ICONQUESTION |
+								MB_DEFBUTTON2) == IDYES)
+							{
+								PostMessage(hMainWnd, WM_COMMAND, MAKEWPARAM(IDM_FILE_EXIT, 0), 0);
+								ReleaseMutex(hMtx);
+								break;
+							}
+						}
+						ReleaseMutex(hMtx);
+					}
+					PostMessage(hMainWnd, WM_COMMAND, MAKEWPARAM(IDM_FILE_CLOSEWINDOW, 0), 0);
 					break;
 				default:
 					PostMessage(hMainWnd, WM_COMMAND, wParam, lParam);

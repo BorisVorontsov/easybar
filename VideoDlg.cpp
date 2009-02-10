@@ -12,6 +12,7 @@
 #include "easybar.h"
 #include "videodlg.h"
 
+extern HWND hMainWnd;
 extern VWDATA VWD;
 
 static POINT PTMM = { 0 };
@@ -29,8 +30,8 @@ INT_PTR CALLBACK VideoDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam
 			//--------------------------------------------------------------------
 			RECT RC = { 0 };
 			ScaleVideoWindow(hWnd, 1, &RC);
-			SetWindowPos(hWnd, HWND_TOP, 0, 0, (RC.right - RC.left),
-				(RC.bottom - RC.top), SWP_NOACTIVATE);
+			SetWindowPos(hWnd, 0, 0, 0, (RC.right - RC.left),
+				(RC.bottom - RC.top), SWP_NOACTIVATE | SWP_NOZORDER);
 			MoveToCenter(hWnd, 0, 0);
 			VWD.dwVWPosFlag = VWPF_NORMAL;
 			VWD.dwSMPTimeout = 0;
@@ -39,7 +40,7 @@ INT_PTR CALLBACK VideoDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam
 			//-------------------------------------------------------------------------------
 			VWD.hPlayerVW = CreateDialogParam(hAppInstance, MAKEINTRESOURCE(IDD_PLAYER_VW),
 				hWnd, PlayerDlgProc, 0);
-			SetWindowPos(VWD.hPlayerVW, HWND_TOP, 100, 100, 0, 0, SWP_NOSIZE);
+			SetWindowPos(VWD.hPlayerVW, 0, 100, 100, 0, 0, SWP_NOSIZE | SWP_NOZORDER);
 			ShowWindow(VWD.hPlayerVW, SW_SHOW);
 			//-------------------------------------------------------------------------------
 			*/
@@ -95,8 +96,8 @@ INT_PTR CALLBACK VideoDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam
 					lCurWndStyle |= WS_CAPTION;
 				}
 				SetWindowLong(hWnd, GWL_STYLE, lCurWndStyle);
-				SetWindowPos(hWnd, HWND_TOP, 0, 0, 0, 0, SWP_FRAMECHANGED |
-					SWP_NOSIZE | SWP_NOMOVE);
+				SetWindowPos(hWnd, 0, 0, 0, 0, 0, SWP_FRAMECHANGED |
+					SWP_NOSIZE | SWP_NOMOVE | SWP_NOZORDER);
 			}
 			else
 			{
@@ -104,6 +105,7 @@ INT_PTR CALLBACK VideoDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam
 			}
 			return TRUE;
 		}
+		case VWM_UPDATEASPECTRATIO:
 		case WM_WINDOWPOSCHANGED:
 		{
 			RECT RCW = { 0 }, RCS = { 0 }, RCV = { 0 };
@@ -355,6 +357,6 @@ void ScaleVideoWindow(HWND hWnd, DWORD dwZoomIndex, LPRECT pVWRC)
 	}
 	else
 	{
-		SetWindowPos(hWnd, HWND_TOP, 0, 0, SZ.cx, SZ.cy, SWP_NOMOVE | SWP_NOACTIVATE);
+		SetWindowPos(hWnd, 0, 0, 0, SZ.cx, SZ.cy, SWP_NOMOVE | SWP_NOACTIVATE | SWP_NOZORDER);
 	}
 }

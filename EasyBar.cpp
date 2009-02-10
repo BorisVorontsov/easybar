@@ -1,7 +1,7 @@
 /////////////////////////////////////////////////////////////////////////////
 //		Проект: EasyBar - media player
-//		Автор: Борис Воронцов
-//		Последнее обновление: 06.08.2008
+//		Автор: Борис Воронцов и участники проекта
+//		Последнее обновление: 04.02.2009
 /////////////////////////////////////////////////////////////////////////////
 
 #define _WIN32_WINNT	0x0501
@@ -25,6 +25,7 @@
 #include "ppgeneraldlg.h"
 #include "ppcontentdlg.h"
 #include "ppfiltersdlg.h"
+#include "playlistdlg.h"
 #include "videodlg.h"
 #include "fsvideomodedlg.h"
 #include "colorsdlg.h"
@@ -48,7 +49,10 @@
 #include "videomode.h"
 #include "easybar.h"
 
-HANDLE hMutex;
+extern HWND hFindTextWnd;
+
+static HANDLE hMutex;
+
 HINSTANCE hAppInstance;
 WCHAR lpwAppPath[MAX_PATH] = { 0 };
 WCHAR lpwAppVersion[20] = { 0 };
@@ -57,6 +61,7 @@ WCHAR lpwAppVersionMM[10] = { 0 };
 OSVERSIONINFO OSVI = { 0 };
 
 HWND hMainWnd = 0;
+HWND hPlaylistWnd = 0;
 HWND hVideoWnd = 0;
 
 WCHAR lpwStdWndTitle[64] = { 0 };
@@ -67,8 +72,8 @@ static BOOL bSeekFlag = FALSE; //Временно отключает обновление полосы поиска
 CURRENTINFO CI = { 0 };
 PAUSEINFO PI = { PS_OTHER, 0 };
 
-CEBMenu *pEBMenuMain = new CEBMenu;
-CToolTips *pToolTipsMain = new CToolTips;
+static CEBMenu *pEBMenuMain = new CEBMenu;
+static CToolTips *pToolTipsMain = new CToolTips;
 CFileCollection *pFileCollection = new CFileCollection;
 CDirectShow *pEngine = new CDirectShow;
 CVideoMode *pVideoMode = new CVideoMode;
@@ -80,7 +85,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, LPWSTR lpwCmdLine, int nShow
 	WCHAR lpwPlPath[MAX_PATH] = { 0 };
 	ULONG lCmdLnLen = 0, lPlFileCnt = 0, lCmdLnFileCnt = 0;
 	BOOL bCmdLnAdd = FALSE;
-	HACCEL hAccel;
+	HACCEL hMainAccel, hPLAccel;
 	MSG Msg = { 0 };
 	LPITEMIDLIST pIIDL = 0;
 	LPEXCEPTION_POINTERS pGEP = 0;
@@ -124,11 +129,13 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, LPWSTR lpwCmdLine, int nShow
 		InitEBSlider(hAppInstance);
 		InitLabelEx(hAppInstance);
 		GetAppPath(hAppInstance, lpwAppPath, MAX_PATH, FALSE);
-		ReadFileVersion(lpwAppPath, lpwAppVersion);
-		ReadFileVersion(lpwAppPath, lpwAppVersionMM, TRUE);
+		ReadFileVersion(lpwAppPath, lpwAppVersion, sizeof(lpwAppVersion), RFV_MAJOR | RFV_MINOR | RFV_RELEASE);
+		ReadFileVersion(lpwAppPath, lpwAppVersionMM, sizeof(lpwAppVersionMM), RFV_MAJOR | RFV_MINOR);
 		swprintf(lpwStdWndTitle, L"%s %s", APP_NAME, lpwAppVersionMM);
-		hAccel = LoadAccelerators(hAppInstance, MAKEINTRESOURCE(IDR_MAINACCEL));
+		hMainAccel = LoadAccelerators(hAppInstance, MAKEINTRESOURCE(IDR_MAINACCEL));
+		hPLAccel = LoadAccelerators(hAppInstance, MAKEINTRESOURCE(IDR_PLACCEL));
 		InitMainWnd();
+		hPlaylistWnd = CreateDialogParam(hAppInstance, MAKEINTRESOURCE(IDD_PLAYLIST), hMainWnd, PlaylistDlgProc, 0);
 		UpdateCFTitle(0);
 		if (!dwNoOwnerDrawMenu)
 		{
@@ -136,12 +143,13 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, LPWSTR lpwCmdLine, int nShow
 				IMAGE_BITMAP, 16, 16, 0);
 			pEBMenuMain->hBmpRadioCheck = (HBITMAP)LoadImage(hAppInstance, MAKEINTRESOURCE(IDB_RADIOCHECKMARK),
 				IMAGE_BITMAP, 16, 16, 0);
-			pEBMenuMain->InitEBMenu(hMainWnd);
+			pEBMenuMain->InitEBMenu(hMainWnd, FALSE);
 		}
 		pToolTipsMain->m_hInstance = hAppInstance;
 		pToolTipsMain->m_hOwner = hMainWnd;
 		pToolTipsMain->Initialize();
 		UpdateToolTips();
+		pFileCollection->SetCallbackWnd(hPlaylistWnd);
 		pEngine->m_lpwFileName = 0;
 		pEngine->m_lpwAppName = APP_NAME;
 		pEngine->m_hAppWnd = hMainWnd;
@@ -236,6 +244,8 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, LPWSTR lpwCmdLine, int nShow
 			}
 		}
 		ShowWindow(hMainWnd, nShowCmd);
+		if (dwPlaylist)
+			ShowWindow(hPlaylistWnd, SW_SHOW);
 #ifndef _DEBUG
 	}
 	__except(ExceptionFilter(pGEP = GetExceptionInformation()))
@@ -260,7 +270,10 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, LPWSTR lpwCmdLine, int nShow
 #endif
 	while (GetMessage(&Msg, 0, 0, 0))
 	{
-		if (TranslateAccelerator(hMainWnd, hAccel, &Msg)) continue;
+		if (hFindTextWnd)
+			if (IsDialogMessage(hFindTextWnd, &Msg)) continue;
+		if (TranslateAccelerator(hMainWnd, hMainAccel, &Msg)) continue;
+		if (TranslateAccelerator(hPlaylistWnd, hPLAccel, &Msg)) continue;
 		TranslateMessage(&Msg);
 		DispatchMessage(&Msg);
 	}
@@ -299,10 +312,7 @@ ExitFunction:
 		dwSFState = E_STATE_STOPPED;
 	}
 	if (pEngine->m_lpwFileName) CloseTrack();
-	pToolTipsMain->Destroy();
 	if (!dwNoOwnerDrawMenu) pEBMenuMain->InitEBMenu(0);
-	if (hMainWnd) InitMainWnd(FALSE);
-	if (dwTrayIcon) RemoveTrayIcon();
 	SaveSettings();
 	ReleaseMutex(hMutex);
 	SDO(pEBMenuMain);
@@ -384,7 +394,7 @@ DWORD ReadCommandLine(LPCWSTR lpwCmdLine, LPBOOL pAdd)
 
 INT_PTR CALLBACK PlayerDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
-	if (uMsg == EBM_INITIALIZE)
+	if (uMsg == EBM_INITIALIZED)
 	{
 		if (lParam != GetCurrentThreadId())
 		{
@@ -392,7 +402,7 @@ INT_PTR CALLBACK PlayerDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 		}
 		return TRUE;
 	}
-	else if (uMsg == EBM_ACTIVATE)
+	else if (uMsg == EBM_ACTIVATED)
 	{
 		//----------------------------------------------------------------
 		if (!dwNoAutomaticPause)
@@ -419,6 +429,8 @@ INT_PTR CALLBACK PlayerDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 		case WM_INITDIALOG:
 			//Инициализация диалога
 			//--------------------------------------------------------------------
+			SendMessage(hWnd, WM_SETICON, ICON_BIG,
+				(LPARAM)LoadImage(hAppInstance, MAKEINTRESOURCE(IDI_MAIN), IMAGE_ICON, 32, 32, 0));
 			SendMessage(hWnd, WM_SETICON, ICON_SMALL,
 				(LPARAM)LoadImage(hAppInstance, MAKEINTRESOURCE(IDI_MAIN), IMAGE_ICON, 16, 16, 0));
 			//Инициализация элементов управления
@@ -455,7 +467,7 @@ INT_PTR CALLBACK PlayerDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 			//--------------------------------------------------------------------
 			if (dwMultipleInstances)
 			{
-				PostMessage(HWND_BROADCAST, EBM_INITIALIZE, 0, (LPARAM)GetCurrentThreadId());
+				PostMessage(HWND_BROADCAST, EBM_INITIALIZED, 0, (LPARAM)GetCurrentThreadId());
 			}
 			return TRUE;
 		case WM_ACTIVATEAPP:
@@ -467,8 +479,14 @@ INT_PTR CALLBACK PlayerDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 				{
 					if (!dwNoTransitionEffects)
 					{
-						for (i = bAlpha1; i < bAlpha2; i++)
+						for (i = bAlpha1; i < bAlpha2; i ++)
+						{
 							SetLayeredWindowAttributes(hWnd, 0, i, LWA_ALPHA);
+							SetLayeredWindowAttributes(hPlaylistWnd, 0, i, LWA_ALPHA);
+							/*if (hVideoWnd)
+								SetLayeredWindowAttributes(hVideoWnd, 0, i, LWA_ALPHA);*/
+							ProcessMessages();
+						}
 					}
 					else
 					{
@@ -479,8 +497,14 @@ INT_PTR CALLBACK PlayerDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 				{
 					if (!dwNoTransitionEffects)
 					{
-						for (i = bAlpha2; i > bAlpha1; i--)
+						for (i = bAlpha2; i > bAlpha1; i --)
+						{
 							SetLayeredWindowAttributes(hWnd, 0, i, LWA_ALPHA);
+							SetLayeredWindowAttributes(hPlaylistWnd, 0, i, LWA_ALPHA);
+							/*if (hVideoWnd)
+								SetLayeredWindowAttributes(hVideoWnd, 0, i, LWA_ALPHA);*/
+							ProcessMessages();
+						}
 					}
 					else
 					{
@@ -513,7 +537,7 @@ INT_PTR CALLBACK PlayerDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 							ReleaseMutex(hMtx);
 						}
 					//}
-					PostMessage(HWND_BROADCAST, EBM_ACTIVATE, 0, (LPARAM)GetCurrentThreadId());
+					PostMessage(HWND_BROADCAST, EBM_ACTIVATED, 0, (LPARAM)GetCurrentThreadId());
 				}
 			}
 			return TRUE;
@@ -679,7 +703,7 @@ INT_PTR CALLBACK PlayerDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 						}
 					}
 					if (GetOpenDialog(hAppInstance, hWnd, (bOpen)?L"Open File(s)":L"Add File(s)",
-						lpwODFile, APP_OD_MS_MAX_FILE - 1, lpwODFilter, 1, TRUE))
+						lpwODFile, APP_OD_MS_MAX_FILE - 1, lpwODFilter, 1, TRUE, lpwRecentDir))
 					{
 						if (bOpen) pFileCollection->Clear();
 						for (i = 0; i < (APP_OD_MS_MAX_FILE - 1); i++)
@@ -695,6 +719,7 @@ INT_PTR CALLBACK PlayerDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 							WCHAR lpwDir[MAX_PATH] = { 0 }, lpwFile[MAX_PATH] = { 0 };
 							wcscpy(lpwDir, pFiles[0]);
 							SP_AddDirSep(lpwDir, lpwDir);
+							wcscpy(lpwRecentDir, lpwDir);
 							for (i = 1; i < lODFileCnt; i++)
 							{
 								wcscpy(lpwFile, lpwDir);
@@ -715,6 +740,8 @@ INT_PTR CALLBACK PlayerDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 						}
 						else
 						{
+							SP_ExtractDirectory(pFiles[0], lpwRecentDir);
+							SP_AddDirSep(lpwRecentDir, lpwRecentDir);
 							SP_ExtractRightPart(pFiles[0], lpwExt, '.');
 							if (SFT_IsMemberOfCategory(lpwExt, SFTC_PLAYLIST))
 							{
@@ -752,7 +779,7 @@ INT_PTR CALLBACK PlayerDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 								}
 							}
 						}
-						else 
+						else
 						{
 							if (bOpen)
 							{
@@ -762,16 +789,20 @@ INT_PTR CALLBACK PlayerDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 					}
 					break;
 				}
-				case IDM_FILE_OPENDIRECTORY:
-				case IDM_FILE_ADDDIRECTORY:
+				case IDM_OD_OPENDIRECTORY:
+				case IDM_OD_OPENDIRECTORY_II:
+				case IDM_AD_ADDDIRECTORY:
+				case IDM_AD_ADDDIRECTORY_II:
 				{
-					BOOL bOpen = (LOWORD(wParam) == IDM_FILE_OPENDIRECTORY);
+					BOOL bOpen = ((LOWORD(wParam) == IDM_OD_OPENDIRECTORY) || (LOWORD(wParam) == IDM_OD_OPENDIRECTORY_II));
+					BOOL bIncImages = ((LOWORD(wParam) == IDM_OD_OPENDIRECTORY_II) || (LOWORD(wParam) == IDM_AD_ADDDIRECTORY_II));
 					WCHAR lpwBFFPath[MAX_PATH] = { 0 };
 					if (GetBrowseForFolderDialog(hWnd, lpwBFFPath, (bOpen)?L"Select directory to open"
-						:L"Select directory to add"))
+						:L"Select directory to add", lpwRecentDir))
 					{
+						wcscpy(lpwRecentDir, lpwBFFPath);
 						if (bOpen) pFileCollection->Clear();
-						if(LoadDirectory(lpwBFFPath))
+						if(LoadDirectory(lpwBFFPath, bIncImages))
 						{
 							if (bOpen)
 							{
@@ -815,10 +846,15 @@ INT_PTR CALLBACK PlayerDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 						FavoritesDlgProc, 0);
 					break;
 				case IDM_FILE_REOPENCURRENT:
-				{
-					int intPos = (int)pEngine->GetPosition();
-					ENGINESTATE eState = pEngine->GetState();
-					SendMessage(hWnd, WM_COMMAND, MAKEWPARAM(IDM_FILE_CLOSE, 0), 0);
+					int intPos;
+					ENGINESTATE eState;
+					if (pEngine->m_lpwFileName)
+					{
+						intPos = (int)pEngine->GetPosition();
+						eState = pEngine->GetState();
+						SendMessage(hWnd, WM_COMMAND, MAKEWPARAM(IDM_FILE_CLOSE, 0), 0);
+					}
+					else eState = E_STATE_STOPPED;
 					InitTrack(FCF_RECENT);
 					if (eState != E_STATE_STOPPED)
 						SendDlgItemMessage(hWnd, IDC_EBSLDSEEK, EBSM_SETPOS, TRUE, intPos);
@@ -836,7 +872,6 @@ INT_PTR CALLBACK PlayerDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 							break;
 					}
 					break;
-				}
 				case IDM_FILE_CLOSE:
 					CloseTrack();
 					UpdateOnTopState();
@@ -844,6 +879,10 @@ INT_PTR CALLBACK PlayerDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 				case IDM_FILE_DELETEFROMPLAYLIST:
 				{
 					WCHAR lpwFile[MAX_PATH] = { 0 };
+					LPPLITEMDESC pPLID = 0;
+					pFileCollection->GetUserData(pEngine->m_lpwFileName, 0, FCF_BYFILENAME, (LONG_PTR &)pPLID);
+					if (pPLID)
+						delete pPLID;
 					pFileCollection->DeleteFile(pEngine->m_lpwFileName, 0, FCF_BYFILENAME);
 					SendMessage(hWnd, WM_COMMAND, MAKEWPARAM(IDM_FILE_CLOSE, 0), 0);
 					if (pFileCollection->GetFile(lpwFile, 0, FCF_RECENT))
@@ -865,8 +904,10 @@ INT_PTR CALLBACK PlayerDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 					DWORD dwFilterIndex = 1;
 					wcscpy(lpwSDFile, pEngine->m_lpwFileName);
 					if (GetSaveDialog(hAppInstance, hWnd, L"Save File As", lpwSDFile,
-						MAX_PATH - 1, L"Any file\0*.*;\0", &dwFilterIndex, 0))
+						MAX_PATH - 1, L"Any file\0*.*;\0", &dwFilterIndex, 0, lpwRecentDir))
 					{
+						SP_ExtractDirectory(lpwSDFile, lpwRecentDir);
+						SP_AddDirSep(lpwRecentDir, lpwRecentDir);
 						if (_wcsicmp(pEngine->m_lpwFileName, lpwSDFile) != 0)
 							CopyFile(pEngine->m_lpwFileName, lpwSDFile, FALSE);
 					}
@@ -879,8 +920,10 @@ INT_PTR CALLBACK PlayerDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 					DWORD dwFilterIndex = 1;
 					if (GetSaveDialog(hAppInstance, hWnd, L"Save Playlist As", lpwSDFile,
 						MAX_PATH - 1, L"EBL Playlist\0*.ebl;\0M3U/M3U8 Playlist\0*.m3u; *.m3u8;\0"
-						L"ASX Playlist\0*.asx;\0", &dwFilterIndex, 0))
+						L"ASX Playlist\0*.asx;\0", &dwFilterIndex, 0, lpwRecentDir))
 					{
+						SP_ExtractDirectory(lpwSDFile, lpwRecentDir);
+						SP_AddDirSep(lpwRecentDir, lpwRecentDir);
 						SP_ExtractRightPart(lpwSDFile, lpwExt, '.');
 						switch (dwFilterIndex)
 						{
@@ -922,28 +965,27 @@ INT_PTR CALLBACK PlayerDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 					PostMessage(hWnd, WM_CLOSE, 0, 0);
 					break;
 				case IDM_FILE_EXIT:
-					if (dwMultipleInstances)
-					{
-						PostMessage(HWND_BROADCAST, EBM_QUIT, 0, 0);
-					}
-					else
-					{
-						PostMessage(hWnd, WM_CLOSE, 0, 0);
-					}
+					PostMessage(HWND_BROADCAST, EBM_QUIT, 0, 0);
 					break;
 				case IDM_WB_NORMALWINDOW:
 					dwWindowBorderIndex = 0;
 					CheckMenuRadioItem(GetMenu(hWnd), IDM_WB_NORMALWINDOW,
 						IDM_WB_TOOLWINDOW, IDM_WB_NORMALWINDOW, MF_BYCOMMAND);
-					UpdateWindowBorderStyle();
+					UpdateBorderStyle();
 					UpdateMainControlsState();
+					UpdateBorderStyle(hPlaylistWnd);
+					if (hVideoWnd/*pEngine->IsVideo()*/)
+						UpdateBorderStyle(hVideoWnd);
 					break;
 				case IDM_WB_TOOLWINDOW:
 					dwWindowBorderIndex = 1;
 					CheckMenuRadioItem(GetMenu(hWnd), IDM_WB_NORMALWINDOW,
 						IDM_WB_TOOLWINDOW, IDM_WB_TOOLWINDOW, MF_BYCOMMAND);
-					UpdateWindowBorderStyle();
+					UpdateBorderStyle();
 					UpdateMainControlsState();
+					UpdateBorderStyle(hPlaylistWnd);
+					if (hVideoWnd/*pEngine->IsVideo()*/)
+						UpdateBorderStyle(hVideoWnd);
 					break;
 				case IDM_VIEW_MAINCONTROLS:
 					dwMainControls = !dwMainControls;
@@ -951,6 +993,14 @@ INT_PTR CALLBACK PlayerDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 						(dwMainControls)?MF_CHECKED:MF_UNCHECKED);
 					UpdateMainControlsState();
 					break;
+				case IDM_VIEW_PLAYLIST:
+				{
+					dwPlaylist = !dwPlaylist;
+					CheckMenuItem(GetMenu(hWnd), IDM_VIEW_PLAYLIST, MF_BYCOMMAND |
+						(dwPlaylist)?MF_CHECKED:MF_UNCHECKED);
+					ShowWindow(hPlaylistWnd, (dwPlaylist)?SW_SHOW:SW_HIDE);
+					break;
+				}
 				case IDM_TB_DISPLAYFULLPATH:
 					dwTitleBarIndex = 0;
 					CheckMenuRadioItem(GetMenu(hWnd), IDM_TB_DISPLAYFULLPATH,
@@ -1021,24 +1071,36 @@ INT_PTR CALLBACK PlayerDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 					CheckMenuRadioItem(GetMenu(hWnd), IDM_OPACITY_100,
 						IDM_OPACITY_CUSTOM, IDM_OPACITY_100, MF_BYCOMMAND);
 					UpdateOpacityState();
+					UpdateOpacityState(hPlaylistWnd);
+					/*if (hVideoWnd)
+						UpdateOpacityState(hVideoWnd);*/
 					break;
 				case IDM_OPACITY_75:
 					dwOpacityLevel = 75;
 					CheckMenuRadioItem(GetMenu(hWnd), IDM_OPACITY_100,
 						IDM_OPACITY_CUSTOM, IDM_OPACITY_75, MF_BYCOMMAND);
 					UpdateOpacityState();
+					UpdateOpacityState(hPlaylistWnd);
+					/*if (hVideoWnd)
+						UpdateOpacityState(hVideoWnd);*/
 					break;
 				case IDM_OPACITY_50:
 					dwOpacityLevel = 50;
 					CheckMenuRadioItem(GetMenu(hWnd), IDM_OPACITY_100,
 						IDM_OPACITY_CUSTOM, IDM_OPACITY_50, MF_BYCOMMAND);
 					UpdateOpacityState();
+					UpdateOpacityState(hPlaylistWnd);
+					/*if (hVideoWnd)
+						UpdateOpacityState(hVideoWnd);*/
 					break;
 				case IDM_OPACITY_25:
 					dwOpacityLevel = 25;
 					CheckMenuRadioItem(GetMenu(hWnd), IDM_OPACITY_100,
 						IDM_OPACITY_CUSTOM, IDM_OPACITY_25, MF_BYCOMMAND);
 					UpdateOpacityState();
+					UpdateOpacityState(hPlaylistWnd);
+					/*if (hVideoWnd)
+						UpdateOpacityState(hVideoWnd);*/
 					break;
 				case IDM_OPACITY_CUSTOM:
 					DialogBoxParam(hAppInstance, MAKEINTRESOURCE(IDD_OPACITY),
@@ -1061,6 +1123,9 @@ INT_PTR CALLBACK PlayerDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 							CheckMenuRadioItem(GetMenu(hWnd), IDM_OPACITY_100,
 								IDM_OPACITY_CUSTOM, IDM_OPACITY_CUSTOM, MF_BYCOMMAND);
 							UpdateOpacityState();
+							UpdateOpacityState(hPlaylistWnd);
+							/*if (hVideoWnd)
+								UpdateOpacityState(hVideoWnd);*/
 							break;
 					}
 					break;
@@ -1069,6 +1134,9 @@ INT_PTR CALLBACK PlayerDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 					CheckMenuItem(GetMenu(hMainWnd), IDM_OPACITY_OPAQUEONFOCUS, MF_BYCOMMAND |
 						(dwOpaqueOnFocus)?MF_CHECKED:MF_UNCHECKED);
 					UpdateOpacityState();
+					UpdateOpacityState(hPlaylistWnd);
+					/*if (hVideoWnd)
+						UpdateOpacityState(hVideoWnd);*/
 					break;
 				case IDM_VIEW_TRAYICON:
 					dwTrayIcon = !dwTrayIcon;
@@ -1344,8 +1412,10 @@ INT_PTR CALLBACK PlayerDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 						pEngine->Pause();
 					}
 					if (GetSaveDialog(hAppInstance, hWnd, L"Save Frame As", lpwSDFile,
-						MAX_PATH - 1, L"Windows Bitmap\0*.bmp;\0", &dwFilterIndex, 0))
+						MAX_PATH - 1, L"Windows Bitmap\0*.bmp;\0", &dwFilterIndex, 0, lpwRecentDir))
 					{
+						SP_ExtractDirectory(lpwSDFile, lpwRecentDir);
+						SP_AddDirSep(lpwRecentDir, lpwRecentDir);
 						SP_ExtractRightPart(lpwSDFile, lpwExt, '.');
 						if (_wcsicmp(lpwExt, L"bmp") != 0)
 							wcscat(lpwSDFile, L".bmp");
@@ -1359,31 +1429,31 @@ INT_PTR CALLBACK PlayerDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 					dwKeepAspectRatio = !dwKeepAspectRatio;
 					CheckMenuItem(GetMenu(hWnd), IDM_AR_KEEPASPECTRATIO, MF_BYCOMMAND |
 						(dwKeepAspectRatio)?MF_CHECKED:MF_UNCHECKED);
-					SendMessage(hVideoWnd, WM_WINDOWPOSCHANGED, 0, 0);
+					SendMessage(hVideoWnd, VWM_UPDATEASPECTRATIO, 0, 0);
 					break;
 				case IDM_AR_DEFAULT:
 					dwAspectRatioIndex = 0;
 					CheckMenuRadioItem(GetMenu(hWnd), IDM_AR_DEFAULT,
 						IDM_AR_169, IDM_AR_DEFAULT, MF_BYCOMMAND);
-					SendMessage(hVideoWnd, WM_WINDOWPOSCHANGED, 0, 0);
+					SendMessage(hVideoWnd, VWM_UPDATEASPECTRATIO, 0, 0);
 					break;
 				case IDM_AR_43:
 					dwAspectRatioIndex = 1;
 					CheckMenuRadioItem(GetMenu(hWnd), IDM_AR_DEFAULT,
 						IDM_AR_169, IDM_AR_43, MF_BYCOMMAND);
-					SendMessage(hVideoWnd, WM_WINDOWPOSCHANGED, 0, 0);
+					SendMessage(hVideoWnd, VWM_UPDATEASPECTRATIO, 0, 0);
 					break;
 				case IDM_AR_54:
 					dwAspectRatioIndex = 2;
 					CheckMenuRadioItem(GetMenu(hWnd), IDM_AR_DEFAULT,
 						IDM_AR_169, IDM_AR_54, MF_BYCOMMAND);
-					SendMessage(hVideoWnd, WM_WINDOWPOSCHANGED, 0, 0);
+					SendMessage(hVideoWnd, VWM_UPDATEASPECTRATIO, 0, 0);
 					break;
 				case IDM_AR_169:
 					dwAspectRatioIndex = 3;
 					CheckMenuRadioItem(GetMenu(hWnd), IDM_AR_DEFAULT,
 						IDM_AR_169, IDM_AR_169, MF_BYCOMMAND);
-					SendMessage(hVideoWnd, WM_WINDOWPOSCHANGED, 0, 0);
+					SendMessage(hVideoWnd, VWM_UPDATEASPECTRATIO, 0, 0);
 					break;
 				case IDM_ZOOM_HALFSIZE:
 					ScaleVideoWindow(hVideoWnd, 0);
@@ -1556,7 +1626,7 @@ INT_PTR CALLBACK PlayerDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 				EnableMenuItem(GetMenu(hWnd), IDM_FILE_NEWPLAYER,
 					(dwMultipleInstances)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
 				EnableMenuItem(GetMenu(hWnd), IDM_FILE_REOPENCURRENT,
-					(bMFFlag1)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
+					(pFileCollection->FileCount())?MF_ENABLED:MF_DISABLED | MF_GRAYED);
 				EnableMenuItem(GetMenu(hWnd), IDM_FILE_CLOSE,
 					(bMFFlag1)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
 				EnableMenuItem(GetMenu(hWnd), IDM_FILE_DELETEFROMPLAYLIST,
@@ -1770,6 +1840,11 @@ INT_PTR CALLBACK PlayerDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 			for (ULONG i = 0; i < lDrFileCnt; i++)
 			{
 				DragQueryFile(hDrop, i, lpwDFile, MAX_PATH);
+				if (i == 0)
+				{
+					SP_ExtractDirectory(lpwDFile, lpwRecentDir);
+					SP_AddDirSep(lpwRecentDir, lpwRecentDir);
+				}
 				SP_ExtractRightPart(lpwDFile, lpwExt, '.');
 				if (SFT_IsMemberOfCategory(lpwExt, SFTC_PLAYLIST))
 				{
@@ -1807,10 +1882,10 @@ INT_PTR CALLBACK PlayerDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 		}
 		case WM_MEASUREITEM:
 		{
-			if (!dwNoOwnerDrawMenu)
+			LPMEASUREITEMSTRUCT pMIS = (LPMEASUREITEMSTRUCT)lParam;
+			if (pMIS->CtlType == ODT_MENU)
 			{
-				LPMEASUREITEMSTRUCT pMIS = (LPMEASUREITEMSTRUCT)lParam;
-				if (pMIS->CtlType == ODT_MENU)
+				if (!dwNoOwnerDrawMenu)
 				{
 					return pEBMenuMain->MeasureItem(wParam, lParam);
 				}
@@ -1819,10 +1894,10 @@ INT_PTR CALLBACK PlayerDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 		}
 		case WM_DRAWITEM:
 		{
-			if (!dwNoOwnerDrawMenu)
-			{
-				LPDRAWITEMSTRUCT pDIS = (LPDRAWITEMSTRUCT)lParam;
-				if (pDIS->CtlType == ODT_MENU)
+			LPDRAWITEMSTRUCT pDIS = (LPDRAWITEMSTRUCT)lParam;
+			if (pDIS->CtlType == ODT_MENU)
+			{			
+				if (!dwNoOwnerDrawMenu)
 				{
 					return pEBMenuMain->DrawItem(wParam, lParam);
 				}
@@ -2130,7 +2205,7 @@ Seek_SetPosition:
 										PostMessage(hWnd, WM_CLOSE, 0, 0);
 										break;
 									case 1:
-										PostMessage(hWnd, WM_COMMAND, MAKEWPARAM(IDM_FILE_EXIT, 0), 0);
+										PostMessage(hWnd, WM_COMMAND, MAKEWPARAM(IDM_FILE_CLOSEWINDOW, 0), 0);
 										break;
 									case 2:
 										ShowWindow(hWnd, SW_MINIMIZE);
@@ -2164,15 +2239,23 @@ Seek_SetPosition:
 					case II_TIME:
 						if (bCtlsFlag1 && bCtlsFlag2)
 						{
-							//Преобразовываем время из мс. в формат ЧЧ:ММ:СС
-							swprintf(CI.lpwBuffer, L"Position: %02i:%02i:%02i, Length: %02i:%02i:%02i, Rate: %.1f",
-								(intPos / 1000) / 3600, ((intPos / 1000) / 60) % 60, ((intPos / 1000) % 60),
-								(intLen / 1000) / 3600, ((intLen / 1000) / 60) % 60, ((intLen / 1000) % 60),
-								pEngine->GetRate());
+							if (((intPos / 1000) / 3600))
+							{
+								swprintf(CI.lpwBuffer, L"Position: %02i:%02i:%02i, Length: %02i:%02i:%02i, Rate: %.1f",
+									(intPos / 1000) / 3600, ((intPos / 1000) / 60) % 60, ((intPos / 1000) % 60),
+									(intLen / 1000) / 3600, ((intLen / 1000) / 60) % 60, ((intLen / 1000) % 60),
+									pEngine->GetRate());
+							}
+							else
+							{
+								swprintf(CI.lpwBuffer, L"Position: %02i:%02i, Length: %02i:%02i, Rate: %.1f", ((intPos / 1000)
+									/ 60) % 60, ((intPos / 1000) % 60), ((intLen / 1000) / 60) % 60, ((intLen / 1000) % 60),
+									pEngine->GetRate());
+							}
 						}
 						else
 						{
-							wcscpy(CI.lpwBuffer, L"Position: 00:00:00, Length: 00:00:00, Rate: 0.0");
+							wcscpy(CI.lpwBuffer, L"Position: 00:00, Length: 00:00, Rate: 0.0");
 						}
 						break;
 					case II_STATE:
@@ -2275,11 +2358,17 @@ Seek_SetPosition:
 			{
 				RECT RCW = { 0 };
 				GetWindowRect(hWnd, &RCW);
-				dwMainWindowLeft = RCW.left;
-				dwMainWindowTop = RCW.top;
+				ptMainWindowPos.x = RCW.left;
+				ptMainWindowPos.y = RCW.top;
 			}
 			RemoveProp(GetDlgItem(hWnd, IDC_EBBPP), L"_icon_");
 			KillTimer(hWnd, 1);
+
+			pToolTipsMain->Destroy();
+			SendMessage(hPlaylistWnd, WM_CLOSE, 0, 0);
+			InitMainWnd(FALSE);
+			if (dwTrayIcon) RemoveTrayIcon();
+
 			PostQuitMessage(0);
 			return TRUE;
 		}
@@ -2317,10 +2406,17 @@ void ApplySettings()
 				IDM_WB_TOOLWINDOW, IDM_WB_TOOLWINDOW, MF_BYCOMMAND);
 			break;
 	}
-	UpdateWindowBorderStyle();
+	UpdateBorderStyle();
+	UpdateBorderStyle(hPlaylistWnd);
+	if (hVideoWnd)
+		UpdateBorderStyle(hVideoWnd);
 	CheckMenuItem(GetMenu(hMainWnd), IDM_VIEW_MAINCONTROLS, MF_BYCOMMAND |
 		(dwMainControls)?MF_CHECKED:MF_UNCHECKED);
 	UpdateMainControlsState();
+	CheckMenuItem(GetMenu(hMainWnd), IDM_VIEW_PLAYLIST, MF_BYCOMMAND |
+		(dwPlaylist)?MF_CHECKED:MF_UNCHECKED);
+	//if (dwPlaylist)
+	//	ShowWindow(hPlaylistWnd, SW_SHOW);
 	switch (dwTitleBarIndex)
 	{
 		case 0:
@@ -2368,7 +2464,7 @@ void ApplySettings()
 				IDM_PAS_RANDOM, IDM_PAS_RANDOM, MF_BYCOMMAND);
 			break;
 	}
-	UpdateWindowPosition();
+	UpdatePosition();
 	switch (dwOpacityLevel)
 	{
 		case 100:
@@ -2393,6 +2489,9 @@ void ApplySettings()
 			break;
 	}
 	UpdateOpacityState();
+	UpdateOpacityState(hPlaylistWnd);
+	/*if (hVideoWnd)
+		UpdateOpacityState(hVideoWnd);*/
 	CheckMenuItem(GetMenu(hMainWnd), IDM_OPACITY_OPAQUEONFOCUS, MF_BYCOMMAND |
 		(dwOpaqueOnFocus)?MF_CHECKED:MF_UNCHECKED);
 	CheckMenuItem(GetMenu(hMainWnd), IDM_VIEW_TRAYICON, MF_BYCOMMAND |
@@ -2505,6 +2604,7 @@ LONG InitTrack(DWORD dwFCFlag, DWORD dwFCIndex)
 	WCHAR lpwFileName[MAX_PATH] = { 0 };
 	ULONG i = 0;
 	int intTmp1 = 0, intTmp2 = 0;
+	LPPLITEMDESC pPLID = 0;
 	if (!pFileCollection->NextFile(lpwFileName, dwFCIndex, dwFCFlag)) return -1;
 	//Если у нас уже что-то открыто, вызываем File->Close
 	if (pEngine->m_lpwFileName)
@@ -2552,6 +2652,8 @@ LONG InitTrack(DWORD dwFCFlag, DWORD dwFCIndex)
 			hMainWnd, VideoDlgProc, 0);
 		pEngine->SetVideoStyles(WS_CHILDWINDOW, 0);
 		pEngine->SetVideoOwner(hVideoWnd);
+		UpdateBorderStyle(hVideoWnd);
+		//UpdateOpacityState(hVideoWnd);
 		ShowWindow(hVideoWnd, SW_SHOW);
 	}
 	SendDlgItemMessage(hMainWnd, IDC_EBSLDSEEK, EBSM_SETRANGE, 0, (LPARAM)pEngine->GetLength());
@@ -2563,6 +2665,16 @@ LONG InitTrack(DWORD dwFCFlag, DWORD dwFCIndex)
 	intTmp2 = PercentsTodB_LogScale((intTmp1 >= 0)?100 - intTmp1:100 - abs(intTmp1));
 	intTmp2 = (intTmp1 >= 0)?abs(intTmp2):intTmp2;
 	pEngine->SetBalance(intTmp2);
+	pFileCollection->GetUserData(0, 0, FCF_RECENT, (LONG_PTR &)pPLID);
+	if (!pPLID)
+	{
+		pPLID = new PLITEMDESC;
+		ZeroMemory(pPLID, sizeof(PLITEMDESC));
+		GetTitle(lpwFileName, pPLID->lpwTitle);
+		pPLID->uDuration = (UINT)pEngine->GetLength();
+		pFileCollection->SetUserData(0, 0, FCF_RECENT, (LONG_PTR)pPLID);
+	}
+	SetActiveItem(lpwFileName);
 	UpdateCFTitle(lpwFileName);
 	return 0;
 }
@@ -2589,7 +2701,7 @@ void CloseTrack()
 }
 
 //Загрузка файлов из каталога, включая все его подкаталоги
-DWORD LoadDirectory(LPCWSTR lpwPath)
+DWORD LoadDirectory(LPCWSTR lpwPath, BOOL bIncImages)
 {
 	WCHAR lpwFFPath[MAX_PATH] = { 0 };
 	WCHAR lpwFFMask[MAX_PATH] = { 0 };
@@ -2622,10 +2734,14 @@ DWORD LoadDirectory(LPCWSTR lpwPath)
 						}
 						else
 						{
+							if (!bIncImages)
+								if (SFT_IsMemberOfCategory(lpwExt, SFTC_IMAGE))
+									goto LD_NextFile;
 							pFileCollection->AppendFile(lpwTmp);
 							lFileCnt++;
 						}
 					}
+LD_NextFile:
 					bNext = FindNextFile(hFindFile, &WFD);
 				}
 			}
@@ -2729,9 +2845,10 @@ void UpdateToolTips(BOOL bRemove)
 	}
 }
 
-void UpdateWindowBorderStyle()
+void UpdateBorderStyle(HWND hTarget)
 {
-	LONG lWndExStyle = GetWindowLong(hMainWnd, GWL_EXSTYLE);
+	HWND hWnd = (hTarget)?hTarget:hMainWnd;
+	LONG lWndExStyle = GetWindowLong(hWnd, GWL_EXSTYLE);
 	switch (dwWindowBorderIndex)
 	{
 		case 0:
@@ -2747,9 +2864,9 @@ void UpdateWindowBorderStyle()
 			}
 			break;
 	}
-	SetWindowLong(hMainWnd, GWL_EXSTYLE, lWndExStyle);
-	SetWindowPos(hMainWnd, HWND_TOP, 0, 0, 0, 0, SWP_FRAMECHANGED |
-		SWP_NOSIZE | SWP_NOMOVE);
+	SetWindowLong(hWnd, GWL_EXSTYLE, lWndExStyle);
+	SetWindowPos(hWnd, 0, 0, 0, 0, 0, SWP_FRAMECHANGED | SWP_NOSIZE |
+		SWP_NOMOVE | SWP_NOZORDER);
 }
 
 //Обновляет состояние видимости основных элементов управления
@@ -2823,6 +2940,7 @@ void UpdateEBColors()
 			pEBMenuMain->crSelColorTwo = Blend(GetSysColor(COLOR_WINDOW), GetSysColor(COLOR_HIGHLIGHT), 0.1);
 			pEBMenuMain->crBrColorOne = Blend(GetSysColor(COLOR_HIGHLIGHT), GetSysColor(COLOR_BTNTEXT), 0.1);
 			pEBMenuMain->crBrColorTwo = Blend(GetSysColor(COLOR_3DHIGHLIGHT), GetSysColor(COLOR_HIGHLIGHT), 0.1);
+			pEBMenuMain->UpdateMenuBar();
 			DrawMenuBar(hMainWnd);
 			UpdateTrayMenuColors();
 		}
@@ -2879,6 +2997,7 @@ void UpdateEBColors()
 		SendDlgItemMessage(hMainWnd, IDC_EBSLDBAL, EBSM_SETBKCOLOR, 0, Blend(GetSysColor(COLOR_WINDOW), GetSysColor(COLOR_HIGHLIGHT), 0.2));
 		SendDlgItemMessage(hMainWnd, IDC_EBSLDBAL, EBSM_SETBRCOLORS, Blend(GetSysColor(COLOR_HIGHLIGHT), GetSysColor(COLOR_BTNTEXT), 0.1),
 			Blend(GetSysColor(COLOR_3DHIGHLIGHT), GetSysColor(COLOR_HIGHLIGHT), 0.1));
+		UpdatePlaylistColors();
 	}
 	else
 	{
@@ -2894,6 +3013,7 @@ void UpdateEBColors()
 			pEBMenuMain->crSelColorTwo = dwGradientColor2;
 			pEBMenuMain->crBrColorOne = dwBorderColor1;
 			pEBMenuMain->crBrColorTwo = dwBorderColor2;
+			pEBMenuMain->UpdateMenuBar();
 			DrawMenuBar(hMainWnd);
 			UpdateTrayMenuColors();
 		}
@@ -2924,22 +3044,27 @@ void UpdateEBColors()
 		SendDlgItemMessage(hMainWnd, IDC_EBSLDBAL, EBSM_SETLINECOLORS, dwGradientColor1, dwGradientColor2);
 		SendDlgItemMessage(hMainWnd, IDC_EBSLDBAL, EBSM_SETBKCOLOR, 0, dwBackgroundColor);
 		SendDlgItemMessage(hMainWnd, IDC_EBSLDBAL, EBSM_SETBRCOLORS, dwBorderColor1, dwBorderColor2);
+		UpdatePlaylistColors();
 	}
 }
 
-void UpdateWindowPosition()
+void UpdatePosition()
 {
 	switch (dwPositionAtStartupIndex)
 	{
 		case 0:
 			MoveToCenter(hMainWnd, 0, 0);
+			MoveToCenter(hPlaylistWnd, 0, 0);
 			break;
 		case 1:
-			SetWindowPos(hMainWnd, HWND_TOP, dwMainWindowLeft, dwMainWindowTop, 0, 0, SWP_NOSIZE);
+			SetWindowPos(hMainWnd, 0, ptMainWindowPos.x, ptMainWindowPos.y, 0, 0, SWP_NOSIZE | SWP_NOZORDER);
+			SetWindowPos(hPlaylistWnd, 0, rcPlaylistPos.left, rcPlaylistPos.top, rcPlaylistPos.right - rcPlaylistPos.left,
+				rcPlaylistPos.bottom - rcPlaylistPos.top, SWP_NOZORDER);
 			break;
 		case 2:
 			Randomize();
 			MoveToCenter(hMainWnd, 100 - Random(200), 100 - Random(200));
+			MoveToCenter(hPlaylistWnd, 100 - Random(200), 100 - Random(200));
 			break;
 	}
 }
@@ -2981,15 +3106,16 @@ void UpdateOnTopState()
 	}
 }
 
-void UpdateOpacityState()
+void UpdateOpacityState(HWND hTarget)
 {
-	LONG lWndStyle = GetWindowLong(hMainWnd, GWL_EXSTYLE);
+	HWND hWnd = (hTarget)?hTarget:hMainWnd;
+	LONG lWndStyle = GetWindowLong(hWnd, GWL_EXSTYLE);
 	if (dwOpacityLevel < 100)
 	{
 		if ((lWndStyle & WS_EX_LAYERED) != WS_EX_LAYERED)
 		{
 			lWndStyle |= WS_EX_LAYERED;
-			SetWindowLong(hMainWnd, GWL_EXSTYLE, lWndStyle);
+			SetWindowLong(hWnd, GWL_EXSTYLE, lWndStyle);
 		}
 	}
 	else
@@ -2997,7 +3123,7 @@ void UpdateOpacityState()
 		if ((lWndStyle & WS_EX_LAYERED) == WS_EX_LAYERED)
 		{
 			lWndStyle ^= WS_EX_LAYERED;
-			SetWindowLong(hMainWnd, GWL_EXSTYLE, lWndStyle);
+			SetWindowLong(hWnd, GWL_EXSTYLE, lWndStyle);
 		}
 		return;
 	}
@@ -3006,11 +3132,11 @@ void UpdateOpacityState()
 	{
 		if (GetForegroundWindow() == hMainWnd)
 		{
-			SetLayeredWindowAttributes(hMainWnd, 0, bAlpha2, LWA_ALPHA);
+			SetLayeredWindowAttributes(hWnd, 0, bAlpha2, LWA_ALPHA);
 			return;
 		}
 	}
-	SetLayeredWindowAttributes(hMainWnd, 0, bAlpha1, LWA_ALPHA);
+	SetLayeredWindowAttributes(hWnd, 0, bAlpha1, LWA_ALPHA);
 }
 
 void UpdateMuteButtonState()
@@ -3044,31 +3170,7 @@ void UpdateCFTitle(LPCWSTR lpwFileName, BOOL bMainWndTitleOnly)
 		wcscpy(lpwPath, lpwFileName);
 		if (!bMainWndTitleOnly)
 		{
-			MEDIACONTENT MC = { 0 };
-			pEngine->UpdateFGFiltersArray();
-			if (pEngine->GetMediaContent(&MC) < 0)
-			{
-CFTitle_CreateFromFile:
-				SP_ExtractName(lpwPath, lpwName);
-				SP_ExtractLeftPart(lpwName, lpwName, '.');
-			}
-			else
-			{
-				int intAL = wcslen(MC.Author);
-				int intTL = wcslen(MC.Title);
-				if ((intAL == 0) && (intTL == 0))
-				{
-					goto CFTitle_CreateFromFile;
-				}
-				if (intAL)
-				{
-					swprintf(lpwName, L"%s - %s", MC.Author, (intTL)?MC.Title:L"None");
-				}
-				else
-				{
-					wcscpy(lpwName, MC.Title);
-				}
-			}
+			GetTitle(lpwPath, lpwName);
 			wcscpy(lpwCurFileTitle, lpwName);
 		}
 		if (dwTBDoNotChangeTitle)
@@ -3113,4 +3215,42 @@ CFTitle_CreateFromFile:
 			}
 		}
 	}
+}
+
+void GetTitle(LPCWSTR lpwFileName, LPWSTR lpwResult)
+{
+	WCHAR lpwName[128] = { 0 };
+	if ((pEngine->m_lpwFileName) && (_wcsicmp(lpwFileName, pEngine->m_lpwFileName) == 0))
+	{
+		MEDIACONTENT MC = { 0 };
+		pEngine->UpdateFGFiltersArray();
+		if (pEngine->GetMediaContent(&MC) < 0)
+		{
+			goto GetTitle_CreateFromFile;
+		}
+		else
+		{
+			int intAL = wcslen(MC.Author);
+			int intTL = wcslen(MC.Title);
+			if ((intAL == 0) && (intTL == 0))
+			{
+				goto GetTitle_CreateFromFile;
+			}
+			if (intAL)
+			{
+				swprintf(lpwName, L"%s - %s", MC.Author, (intTL)?MC.Title:L"None");
+			}
+			else
+			{
+				wcscpy(lpwName, MC.Title);
+			}
+		}
+	}
+	else
+	{
+GetTitle_CreateFromFile:
+		SP_ExtractName(lpwFileName, lpwName);
+		SP_ExtractLeftPart(lpwName, lpwName, '.');
+	}
+	wcscpy(lpwResult, lpwName);
 }
