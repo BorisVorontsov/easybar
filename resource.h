@@ -37,6 +37,7 @@
 #define IDB_RADIOCHECKMARK              156
 #define IDD_PLAYLIST                    159
 #define IDB_ACTIVEITEM                  160
+#define IDD_PP_ADJUSTMENTS              160
 #define IDR_PLMENU                      161
 #define IDR_PLACCEL                     162
 #define IDS_CREDITS                     165
@@ -158,6 +159,13 @@
 #define IDC_BTNPLS                      1147
 #define IDC_BTNCRED                     1147
 #define IDC_EDTCRED                     1148
+#define IDC_BTNRESET                    1149
+#define IDC_STCAS                       1150
+#define IDC_BTNSAS                      1151
+#define IDC_CBOAS                       1152
+#define IDC_BTNEVS                      1153
+#define IDC_BTNSVS                      1153
+#define IDC_CBOVS                       1154
 #define IDM_FILE_EXIT                   40003
 #define IDM_HELP_ABOUT                  40009
 #define IDM_FILE_CLOSE                  40011
@@ -275,6 +283,9 @@
 #define ID_SELECTION_MOVEDOWN           40202
 #define IDM_SELECTION_MOVEUP            40203
 #define IDM_SELECTION_MOVEDOWN          40204
+#define ID_MANAGE_OPENFILE              40210
+#define ID_MANAGE_HIDE                  40211
+#define IDM_MANAGE_HIDE                 40212
 
 // Next default values for new objects
 // 
@@ -283,8 +294,8 @@
 #define _APS_NO_MFC                     1
 #define _APS_3D_CONTROLS                     1
 #define _APS_NEXT_RESOURCE_VALUE        166
-#define _APS_NEXT_COMMAND_VALUE         40210
-#define _APS_NEXT_CONTROL_VALUE         1149
+#define _APS_NEXT_COMMAND_VALUE         40213
+#define _APS_NEXT_CONTROL_VALUE         1153
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

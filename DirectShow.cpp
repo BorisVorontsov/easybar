@@ -229,16 +229,28 @@ void CDirectShow::Pause()
 void CDirectShow::Stop()
 {
 	if (m_pMediaControl)
+	{
 		m_pMediaControl->Stop();
+		if (m_pMediaSeeking)
+		{
+			OAFilterState fState;
+			__int64 intPos = 0;
+			m_pMediaControl->GetState(INFINITE, &fState);
+			m_pMediaSeeking->SetPositions(&intPos, AM_SEEKING_AbsolutePositioning, NULL,
+				AM_SEEKING_NoPositioning);
+		}
+		if (m_pVideoWindow)
+			m_pMediaControl->StopWhenReady();
+	}
 }
 
 //Здесь происходит сброс всех параметров и освобождение интерфейсов
 void CDirectShow::Close()
 {
 	if (m_pMediaEventEx)
-		m_pMediaEventEx->SetNotifyWindow(NULL, DS_MEDIAEVENTEX, 0);
-	if (m_pVideoWindow)
-		m_pVideoWindow->put_Visible(OAFALSE);
+		m_pMediaEventEx->SetNotifyWindow(NULL, 0, 0);
+	/*if (m_pVideoWindow)
+		m_pVideoWindow->put_Visible(OAFALSE);*/
 	SR(m_pAMStreamSelect);
 	for (m_lCounter = 0; m_lCounter < E_MAX_ARR_SIZE; m_lCounter++)
 		SR(m_pFGBaseFilter[m_lCounter]);
@@ -568,6 +580,7 @@ int CDirectShow::CopyCurrentFrame() //*доработанная версия функции от Jenya
 		LPBYTE pImage;
 		long lArrSize;
 		OAFilterState fTmp;
+
 		if (m_pMediaControl)
 		{
 			m_pMediaControl->GetState(10, &fTmp);
@@ -584,10 +597,10 @@ int CDirectShow::CopyCurrentFrame() //*доработанная версия функции от Jenya
 		GlobalUnlock(hGbCopy);
 
 		m_pBasicVideo2->GetCurrentImage(&lArrSize, (long *)pImage);
-		
+
 		SetClipboardData(CF_DIB, pImage);
 		CloseClipboard();
-		
+
 		if (m_pMediaControl)
 			if (fTmp == 2) m_pMediaControl->Run();
 		return 0;
@@ -602,13 +615,14 @@ int CDirectShow::SaveCurrentFrame(LPCWSTR lpwFileName) //*доработанная версия фу
 	{
 		HANDLE hFile;
 		BITMAPFILEHEADER BFH = { 0 };
-		LPBITMAPINFOHEADER LPBI;
-		LPBITMAPCOREHEADER LPBC;
+		LPBITMAPINFOHEADER pBI;
+		LPBITMAPCOREHEADER pBC;
 		LPBYTE pImage;
 		DWORD dwWritten;
 		long lArrSize;
 		DWORD dwColors, dwPaletteSize;
 		OAFilterState fTmp;
+
 		if (m_pMediaControl)
 		{
 			m_pMediaControl->GetState(10, &fTmp);
@@ -616,39 +630,44 @@ int CDirectShow::SaveCurrentFrame(LPCWSTR lpwFileName) //*доработанная версия фу
 				m_pMediaControl->Pause();
 		}
 		if (FAILED(m_pBasicVideo2->GetCurrentImage(&lArrSize, NULL))) return -1;
+
 		pImage = new BYTE[lArrSize];
 		m_pBasicVideo2->GetCurrentImage(&lArrSize, (long *)pImage);
 		hFile = CreateFile(lpwFileName, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+		
 		if (hFile != INVALID_HANDLE_VALUE)
 		{
-            LPBI = (LPBITMAPINFOHEADER)pImage;
-            LPBC = (LPBITMAPCOREHEADER)pImage;
-            if (LPBI->biSize == sizeof(BITMAPCOREHEADER))
+            pBI = (LPBITMAPINFOHEADER)pImage;
+            pBC = (LPBITMAPCOREHEADER)pImage;
+
+            if (pBI->biSize == sizeof(BITMAPCOREHEADER))
             {
-                if (LPBC->bcBitCount > 8)
+                if (pBC->bcBitCount > 8)
                     dwColors = 0;
                 else
-                    dwColors =  (2 ^ LPBC->bcBitCount);
+                    dwColors =  (2 ^ pBC->bcBitCount);
                 dwPaletteSize = (dwColors * sizeof(RGBTRIPLE));
             }
             else
             {
-                 if (LPBI->biClrUsed != 0)
-                     dwColors = LPBI->biClrUsed;
-                 else if (LPBI->biBitCount > 8)
+                 if (pBI->biClrUsed != 0)
+                     dwColors = pBI->biClrUsed;
+                 else if (pBI->biBitCount > 8)
                      dwColors = 0;
                  else
-                     dwColors =  (2 ^ LPBI->biBitCount);
+                     dwColors =  (2 ^ pBI->biBitCount);
                  dwPaletteSize = (dwColors * sizeof(RGBQUAD));
             }
+
 			BFH.bfType = 0x4D42; //0x42 -- 'B', 0x4D -- 'M'
-			BFH.bfOffBits = sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFO);
-			BFH.bfSize = sizeof(BITMAPFILEHEADER) + lArrSize + dwPaletteSize;
+			BFH.bfOffBits = (sizeof(BITMAPFILEHEADER) + pBI->biSize + dwPaletteSize);
+			BFH.bfSize = (sizeof(BITMAPFILEHEADER) + lArrSize);
 			if (WriteFile(hFile, &BFH, sizeof(BITMAPFILEHEADER), &dwWritten, NULL))
 				WriteFile(hFile, pImage, lArrSize, &dwWritten, NULL);
 			SetEndOfFile(hFile);
 			CloseHandle(hFile);
 		}
+
 		delete[] pImage;
 		if (m_pMediaControl)
 			if (fTmp == 2) m_pMediaControl->Run();
@@ -687,13 +706,12 @@ int CDirectShow::GetAvailableStreams(DSSTREAMTYPE dStreamType, LPWSTR *lpwStmArr
 			CoTaskMemFree(lpwName);
 		}
 	}
-	m_pAMStreamSelect->Release();
 	return 0;
 }
 
-//Включает/выключает поток
+//Выбирает поток
 //В случае ошибки функция вернет значение меньше нуля
-int CDirectShow::EnableStream(DSSTREAMTYPE dStreamType, LPCWSTR lpwStmName, BOOL bEnable)
+int CDirectShow::SelectStream(DSSTREAMTYPE dStreamType, LPCWSTR lpwStmName)
 {
 	if (!m_pAMStreamSelect) return -1;
 	DWORD dwStmCnt = 0;
@@ -707,12 +725,18 @@ int CDirectShow::EnableStream(DSSTREAMTYPE dStreamType, LPCWSTR lpwStmName, BOOL
 			if ((pMT->majortype == MEDIATYPE_Audio) && (dStreamType == DSST_AUDIO))
 			{
 				if (_wcsicmp(lpwName, lpwStmName) == 0)
-					m_pAMStreamSelect->Enable(m_lCounter, (bEnable)?AMSTREAMSELECTENABLE_ENABLE:0);
+				{
+					m_pAMStreamSelect->Enable(m_lCounter, AMSTREAMSELECTENABLE_ENABLE);
+					break;
+				}
 			}
 			else if ((pMT->majortype == MEDIATYPE_Video) && (dStreamType == DSST_VIDEO))
 			{
 				if (_wcsicmp(lpwName, lpwStmName) == 0)
-					m_pAMStreamSelect->Enable(m_lCounter, (bEnable)?AMSTREAMSELECTENABLE_ENABLE:0);
+				{
+					m_pAMStreamSelect->Enable(m_lCounter, AMSTREAMSELECTENABLE_ENABLE);
+					break;
+				}
 			}
 			FreeMediaType(pMT);
 			CoTaskMemFree(lpwName);
@@ -721,8 +745,8 @@ int CDirectShow::EnableStream(DSSTREAMTYPE dStreamType, LPCWSTR lpwStmName, BOOL
 	return 0;
 }
 
-//Позволяет узнать, включен ли поток
-BOOL CDirectShow::IsStreamEnabled(DSSTREAMTYPE dStreamType, LPCWSTR lpwStmName)
+//Позволяет узнать, выбран ли поток
+BOOL CDirectShow::IsStreamSelected(DSSTREAMTYPE dStreamType, LPCWSTR lpwStmName)
 {
 	if (!m_pAMStreamSelect) return FALSE;
 	DWORD dwStmCnt = 0;
@@ -738,12 +762,18 @@ BOOL CDirectShow::IsStreamEnabled(DSSTREAMTYPE dStreamType, LPCWSTR lpwStmName)
 			if ((pMT->majortype == MEDIATYPE_Audio) && (dStreamType == DSST_AUDIO))
 			{
 				if (_wcsicmp(lpwName, lpwStmName) == 0)
+				{
 					bResult = (dwFlags != 0);
+					break;
+				}
 			}
 			else if ((pMT->majortype == MEDIATYPE_Video) && (dStreamType == DSST_VIDEO))
 			{
 				if (_wcsicmp(lpwName, lpwStmName) == 0)
+				{
 					bResult = (dwFlags != 0);
+					break;
+				}
 			}
 			FreeMediaType(pMT);
 			CoTaskMemFree(lpwName);

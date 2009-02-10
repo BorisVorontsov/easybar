@@ -199,6 +199,15 @@ Find_Begin:
 						}
 					}
 					break;
+				case IDM_FILE_OPENFILES:
+				case IDM_OD_OPENDIRECTORY:
+				case IDM_OD_OPENDIRECTORY_II:
+				case IDM_FILE_ADDFILES:
+				case IDM_AD_ADDDIRECTORY:
+				case IDM_AD_ADDDIRECTORY_II:
+				case IDM_VIEW_PLAYLIST:
+					PostMessage(hMainWnd, uMsg, wParam, lParam);
+					break;
 				case IDM_SELECTION_MOVEUP:
 				case IDM_SELECTION_MOVEDOWN:
 				{
@@ -266,13 +275,12 @@ Find_Begin:
 				| SWP_NOSENDCHANGING);
 			return TRUE;
 		}
-		case WM_CLOSE:
+		case WM_DESTROY:
 		{
 			WINDOWPLACEMENT WP = { 0 };
 			GetWindowPlacement(hWnd, &WP);
 			if (WP.showCmd == SW_NORMAL)
 				GetWindowRect(hWnd, &rcPlaylistPos);
-			DestroyWindow(hWnd);
 			return TRUE;
 		}
 	}
