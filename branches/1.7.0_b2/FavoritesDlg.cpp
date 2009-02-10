@@ -353,6 +353,7 @@ Removing_NextItem:
 				ListView_InsertItem(GetDlgItem(hWnd, IDC_LVFILES), &LVI);
 				ListView_SetItemText(GetDlgItem(hWnd, IDC_LVFILES), lIndex, 1, lpwDFile);
 			}
+			DragFinish(hDrop);
 			return TRUE;
 		}
 		case WM_NOTIFY:

@@ -56,7 +56,6 @@ INT_PTR CALLBACK AssociationsDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM
 				{
 					ULONG i;
 					WCHAR lpwText[64] = { 0 };
-					SendDlgItemMessage(hWnd, IDC_LSTFT, LB_SETSEL, FALSE, -1);
 					int intItemsCnt = SendDlgItemMessage(hWnd, IDC_LSTFT, LB_GETCOUNT, 0, 0);
 					for (i = 0; i < (UINT)intItemsCnt; i++)
 					{
@@ -84,6 +83,9 @@ INT_PTR CALLBACK AssociationsDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM
 					}
 					break;
 				}
+				case IDC_BTNRESET:
+					SendDlgItemMessage(hWnd, IDC_LSTFT, LB_SETSEL, FALSE, -1);
+					break;
 				case IDC_BTNOK:
 				{
 					ULONG i;

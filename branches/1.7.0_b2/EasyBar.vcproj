@@ -630,6 +630,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\PPAdjustmentsDlg.cpp"
+				>
+			</File>
+			<File
 				RelativePath="PPContentDlg.cpp"
 				>
 				<FileConfiguration
@@ -940,6 +944,10 @@
 			</File>
 			<File
 				RelativePath=".\PlaylistDlg.h"
+				>
+			</File>
+			<File
+				RelativePath=".\PPAdjustmentsDlg.h"
 				>
 			</File>
 			<File

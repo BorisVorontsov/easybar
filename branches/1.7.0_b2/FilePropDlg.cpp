@@ -6,6 +6,7 @@
 #include "ppgeneraldlg.h"
 #include "ppcontentdlg.h"
 #include "ppfiltersdlg.h"
+#include "ppadjustmentsdlg.h"
 #include "common.h"
 #include "easybar.h"
 #include "filepropdlg.h"
@@ -13,6 +14,7 @@
 static HWND hPPGeneral		= 0; //Property Page: 'General'
 static HWND hPPContent		= 0; //Property Page: '[Media] Content'
 static HWND hPPFilters		= 0; //Property Page: '[DirectShow] Filters'
+static HWND hPPAdjustments	= 0; //Property Page: 'Adjustments'
 
 extern OSVERSIONINFO OSVI;
 extern HINSTANCE hAppInstance;
@@ -38,6 +40,8 @@ INT_PTR CALLBACK FilePropDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPa
 			TabCtrl_InsertItem(GetDlgItem(hWnd, IDC_TABPROP), 1, &TCI);
 			TCI.pszText = L"DirectShow Filters";
 			TabCtrl_InsertItem(GetDlgItem(hWnd, IDC_TABPROP), 2, &TCI);
+			TCI.pszText = L"Adjustments";
+			TabCtrl_InsertItem(GetDlgItem(hWnd, IDC_TABPROP), 3, &TCI);
 			MoveToCenter(hWnd, -100, 0);
 			hPPGeneral = CreateDialogParam(hAppInstance, MAKEINTRESOURCE(IDD_PP_GENERAL),
 				hWnd, PPGeneralDlgProc, 0);
@@ -45,6 +49,8 @@ INT_PTR CALLBACK FilePropDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPa
 				hWnd, PPContentDlgProc, 0);
 			hPPFilters = CreateDialogParam(hAppInstance, MAKEINTRESOURCE(IDD_PP_FILTERS),
 				hWnd, PPFiltersDlgProc, 0);
+			hPPAdjustments = CreateDialogParam(hAppInstance, MAKEINTRESOURCE(IDD_PP_ADJUSTMENTS),
+				hWnd, PPAdjustmentsDlgProc, 0);
 			GetWindowRect(GetDlgItem(hWnd, IDC_TABPROP), &RCC);
 			TabCtrl_AdjustRect(GetDlgItem(hWnd, IDC_TABPROP), FALSE, &RCC);
 			PTLT.x = RCC.left;
@@ -56,12 +62,15 @@ INT_PTR CALLBACK FilePropDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPa
 				RCC.bottom - RCC.top, FALSE);
 			MoveWindow(hPPFilters, PTLT.x, PTLT.y, RCC.right - RCC.left,
 				RCC.bottom - RCC.top, FALSE);
+			MoveWindow(hPPAdjustments, PTLT.x, PTLT.y, RCC.right - RCC.left,
+				RCC.bottom - RCC.top, FALSE);
 			if ((OSVI.dwMajorVersion > 5) || ((OSVI.dwMajorVersion == 5) &&
 				(OSVI.dwMinorVersion >= 1)))
 			{
 				EnableThemeDialogTexture(hPPGeneral, ETDT_ENABLETAB);
 				EnableThemeDialogTexture(hPPContent, ETDT_ENABLETAB);
 				EnableThemeDialogTexture(hPPFilters, ETDT_ENABLETAB);
+				EnableThemeDialogTexture(hPPAdjustments, ETDT_ENABLETAB);
 			}
 			//Выбираем по умолчанию 'General'
 			TabCtrl_SetCurSel(GetDlgItem(hWnd, IDC_TABPROP), 0);
@@ -91,6 +100,7 @@ INT_PTR CALLBACK FilePropDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPa
 							ShowWindow(hPPGeneral, SW_HIDE);
 							ShowWindow(hPPContent, SW_HIDE);
 							ShowWindow(hPPFilters, SW_HIDE);
+							ShowWindow(hPPAdjustments, SW_HIDE);
 							switch (TabCtrl_GetCurSel(pNM->hwndFrom))
 							{
 								case 0:
@@ -101,6 +111,9 @@ INT_PTR CALLBACK FilePropDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPa
 									break;
 								case 2:
 									ShowWindow(hPPFilters, SW_SHOW);
+									break;
+								case 3:
+									ShowWindow(hPPAdjustments, SW_SHOW);
 									break;
 							}
 							break;
@@ -113,6 +126,7 @@ INT_PTR CALLBACK FilePropDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPa
 			//DestroyWindow(hPPGeneral);
 			//DestroyWindow(hPPContent);
 			//DestroyWindow(hPPFilters);
+			//DestroyWindow(hPPAdjustments);
 			EndDialog(hWnd, 0);
 			return TRUE;
 	}

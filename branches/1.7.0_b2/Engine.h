@@ -142,11 +142,10 @@ public:
 	                        LPWSTR *lpwStmArr,
 		                    LPDWORD pArrSize,
 							DWORD dwBuffSize);
-	int EnableStream(DSSTREAMTYPE dStreamType,
-		             LPCWSTR lpwStmName,
-					 BOOL bEnable);
-	BOOL IsStreamEnabled(DSSTREAMTYPE dStreamType,
-		                 LPCWSTR lpwStmName);
+	int SelectStream(DSSTREAMTYPE dStreamType,
+		             LPCWSTR lpwStmName);
+	BOOL IsStreamSelected(DSSTREAMTYPE dStreamType,
+		                  LPCWSTR lpwStmName);
 	int AddFGToROT();
 	int GetDSFiltersNames(LPWSTR *lpwDSFilArr,
 		                  LPDWORD pArrSize,

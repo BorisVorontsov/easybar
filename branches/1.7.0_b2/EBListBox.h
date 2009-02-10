@@ -10,7 +10,7 @@
 											EBLB_METRICS_STD_INDENT + 0x0002
 #define EBLB_METRICS_RIGHT_SEL_INDENT		0x0002
 
-#define EBLB_METRICS_COL2_WIDTH				0x0040
+#define EBLB_METRICS_COL2_WIDTH				0x0030
 
 __declspec(selectany) UINT EBLB_METRICS_STD_HEIGHT = EBLB_METRICS_STD_INDENT + EBLB_METRICS_PA_HEIGHT +
 	EBLB_METRICS_STD_INDENT;
@@ -68,6 +68,7 @@ public:
 	HDC hLPDMDC; //Левая панель + недоступная пометка
 	HDC hNI1DC; //Обычный пункт (цвет 1)
 	HDC hNI2DC; //Обычный пункт (цвет 2)
+	HDC hBDC; //Фон
 	HDC hSIDC;	//Выделенный пункт
 
 	HBITMAP hLPBmp, hOldLPBmp;
@@ -76,6 +77,7 @@ public:
 	HBITMAP hLPDMBmp, hOldLPDMBmp;
 	HBITMAP hNI1Bmp, hOldNI1Bmp;
 	HBITMAP hNI2Bmp, hOldNI2Bmp;
+	HBITMAP hBBmp, hOldBBmp;
 	HBITMAP hSIBmp, hOldSIBmp;
 
 protected:

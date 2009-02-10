@@ -1,7 +1,7 @@
 /////////////////////////////////////////////////////////////////////////////
 //		Проект: EasyBar - media player
-//		Автор: Борис Воронцов и участники проекта
-//		Последнее обновление: 04.02.2009
+//		Автор(ы): Борис Воронцов и участники проекта
+//		Последнее обновление: 10.02.2009
 /////////////////////////////////////////////////////////////////////////////
 
 #define _WIN32_WINNT	0x0501
@@ -67,6 +67,8 @@ HWND hVideoWnd = 0;
 WCHAR lpwStdWndTitle[64] = { 0 };
 WCHAR lpwCurFileTitle[128] = { 0 };
 
+WCHAR lpwPlPath[MAX_PATH] = { 0 };
+
 static BOOL bSeekFlag = FALSE; //Временно отключает обновление полосы поиска
 
 CURRENTINFO CI = { 0 };
@@ -82,7 +84,6 @@ VWDATA VWD = { 0 };
 
 int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, LPWSTR lpwCmdLine, int nShowCmd)
 {
-	WCHAR lpwPlPath[MAX_PATH] = { 0 };
 	ULONG lCmdLnLen = 0, lPlFileCnt = 0, lCmdLnFileCnt = 0;
 	BOOL bCmdLnAdd = FALSE;
 	HACCEL hMainAccel, hPLAccel;
@@ -280,39 +281,6 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, LPWSTR lpwCmdLine, int nShow
 #ifndef _DEBUG
 ExitFunction:
 #endif
-	if (dwRememberPlaylist)
-	{
-		if ((pEngine->m_lpwFileName) || (pFileCollection->FileCount()))
-		{
-			SavePlaylist(lpwPlPath);
-			int intSelFile = pFileCollection->GetFileIndex(0, FCF_RECENT);
-			dwSelectedFileIndex = (intSelFile >= 0)?intSelFile:0;
-			//if (dwASResumePlayback)
-			//{
-				dwSFPosition = (pEngine->m_lpwFileName)?(DWORD)pEngine->GetPosition():0;
-				dwSFState = pEngine->GetState();
-			//}
-		}
-		else
-		{
-			DeleteFile(lpwPlPath);
-			dwSelectedFileIndex = 0;
-			dwSFPosition = 0;
-			dwSFState = E_STATE_STOPPED;
-		}
-	}
-	else
-	{
-		if (IsFile(lpwPlPath))
-		{
-			DeleteFile(lpwPlPath);
-		}
-		dwSelectedFileIndex = 0;
-		dwSFPosition = 0;
-		dwSFState = E_STATE_STOPPED;
-	}
-	if (pEngine->m_lpwFileName) CloseTrack();
-	if (!dwNoOwnerDrawMenu) pEBMenuMain->InitEBMenu(0);
 	SaveSettings();
 	ReleaseMutex(hMutex);
 	SDO(pEBMenuMain);
@@ -1241,7 +1209,6 @@ INT_PTR CALLBACK PlayerDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 					}
 					break;
 				case IDM_PLAYBACK_STOP:
-					pEngine->SetPosition(0);
 					pEngine->Stop();
 					break;
 				case IDM_PLAYBACK_FRAMESTEP:
@@ -1878,6 +1845,7 @@ INT_PTR CALLBACK PlayerDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 					pFileCollection->SetRecentFile(pEngine->m_lpwFileName);
 				}
 			}
+			DragFinish(hDrop);
 			return TRUE;
 		}
 		case WM_MEASUREITEM:
@@ -2364,8 +2332,42 @@ Seek_SetPosition:
 			RemoveProp(GetDlgItem(hWnd, IDC_EBBPP), L"_icon_");
 			KillTimer(hWnd, 1);
 
+			if (dwRememberPlaylist)
+			{
+				if ((pEngine->m_lpwFileName) || (pFileCollection->FileCount()))
+				{
+					SavePlaylist(lpwPlPath);
+					int intSelFile = pFileCollection->GetFileIndex(0, FCF_RECENT);
+					dwSelectedFileIndex = (intSelFile >= 0)?intSelFile:0;
+					//if (dwASResumePlayback)
+					//{
+						dwSFPosition = (pEngine->m_lpwFileName)?(DWORD)pEngine->GetPosition():0;
+						dwSFState = pEngine->GetState();
+					//}
+				}
+				else
+				{
+					DeleteFile(lpwPlPath);
+					dwSelectedFileIndex = 0;
+					dwSFPosition = 0;
+					dwSFState = E_STATE_STOPPED;
+				}
+			}
+			else
+			{
+				if (IsFile(lpwPlPath))
+				{
+					DeleteFile(lpwPlPath);
+				}
+				dwSelectedFileIndex = 0;
+				dwSFPosition = 0;
+				dwSFState = E_STATE_STOPPED;
+			}
+			if (pEngine->m_lpwFileName) CloseTrack();
+
 			pToolTipsMain->Destroy();
-			SendMessage(hPlaylistWnd, WM_CLOSE, 0, 0);
+			if (!dwNoOwnerDrawMenu) pEBMenuMain->InitEBMenu(0);
+			DestroyWindow(hPlaylistWnd);
 			InitMainWnd(FALSE);
 			if (dwTrayIcon) RemoveTrayIcon();
 
@@ -2688,8 +2690,9 @@ void CloseTrack()
 		{
 			SendMessage(hMainWnd, WM_COMMAND, MAKEWPARAM(IDM_FULLSCREEN_FULLSCREENNORMAL, 0), 0);
 		}
-		SendMessage(hVideoWnd, WM_CLOSE, 0, 0);
+		pEngine->SetVideoVisible(FALSE);
 		pEngine->SetVideoOwner(0);
+		DestroyWindow(hVideoWnd);
 		hVideoWnd = 0;
 	}
 	if (pEngine->GetState() != E_STATE_STOPPED) pEngine->Stop();

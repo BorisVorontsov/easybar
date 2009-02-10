@@ -277,13 +277,12 @@ INT_PTR CALLBACK VideoDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam
 				}
 			}
 			return TRUE;
-		case WM_CLOSE:
+		case WM_DESTROY:
 			if (VWD.dwVWPosFlag == VWPF_FULLSCREEN) ShowMousePointer(TRUE);
 			KillTimer(hWnd, 1);
 			/*
 			DestroyWindow(VWD.hPlayerVW);
 			*/
-			DestroyWindow(hWnd);
 			return TRUE;
 	}
 	return FALSE;

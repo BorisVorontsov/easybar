@@ -49,6 +49,7 @@ CEBListBox::CEBListBox()
 	hLPDMDC = NULL;
 	hNI1DC = NULL;
 	hNI2DC = NULL;
+	hBDC = NULL;
 	hSIDC = NULL;
 
 	hLPBmp = NULL; hOldLPBmp = NULL;
@@ -57,6 +58,7 @@ CEBListBox::CEBListBox()
 	hLPDMBmp = NULL; hOldLPDMBmp = NULL;
 	hNI1Bmp = NULL; hOldNI1Bmp = NULL;
 	hNI2Bmp = NULL; hOldNI2Bmp = NULL;
+	hBBmp = NULL; hOldBBmp = NULL;
 	hSIBmp = NULL; hOldSIBmp = NULL;
 }
 
@@ -80,6 +82,8 @@ CEBListBox::~CEBListBox()
 	DeleteDC(hNI1DC);
 	DeleteObject(SelectObject(hNI2DC, hOldNI2Bmp));
 	DeleteDC(hNI2DC);
+	DeleteObject(SelectObject(hBDC, hOldBBmp));
+	DeleteDC(hBDC);
 	DeleteObject(SelectObject(hSIDC, hOldSIBmp));
 	DeleteDC(hSIDC);
 }
@@ -90,11 +94,11 @@ BOOL CEBListBox::InitEBListBox(HWND hListBox)
 	{
 		if ((GetWindowLongPtr(hListBox, GWL_STYLE) & LBS_OWNERDRAWFIXED) != LBS_OWNERDRAWFIXED)
 			return FALSE;
-		int intItemCnt = SendMessage(hListBox, LB_GETCOUNT, 0, 0);
-		if (intItemCnt != LB_ERR)
+		int intItemsCnt = SendMessage(hListBox, LB_GETCOUNT, 0, 0);
+		if (intItemsCnt != LB_ERR)
 		{
 			LPLBITEMDESC pLBID;
-			for (UINT i = 0; i < (UINT)intItemCnt; i++)
+			for (UINT i = 0; i < (UINT)intItemsCnt; i++)
 			{
 				pLBID = new LBITEMDESC;
 				SendMessage(hListBox, LB_SETITEMDATA, i, (LPARAM)pLBID);
@@ -108,11 +112,11 @@ BOOL CEBListBox::InitEBListBox(HWND hListBox)
 	else
 	{
 		if (!m_hListBox) return FALSE;
-		int intItemCnt = SendMessage(m_hListBox, LB_GETCOUNT, 0, 0);
-		if (intItemCnt != LB_ERR)
+		int intItemsCnt = SendMessage(m_hListBox, LB_GETCOUNT, 0, 0);
+		if (intItemsCnt != LB_ERR)
 		{
 			LPLBITEMDESC pLBID;
-			for (UINT i = 0; i < (UINT)intItemCnt; i++)
+			for (UINT i = 0; i < (UINT)intItemsCnt; i++)
 			{
 				pLBID = (LPLBITEMDESC)SendMessage(m_hListBox, LB_GETITEMDATA, i, 0);
 				if ((int)pLBID != LB_ERR)
@@ -161,6 +165,11 @@ void CEBListBox::Refresh()
 	{
 		DeleteObject(SelectObject(hNI2DC, hOldNI2Bmp));
 		DeleteDC(hNI2DC);
+	}
+	if (hBDC)
+	{
+		DeleteObject(SelectObject(hBDC, hOldBBmp));
+		DeleteDC(hBDC);
 	}
 	if (hSIDC)
 	{
@@ -261,6 +270,17 @@ void CEBListBox::Refresh()
 	}
 	//----------------------------------------------------------------
 
+	hBDC = CreateCompatibleDC(hLBDC);
+	hBBmp = CreateCompatibleBitmap(hLBDC, RCP.right, RCP.bottom);
+	hOldBBmp = (HBITMAP)SelectObject(hBDC, hBBmp);
+
+	//Фон
+	//----------------------------------------------------------------
+	{
+		FillRect(hBDC, &RCP, GetSysColorBrush(COLOR_WINDOW));
+	}
+	//----------------------------------------------------------------
+
 	SetRect(&RCP, 0, 0, RCLB.right - (EBLB_METRICS_LEFT_SEL_INDENT + EBLB_METRICS_RIGHT_SEL_INDENT),
 		EBLB_METRICS_STD_HEIGHT);
 
@@ -303,7 +323,7 @@ void CEBListBox::Refresh()
 	//----------------------------------------------------------------
 
 	ReleaseDC(m_hListBox, hLBDC);
-	InvalidateRect(m_hListBox, NULL, FALSE);
+	RedrawWindow(m_hListBox, 0, 0, RDW_ERASE | RDW_INVALIDATE);
 }
 
 LRESULT CALLBACK CEBListBox::ListBoxProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
@@ -312,7 +332,43 @@ LRESULT CALLBACK CEBListBox::ListBoxProc(HWND hWnd, UINT uMsg, WPARAM wParam, LP
 	switch (uMsg)
 	{
 		case WM_ERASEBKGND:
-			return 0;
+		{
+			int intItemsCnt;
+			RECT RCLB = { 0 }, RCI = { 0 };
+			BITMAP BMLP = { 0 }, BMB = { 0 };
+			
+			GetClientRect(hWnd, &RCLB);
+			intItemsCnt = SendMessage(hWnd, LB_GETCOUNT, 0, 0);
+
+			if ((intItemsCnt != LB_ERR) && intItemsCnt)
+				SendMessage(hWnd, LB_GETITEMRECT, (intItemsCnt - 1), (LPARAM)&RCI);
+
+			GetObject(pThis->hLPBmp, sizeof(BITMAP), &BMLP);
+			GetObject(pThis->hBBmp, sizeof(BITMAP), &BMB);
+
+			if (RCI.bottom < RCLB.bottom)
+			{
+				for (UINT i = RCI.bottom; i < (UINT)RCLB.bottom; i += BMLP.bmHeight)
+				{
+					BitBlt((HDC)wParam, 0, i, BMLP.bmWidth, BMLP.bmHeight, pThis->hLPDC, 0, 0, SRCCOPY);
+					BitBlt((HDC)wParam, BMLP.bmWidth, i, BMB.bmWidth, BMB.bmHeight, pThis->hBDC, 0, 0, SRCCOPY);
+				}
+			}
+			return 1;
+		}
+		case WM_PAINT:
+		{
+			int intItemsCnt = SendMessage(hWnd, LB_GETCOUNT, 0, 0);
+			if ((intItemsCnt == LB_ERR) || !intItemsCnt)
+			{
+				PAINTSTRUCT PS = { 0 };
+				HDC hDC = BeginPaint(hWnd, &PS);
+				//
+				EndPaint(hWnd, &PS);
+				return 0;
+			}
+			else break;
+		}
 		case WM_WINDOWPOSCHANGED:
 			pThis->Refresh();
 			break;
@@ -370,8 +426,6 @@ DWORD CEBListBox::DrawItem(WPARAM wParam, LPARAM lParam)
 	HDC hTmpDC;
 	HBITMAP hTmpBmp, hOldBmp;
 
-	int intItemCnt = SendMessage(m_hListBox, LB_GETCOUNT, 0, 0);
-
 	hTmpDC = CreateCompatibleDC(pDIS->hDC);
 	hTmpBmp = CreateCompatibleBitmap(pDIS->hDC, pDIS->rcItem.right - pDIS->rcItem.left,
 		pDIS->rcItem.bottom - pDIS->rcItem.top);
@@ -424,9 +478,8 @@ DWORD CEBListBox::DrawItem(WPARAM wParam, LPARAM lParam)
 	{
 		if (pDIS->itemID == LB_ERR)
 		{
-			//Не рисуем фон, если список пуст
-			RECT RCNI = {BMLP.bmWidth, 0, BMLP.bmWidth + BMNI.bmWidth, BMNI.bmHeight};
-			FillRect(hTmpDC, &RCNI, GetSysColorBrush(COLOR_WINDOW));
+			//GetObject(hBBmp, sizeof(BITMAP), &BMx);
+			BitBlt(hTmpDC, BMLP.bmWidth, 0, BMNI.bmWidth, BMNI.bmHeight, hBDC, 0, 0, SRCCOPY);
 		}
 		else
 		{
@@ -512,19 +565,6 @@ DWORD CEBListBox::DrawItem(WPARAM wParam, LPARAM lParam)
 			pDIS->rcItem.bottom - pDIS->rcItem.top, hTmpDC, 0, 0, SRCCOPY);
 	}
 
-	//Закраска фона
-	//-------------------------------------------------------------------------
-	if ((pDIS->itemID == LB_ERR) || (pDIS->itemID == (intItemCnt - 1)))
-	{
-		RECT RCLB = { 0 }, RCEA = { 0 };
-		GetClientRect(pDIS->hwndItem, &RCLB);
-		for (UINT i = pDIS->rcItem.bottom; i < (UINT)RCLB.bottom; i += BMLP.bmHeight)
-			BitBlt(pDIS->hDC, 0, i, BMLP.bmWidth, BMLP.bmHeight, hLPDC, 0, 0, SRCCOPY);
-		SetRect(&RCEA, BMLP.bmWidth, pDIS->rcItem.bottom, RCLB.right, RCLB.bottom);
-		FillRect(pDIS->hDC, &RCEA, GetSysColorBrush(COLOR_WINDOW));
-	}
-	//-------------------------------------------------------------------------
-
 	SelectObject(hTmpDC, hOldBmp);
 	DeleteObject(hTmpBmp);
 	DeleteDC(hTmpDC);
@@ -534,11 +574,11 @@ DWORD CEBListBox::DrawItem(WPARAM wParam, LPARAM lParam)
 
 BOOL CEBListBox::HighlightItem(UINT uItemIndex)
 {
-	int intItemCnt = SendMessage(m_hListBox, LB_GETCOUNT, 0, 0);
-	if ((intItemCnt == LB_ERR) || !intItemCnt) return FALSE;
-	//if (uItemIndex > (intItemCnt - 1)) return FALSE;
+	int intItemsCnt = SendMessage(m_hListBox, LB_GETCOUNT, 0, 0);
+	if ((intItemsCnt == LB_ERR) || !intItemsCnt) return FALSE;
+	//if (uItemIndex > (intItemsCnt - 1)) return FALSE;
 	LPLBITEMDESC pLBID;
-	for (UINT i = 0; i < (UINT)intItemCnt; i++)
+	for (UINT i = 0; i < (UINT)intItemsCnt; i++)
 	{
 		pLBID = (LPLBITEMDESC)SendMessage(m_hListBox, LB_GETITEMDATA, i, 0);
 		if (((int)pLBID == LB_ERR) || !pLBID)
@@ -557,15 +597,15 @@ BOOL CEBListBox::HighlightItem(UINT uItemIndex)
 				pLBID->dwStyle ^= LBIS_HIGHLIGHTED;
 		}
 	}
-	InvalidateRect(m_hListBox, NULL, FALSE);
+	RedrawWindow(m_hListBox, 0, 0, RDW_ERASE | RDW_INVALIDATE);
 	return TRUE;
 }
 
 BOOL CEBListBox::IsItemHighlighted(UINT uItemIndex)
 {
-	//int intItemCnt = SendMessage(m_hListBox, LB_GETCOUNT, 0, 0);
-	//if ((intItemCnt == LB_ERR) || !intItemCnt) return FALSE;
-	//if (uItemIndex > (intItemCnt - 1)) return FALSE;
+	//int intItemsCnt = SendMessage(m_hListBox, LB_GETCOUNT, 0, 0);
+	//if ((intItemsCnt == LB_ERR) || !intItemsCnt) return FALSE;
+	//if (uItemIndex > (intItemsCnt - 1)) return FALSE;
 	LPLBITEMDESC pLBID = (LPLBITEMDESC)SendMessage(m_hListBox, LB_GETITEMDATA, uItemIndex, 0);
 	if (((int)pLBID == LB_ERR) || !pLBID) return FALSE;
 	return ((pLBID->dwStyle & LBIS_HIGHLIGHTED) == LBIS_HIGHLIGHTED);
@@ -573,10 +613,10 @@ BOOL CEBListBox::IsItemHighlighted(UINT uItemIndex)
 
 UINT CEBListBox::GetHighlightedItemIndex()
 {
-	int intItemCnt = SendMessage(m_hListBox, LB_GETCOUNT, 0, 0);
-	if ((intItemCnt == LB_ERR) || !intItemCnt) return -1;
+	int intItemsCnt = SendMessage(m_hListBox, LB_GETCOUNT, 0, 0);
+	if ((intItemsCnt == LB_ERR) || !intItemsCnt) return -1;
 	LPLBITEMDESC pLBID;
-	for (UINT i = 0; i < (UINT)intItemCnt; i++)
+	for (UINT i = 0; i < (UINT)intItemsCnt; i++)
 	{
 		pLBID = (LPLBITEMDESC)SendMessage(m_hListBox, LB_GETITEMDATA, i, 0);
 		if (((int)pLBID == LB_ERR) || !pLBID) return -1;
@@ -588,9 +628,9 @@ UINT CEBListBox::GetHighlightedItemIndex()
 
 BOOL CEBListBox::SetItemTag(UINT uItemIndex, LPCBYTE pTag, SIZE_T szTagSize)
 {
-	//int intItemCnt = SendMessage(m_hListBox, LB_GETCOUNT, 0, 0);
-	//if ((intItemCnt == LB_ERR) || !intItemCnt) return FALSE;
-	//if (uItemIndex > (intItemCnt - 1)) return FALSE;
+	//int intItemsCnt = SendMessage(m_hListBox, LB_GETCOUNT, 0, 0);
+	//if ((intItemsCnt == LB_ERR) || !intItemsCnt) return FALSE;
+	//if (uItemIndex > (intItemsCnt - 1)) return FALSE;
 	LPLBITEMDESC pLBID = (LPLBITEMDESC)SendMessage(m_hListBox, LB_GETITEMDATA, uItemIndex, 0);
 	if (((int)pLBID == LB_ERR) || !pLBID)
 	{
