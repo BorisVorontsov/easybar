@@ -42,6 +42,7 @@ public:
 	SIZE_T GetItemTagSize(UINT uItemIndex);
 	BOOL GetItemTag(UINT uItemIndex, LPBYTE pTag);
 	BOOL DeleteItemTag(UINT uItemIndex);
+	BOOL Sort(BOOL bReverse);
 	HWND GetCurrentListBox();
 	LONG_PTR GetOldListBoxProc();
 	void Refresh();

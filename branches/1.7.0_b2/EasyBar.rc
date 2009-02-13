@@ -823,6 +823,11 @@ BEGIN
     BEGIN
         MENUITEM "&Find...\tCtrl+F",            IDM_MISC_FIND
         MENUITEM SEPARATOR
+        POPUP "&Sort"
+        BEGIN
+            MENUITEM "&Sort by Title",              IDM_SORT_SORTBYTITLE
+            MENUITEM "&Reverse Sort by Title",      IDM_SORT_REVERSESORTBYTITLE
+        END
         MENUITEM "&Clear Playlist\tShift+Delete", IDM_MISC_CLEARPLAYLIST
     END
 END

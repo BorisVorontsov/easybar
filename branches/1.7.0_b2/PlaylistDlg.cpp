@@ -254,6 +254,17 @@ Find_Begin:
 					intOldIndex = 0;
 					hFindTextWnd = FindText(&FR);
 					break;
+				case IDM_SORT_SORTBYTITLE:
+				case IDM_SORT_REVERSESORTBYTITLE:
+				{
+					BOOL bReverse = (LOWORD(wParam) == IDM_SORT_REVERSESORTBYTITLE);
+					LPWSTR *lpwFiles = new LPWSTR[pFileCollection->FileCount()];
+					//...
+					pEBListBox->Sort(bReverse);
+					//...
+					delete[] lpwFiles;
+					break;
+				}
 				case IDM_MISC_CLEARPLAYLIST:
 					if (pEngine->m_lpwFileName)
 						SendMessage(hMainWnd, WM_COMMAND, MAKEWPARAM(IDM_FILE_CLOSE, 0), 0);
