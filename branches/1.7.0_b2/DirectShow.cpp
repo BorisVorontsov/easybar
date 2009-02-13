@@ -594,11 +594,10 @@ int CDirectShow::CopyCurrentFrame() //*доработанная версия функции от Jenya
 
 		hGbCopy = GlobalAlloc(GMEM_MOVEABLE, lArrSize);
 		pImage = (LPBYTE)GlobalLock(hGbCopy);
+		m_pBasicVideo2->GetCurrentImage(&lArrSize, (long *)pImage);
 		GlobalUnlock(hGbCopy);
 
-		m_pBasicVideo2->GetCurrentImage(&lArrSize, (long *)pImage);
-
-		SetClipboardData(CF_DIB, pImage);
+		SetClipboardData(CF_DIB, hGbCopy);
 		CloseClipboard();
 
 		if (m_pMediaControl)
@@ -645,7 +644,7 @@ int CDirectShow::SaveCurrentFrame(LPCWSTR lpwFileName) //*доработанная версия фу
                 if (pBC->bcBitCount > 8)
                     dwColors = 0;
                 else
-                    dwColors =  (2 ^ pBC->bcBitCount);
+                    dwColors =  (DWORD)pow((double)2, pBC->bcBitCount);
                 dwPaletteSize = (dwColors * sizeof(RGBTRIPLE));
             }
             else
@@ -655,7 +654,7 @@ int CDirectShow::SaveCurrentFrame(LPCWSTR lpwFileName) //*доработанная версия фу
                  else if (pBI->biBitCount > 8)
                      dwColors = 0;
                  else
-                     dwColors =  (2 ^ pBI->biBitCount);
+                     dwColors =  (DWORD)pow((double)2, (int)pBI->biBitCount);
                  dwPaletteSize = (dwColors * sizeof(RGBQUAD));
             }
 

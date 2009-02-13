@@ -359,3 +359,54 @@ void ScaleVideoWindow(HWND hWnd, DWORD dwZoomIndex, LPRECT pVWRC)
 		SetWindowPos(hWnd, 0, 0, 0, SZ.cx, SZ.cy, SWP_NOMOVE | SWP_NOACTIVATE | SWP_NOZORDER);
 	}
 }
+
+//ќбход проблемы с перекрыванием главного окна окном видео (иде€ Jenya)
+BOOL AutoMoveVideoDlg(HWND hWnd)
+{
+    RECT rcVideoDlg, rcMain, rcResult;
+    int nVideoHeight, nVideoWidth;
+    if (hWnd == NULL)
+        return FALSE;
+
+    GetWindowRect(hWnd,&rcVideoDlg);
+    GetWindowRect(hMainWnd,&rcMain);
+
+	//≈сли окно видео никак не закрывает главное -- ничего не делаем
+	if (!IntersectRect(&rcResult, &rcVideoDlg, &rcMain)) return FALSE;
+    
+    nVideoHeight = rcVideoDlg.bottom - rcVideoDlg.top;
+    nVideoWidth = rcVideoDlg.right - rcVideoDlg.left;
+    
+	//ѕозиционируем главное окно
+	if (nVideoWidth >= nVideoHeight)
+	{
+		int nScreenHeight = GetSystemMetrics(SM_CYSCREEN);
+		int nMainHeight = rcMain.bottom - rcMain.top;
+		if (rcMain.top <= (nScreenHeight / 2))
+		{
+			SetWindowPos(hMainWnd, NULL, rcMain.left, rcVideoDlg.top - nMainHeight,
+				0, 0, SWP_NOSIZE | SWP_NOZORDER);
+		}
+		else
+		{
+			SetWindowPos(hMainWnd, NULL, rcMain.left, rcVideoDlg.bottom, 0, 0,
+				SWP_NOSIZE | SWP_NOZORDER);
+		}
+	}
+	else
+	{
+		int nScreenWidth = GetSystemMetrics(SM_CXSCREEN);
+		int nMainWidth = rcMain.right - rcMain.left;
+		if (rcMain.left <= (nScreenWidth / 2))
+		{
+			SetWindowPos(hMainWnd, NULL, rcMain.top, rcVideoDlg.left - nMainWidth,
+				0, 0, SWP_NOSIZE | SWP_NOZORDER);
+		}
+		else
+		{
+			SetWindowPos(hMainWnd, NULL, rcMain.top, rcVideoDlg.right, 0, 0,
+				SWP_NOSIZE | SWP_NOZORDER);
+		}
+	}
+    return TRUE;
+}

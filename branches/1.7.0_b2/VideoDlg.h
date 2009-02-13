@@ -24,5 +24,6 @@ typedef struct _VWDATA
 
 INT_PTR CALLBACK VideoDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 void ScaleVideoWindow(HWND hWnd, DWORD dwZoomIndex, LPRECT pVWRC = 0);
+BOOL AutoMoveVideoDlg(HWND hWnd);
 
 #endif
