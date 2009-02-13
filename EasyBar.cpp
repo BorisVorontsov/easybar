@@ -1,7 +1,7 @@
 /////////////////////////////////////////////////////////////////////////////
 //		Проект: EasyBar - media player
 //		Автор(ы): Борис Воронцов и участники проекта
-//		Последнее обновление: 10.02.2009
+//		Последнее обновление: 13.02.2009
 /////////////////////////////////////////////////////////////////////////////
 
 #define _WIN32_WINNT	0x0501
@@ -2652,10 +2652,11 @@ LONG InitTrack(DWORD dwFCFlag, DWORD dwFCIndex)
 		}
 		hVideoWnd = CreateDialogParam(hAppInstance, MAKEINTRESOURCE(IDD_VIDEO),
 			hMainWnd, VideoDlgProc, 0);
-		pEngine->SetVideoStyles(WS_CHILDWINDOW, 0);
+		pEngine->SetVideoStyles(WS_CHILDWINDOW | WS_CLIPSIBLINGS, 0);
 		pEngine->SetVideoOwner(hVideoWnd);
 		UpdateBorderStyle(hVideoWnd);
 		//UpdateOpacityState(hVideoWnd);
+		AutoMoveVideoDlg(hVideoWnd);
 		ShowWindow(hVideoWnd, SW_SHOW);
 	}
 	SendDlgItemMessage(hMainWnd, IDC_EBSLDSEEK, EBSM_SETRANGE, 0, (LPARAM)pEngine->GetLength());
