@@ -163,7 +163,6 @@
 #define IDC_STCAS                       1150
 #define IDC_BTNSAS                      1151
 #define IDC_CBOAS                       1152
-#define IDC_BTNEVS                      1153
 #define IDC_BTNSVS                      1153
 #define IDC_CBOVS                       1154
 #define IDM_FILE_EXIT                   40003
@@ -286,6 +285,10 @@
 #define ID_MANAGE_OPENFILE              40210
 #define ID_MANAGE_HIDE                  40211
 #define IDM_MANAGE_HIDE                 40212
+#define ID_SORT_SORTBYTITLE             40213
+#define ID_SORT_REVERSESORTBYTITLE      40214
+#define IDM_SORT_SORTBYTITLE            40215
+#define IDM_SORT_REVERSESORTBYTITLE     40216
 
 // Next default values for new objects
 // 
@@ -294,7 +297,7 @@
 #define _APS_NO_MFC                     1
 #define _APS_3D_CONTROLS                     1
 #define _APS_NEXT_RESOURCE_VALUE        166
-#define _APS_NEXT_COMMAND_VALUE         40213
+#define _APS_NEXT_COMMAND_VALUE         40217
 #define _APS_NEXT_CONTROL_VALUE         1153
 #define _APS_NEXT_SYMED_VALUE           101
 #endif

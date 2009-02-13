@@ -672,6 +672,12 @@ BOOL CEBListBox::DeleteItemTag(UINT uItemIndex)
 	return TRUE;
 }
 
+BOOL CEBListBox::Sort(BOOL bReverse)
+{
+	//
+	return TRUE;
+}
+
 HWND CEBListBox::GetCurrentListBox()
 {
 	return m_hListBox;
