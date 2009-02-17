@@ -13,5 +13,6 @@ typedef struct _PLITEMDESC
 INT_PTR CALLBACK PlaylistDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 void SetActiveItem(LPCWSTR lpwFileName);
 void UpdatePlaylistColors();
+static void DeleteItem(int intItemIndex);
 
 #endif

@@ -28,6 +28,11 @@ INT_PTR CALLBACK PlaylistDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPa
 	if (uMsg == WM_FINDMSG)
 	{
 		LPFINDREPLACE pFR = (LPFINDREPLACE)lParam;
+		LPWSTR lpwLocale;
+		LCID lcSD = GetSystemDefaultLCID();
+		UINT uLocNameSize = GetLocaleInfo(LOCALE_USER_DEFAULT, LOCALE_SENGLANGUAGE, 0, 0);
+		lpwLocale = new WCHAR[uLocNameSize];
+		GetLocaleInfo(LOCALE_USER_DEFAULT, LOCALE_SENGLANGUAGE, lpwLocale, uLocNameSize);
 		if  ((pFR->Flags & FR_FINDNEXT) == FR_FINDNEXT)
 		{
 			WCHAR lpwText[160] = { 0 };
@@ -36,7 +41,8 @@ Find_Begin:
 			for (UINT i = intOldIndex; i < (UINT)intItemsCnt; i++)
 			{
 				SendDlgItemMessage(hWnd, IDC_LSTPL, LB_GETTEXT, i, (LPARAM)lpwText);
-				if (SP_Find(lpwText, pFR->lpstrFindWhat, 0, ((pFR->Flags & FR_MATCHCASE) == FR_MATCHCASE)) != -1)
+				if (SP_Find(lpwText, pFR->lpstrFindWhat, 0, ((pFR->Flags & FR_MATCHCASE) == FR_MATCHCASE),
+					lpwLocale) != -1)
 				{
 					SendDlgItemMessage(hPlaylistWnd, IDC_LSTPL, LB_SETCURSEL, i, 0);
 					if (i < (UINT)(intItemsCnt - 1))
@@ -54,13 +60,13 @@ Find_Begin:
 					}
 				}
 			}
-
 		}
 		else if ((pFR->Flags & FR_DIALOGTERM) == FR_DIALOGTERM)
 		{
 			delete[] pFR->lpstrFindWhat;
 			hFindTextWnd = 0;
 		}
+		delete[] lpwLocale;
 		return TRUE;
 	}
 	switch (uMsg)
@@ -91,9 +97,15 @@ Find_Begin:
 				EnableMenuItem(GetMenu(hWnd), IDM_SELECTION_MOVEDOWN,
 					((intItemsCnt && (intItemsCnt != LB_ERR)) && (intCurSel != LB_ERR) && (intCurSel < (intItemsCnt - 1)))?MF_ENABLED:
 					MF_DISABLED | MF_GRAYED);
+				EnableMenuItem(GetMenu(hWnd), IDM_SELECTION_CROP,
+					((intItemsCnt && (intItemsCnt != LB_ERR)) && (intCurSel != LB_ERR))?MF_ENABLED:MF_DISABLED | MF_GRAYED);
 				EnableMenuItem(GetMenu(hWnd), IDM_SELECTION_DELETE,
 					((intItemsCnt && (intItemsCnt != LB_ERR)) && (intCurSel != LB_ERR))?MF_ENABLED:MF_DISABLED | MF_GRAYED);
 				EnableMenuItem(GetMenu(hWnd), IDM_MISC_FIND,
+					(intItemsCnt && (intItemsCnt != LB_ERR))?MF_ENABLED:MF_DISABLED | MF_GRAYED);
+				EnableMenuItem(GetMenu(hWnd), IDM_SORT_SORTBYTITLE,
+					(intItemsCnt && (intItemsCnt != LB_ERR))?MF_ENABLED:MF_DISABLED | MF_GRAYED);
+				EnableMenuItem(GetMenu(hWnd), IDM_SORT_REVERSESORTBYTITLE,
 					(intItemsCnt && (intItemsCnt != LB_ERR))?MF_ENABLED:MF_DISABLED | MF_GRAYED);
 				EnableMenuItem(GetMenu(hWnd), IDM_MISC_CLEARPLAYLIST,
 					(intItemsCnt && (intItemsCnt != LB_ERR))?MF_ENABLED:MF_DISABLED | MF_GRAYED);
@@ -226,21 +238,21 @@ Find_Begin:
 					SendDlgItemMessage(hPlaylistWnd, IDC_LSTPL, LB_SETCURSEL, intNewIndex, 0);
 					break;
 				}
+				case IDM_SELECTION_CROP:
+				{
+					UINT i;
+					int intCurSel = SendDlgItemMessage(hWnd, IDC_LSTPL, LB_GETCURSEL, 0, 0);
+					int intItemsCnt = SendDlgItemMessage(hWnd, IDC_LSTPL, LB_GETCOUNT, 0, 0);
+					for (i = (intItemsCnt - 1); i > (UINT)intCurSel; i--)
+						DeleteItem(i);
+					for (i = 0; i < (UINT)intCurSel; i++)
+						DeleteItem(0);
+					break;
+				}
 				case IDM_SELECTION_DELETE:
 				{
 					int intCurSel = SendDlgItemMessage(hWnd, IDC_LSTPL, LB_GETCURSEL, 0, 0);
-					if (pEBListBox->IsItemHighlighted(intCurSel))
-					{
-						SendMessage(hMainWnd, WM_COMMAND, MAKEWPARAM(IDM_FILE_DELETEFROMPLAYLIST, 0), 0);
-					}
-					else
-					{
-						LPPLITEMDESC pPLID = 0;
-						pFileCollection->GetUserData(0, intCurSel, FCF_BYINDEX, (LONG_PTR &)pPLID);
-						if (pPLID)
-							delete pPLID;
-						pFileCollection->DeleteFile(0, intCurSel, FCF_BYINDEX);
-					}
+					DeleteItem(intCurSel);
 					break;
 				}
 				case IDM_MISC_FIND:
@@ -258,16 +270,37 @@ Find_Begin:
 				case IDM_SORT_REVERSESORTBYTITLE:
 				{
 					BOOL bReverse = (LOWORD(wParam) == IDM_SORT_REVERSESORTBYTITLE);
-					LPWSTR *lpwFiles = new LPWSTR[pFileCollection->FileCount()];
-					//...
+					UINT i;
+					WCHAR lpwFile[MAX_PATH] = { 0 };
+					int intItemsCnt = SendDlgItemMessage(hWnd, IDC_LSTPL, LB_GETCOUNT, 0, 0);
+					for (i = 0; i < (UINT)intItemsCnt; i++)
+					{
+						pFileCollection->GetFile(lpwFile, i, FCF_BYINDEX);
+						pEBListBox->SetItemTag(i, (LPCBYTE)lpwFile, MAX_PATH);
+					}
 					pEBListBox->Sort(bReverse);
-					//...
-					delete[] lpwFiles;
+					pFileCollection->Clear(FALSE);
+					for (i = 0; i < (UINT)intItemsCnt; i++)
+					{
+						pEBListBox->GetItemTag(i, (LPBYTE)lpwFile);
+						pFileCollection->AppendFile(lpwFile, FALSE);
+						pEBListBox->DeleteItemTag(i);
+						if (pEBListBox->IsItemHighlighted(i))
+							pFileCollection->SetRecentFile(lpwFile);
+					}
 					break;
 				}
 				case IDM_MISC_CLEARPLAYLIST:
+					LPPLITEMDESC pPLID;
 					if (pEngine->m_lpwFileName)
 						SendMessage(hMainWnd, WM_COMMAND, MAKEWPARAM(IDM_FILE_CLOSE, 0), 0);
+					for (UINT i = 0; i < (UINT)pFileCollection->FileCount(); i++)
+					{
+						pPLID = 0;							
+						pFileCollection->GetUserData(0, i, FCF_BYINDEX, (LONG_PTR &)pPLID);
+						if (pPLID)
+							delete pPLID;
+					}
 					pFileCollection->Clear();
 					break;
 			}
@@ -385,4 +418,15 @@ void UpdatePlaylistColors()
 		pEBListBox->crBrColorTwo = dwBorderColor2;
 		pEBListBox->Refresh();
 	}
+}
+
+void DeleteItem(int intItemIndex)
+{
+	LPPLITEMDESC pPLID = 0;
+	if (pEBListBox->IsItemHighlighted(intItemIndex))
+		SendMessage(hMainWnd, WM_COMMAND, MAKEWPARAM(IDM_FILE_CLOSE, 0), 0);
+	pFileCollection->GetUserData(0, intItemIndex, FCF_BYINDEX, (LONG_PTR &)pPLID);
+	if (pPLID)
+		delete pPLID;
+	pFileCollection->DeleteFile(0, intItemIndex, FCF_BYINDEX);
 }

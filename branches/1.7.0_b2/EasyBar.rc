@@ -817,7 +817,8 @@ BEGIN
         MENUITEM "&Move Up\tShift+Up",          IDM_SELECTION_MOVEUP
         MENUITEM "M&ove Down\tShift+Down",      IDM_SELECTION_MOVEDOWN
         MENUITEM SEPARATOR
-        MENUITEM "&Delete",                     IDM_SELECTION_DELETE
+        MENUITEM "&Crop",                       IDM_SELECTION_CROP
+        MENUITEM "&Delete\tCtrl+Delete",        IDM_SELECTION_DELETE
     END
     POPUP "&Misc"
     BEGIN
@@ -910,6 +911,7 @@ BEGIN
     "F",            IDM_MISC_FIND,          VIRTKEY, CONTROL, NOINVERT
     VK_DOWN,        IDM_SELECTION_MOVEDOWN, VIRTKEY, SHIFT, NOINVERT
     VK_UP,          IDM_SELECTION_MOVEUP,   VIRTKEY, SHIFT, NOINVERT
+    VK_DELETE,      IDM_SELECTION_DELETE,   VIRTKEY, CONTROL, NOINVERT
 END
 
 

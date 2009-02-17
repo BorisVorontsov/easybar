@@ -40,23 +40,23 @@ public:
 	CFileCollection();
 	~CFileCollection();
 	int FileCount();
-	int AppendFile(LPWSTR lpwFileName);
+	int AppendFile(LPWSTR lpwFileName, BOOL bSendNfn = TRUE);
 	int GetFile(LPWSTR lpwFileName, DWORD dwIndex, DWORD dwFlag);
 	int GetFileIndex(LPCWSTR lpwFileName, DWORD dwFlag);
 	int NextFile(LPWSTR lpwFileName, DWORD dwIndex, DWORD dwFlag);
 	int MoveFile(LPCWSTR lpwFileName, DWORD dwIndex, DWORD dwNewIndex, DWORD dwFlag);
-	int DeleteFile(LPCWSTR lpwFileName, DWORD dwIndex, DWORD dwFlag);
-	void Clear();
+	int DeleteFile(LPCWSTR lpwFileName, DWORD dwIndex, DWORD dwFlag, BOOL bSendNfn = TRUE);
+	void Clear(BOOL bSendNfn = TRUE);
 	int IsFileAvailable(DWORD dwFlag);
-	int SetRecentFile(LPCWSTR lpwFileName);
-	int SetUserData(LPCWSTR lpwFileName, DWORD dwIndex, DWORD dwFlag, LONG_PTR intUD);
+	int SetRecentFile(LPCWSTR lpwFileName, BOOL bSendNfn = TRUE);
+	int SetUserData(LPCWSTR lpwFileName, DWORD dwIndex, DWORD dwFlag, LONG_PTR intUD, BOOL bSendNfn = TRUE);
 	int GetUserData(LPCWSTR lpwFileName, DWORD dwIndex, DWORD dwFlag, LONG_PTR& intUD);
 	void SetCallbackWnd(HWND hWnd);
 	HWND GetCallbackWnd();
 protected:
 	//
 private:
-	void SetCurrentFile(LPCWSTR lpwPath);
+	void SetCurrentFile(LPCWSTR lpwPath, BOOL bSendNfn = TRUE);
 	LPFCSTRUCT m_pFileCollection[FC_MAX_FILES];
 	LPWSTR m_lpwCurrentFile;
 	HWND m_hCBWnd;
