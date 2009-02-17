@@ -101,6 +101,7 @@ BOOL CEBListBox::InitEBListBox(HWND hListBox)
 			for (UINT i = 0; i < (UINT)intItemsCnt; i++)
 			{
 				pLBID = new LBITEMDESC;
+				ZeroMemory(pLBID, sizeof(LBITEMDESC));
 				SendMessage(hListBox, LB_SETITEMDATA, i, (LPARAM)pLBID);
 			}
 		}
@@ -119,7 +120,7 @@ BOOL CEBListBox::InitEBListBox(HWND hListBox)
 			for (UINT i = 0; i < (UINT)intItemsCnt; i++)
 			{
 				pLBID = (LPLBITEMDESC)SendMessage(m_hListBox, LB_GETITEMDATA, i, 0);
-				if ((int)pLBID != LB_ERR)
+				if ((int)pLBID != LB_ERR && pLBID)
 					delete pLBID;
 			}
 		}
@@ -376,8 +377,23 @@ LRESULT CALLBACK CEBListBox::ListBoxProc(HWND hWnd, UINT uMsg, WPARAM wParam, LP
 		{
 			LPLBITEMDESC pLBID = (LPLBITEMDESC)SendMessage(hWnd, LB_GETITEMDATA,
 				wParam, 0);
-			if ((int)pLBID != LB_ERR)
+			if ((int)pLBID != LB_ERR && pLBID)
 				delete pLBID;
+			break;
+		}
+		case LB_RESETCONTENT:
+		{
+			int intItemsCnt = SendMessage(hWnd, LB_GETCOUNT, 0, 0);
+			if ((intItemsCnt != LB_ERR) && intItemsCnt)
+			{
+				LPLBITEMDESC pLBID;
+				for (UINT i = 0; i < (UINT)intItemsCnt; i++)
+				{
+					pLBID = (LPLBITEMDESC)SendMessage(hWnd, LB_GETITEMDATA, i, 0);
+					if ((int)pLBID != LB_ERR && pLBID)
+						delete pLBID;
+				}
+			}
 			break;
 		}
 		default:
@@ -436,6 +452,7 @@ DWORD CEBListBox::DrawItem(WPARAM wParam, LPARAM lParam)
 	if (((int)pLBID == LB_ERR) || !pLBID)
 	{
 		pLBID = new LBITEMDESC;
+		ZeroMemory(pLBID, sizeof(LBITEMDESC));
 		SendMessage(pDIS->hwndItem, LB_SETITEMDATA, pDIS->itemID, (LPARAM)pLBID);
 	}
 
@@ -584,6 +601,7 @@ BOOL CEBListBox::HighlightItem(UINT uItemIndex)
 		if (((int)pLBID == LB_ERR) || !pLBID)
 		{
 			pLBID = new LBITEMDESC;
+			ZeroMemory(pLBID, sizeof(LBITEMDESC));
 			SendMessage(m_hListBox, LB_SETITEMDATA, i, (LPARAM)pLBID);
 		}
 		if (i == uItemIndex)
@@ -635,6 +653,7 @@ BOOL CEBListBox::SetItemTag(UINT uItemIndex, LPCBYTE pTag, SIZE_T szTagSize)
 	if (((int)pLBID == LB_ERR) || !pLBID)
 	{
 		pLBID = new LBITEMDESC;
+		ZeroMemory(pLBID, sizeof(LBITEMDESC));
 		SendMessage(m_hListBox, LB_SETITEMDATA, uItemIndex, (LPARAM)pLBID);
 	}
 	if (pLBID->pTag != NULL) delete[] pLBID->pTag;
@@ -674,8 +693,78 @@ BOOL CEBListBox::DeleteItemTag(UINT uItemIndex)
 
 BOOL CEBListBox::Sort(BOOL bReverse)
 {
-	//
+	int intItemsCnt = SendMessage(m_hListBox, LB_GETCOUNT, 0, 0);
+	if ((intItemsCnt == LB_ERR) || !intItemsCnt) return FALSE;
+	UINT i, j, uTextSize;
+	LPWSTR *lpwItems = new LPWSTR[intItemsCnt];
+
+	struct ItemData
+	{
+		LPLBITEMDESC pLBID;
+		LPWSTR lpwItem;
+	};
+	ItemData **pIDArr = new ItemData*[intItemsCnt];
+
+	LPLBITEMDESC pLBID;
+	for (i = 0; i < (UINT)intItemsCnt; i++)
+	{
+		uTextSize = SendMessage(m_hListBox, LB_GETTEXTLEN, i, 0);
+		lpwItems[i] = new WCHAR[uTextSize + 1];
+		ZeroMemory(lpwItems[i], (uTextSize + 1) * sizeof(WCHAR));
+		SendMessage(m_hListBox, LB_GETTEXT, i, (LPARAM)lpwItems[i]);
+		pIDArr[i] = new ItemData;
+		pIDArr[i]->pLBID = NULL;
+		pIDArr[i]->lpwItem = lpwItems[i];
+		pLBID = (LPLBITEMDESC)SendMessage(m_hListBox, LB_GETITEMDATA, i, 0);
+		if (((int)pLBID != LB_ERR) && pLBID)
+		{
+			pIDArr[i]->pLBID = new LBITEMDESC;
+			ZeroMemory(pIDArr[i]->pLBID, sizeof(LBITEMDESC));
+			pIDArr[i]->pLBID->dwStyle = pLBID->dwStyle;
+			if (pLBID->pTag)
+			{
+				pIDArr[i]->pLBID->pTag = new BYTE[pLBID->szTagSize];
+				CopyMemory(pIDArr[i]->pLBID->pTag, pLBID->pTag, pLBID->szTagSize);
+				pIDArr[i]->pLBID->szTagSize = pLBID->szTagSize;
+			}
+		}
+		else pIDArr[i]->pLBID = NULL;
+	}
+
+	SendMessage(m_hListBox, LB_RESETCONTENT, 0, 0);
+	qsort(lpwItems, intItemsCnt, sizeof(LPWSTR), (bReverse)?CompareReverse:Compare);
+	
+	for (i = 0; i < (UINT)intItemsCnt; i++)
+	{
+		SendMessage(m_hListBox, LB_ADDSTRING, 0, (LPARAM)lpwItems[i]);
+		for (j = 0; j < (UINT)intItemsCnt; j++)
+		{
+			if (!pIDArr[j] || !pIDArr[j]->pLBID) continue;
+			if (lpwItems[i] == pIDArr[j]->lpwItem)
+			{
+				SendMessage(m_hListBox, LB_SETITEMDATA, i, (LPARAM)pIDArr[j]->pLBID);
+				delete pIDArr[j];
+				pIDArr[j] = NULL;
+				break;
+			}
+		}
+		delete[] lpwItems[i];
+	}
+	delete[] lpwItems;
+	delete[] pIDArr;
+
+	Refresh();
 	return TRUE;
+}
+
+int CEBListBox::Compare(LPCVOID pArg1, LPCVOID pArg2)
+{
+	return _wcsicmp(*((LPCWSTR*)pArg1), *((LPCWSTR*)pArg2));
+}
+
+int CEBListBox::CompareReverse(LPCVOID pArg1, LPCVOID pArg2)
+{
+	return -(_wcsicmp(*((LPCWSTR*)pArg1), *((LPCWSTR*)pArg2)));
 }
 
 HWND CEBListBox::GetCurrentListBox()

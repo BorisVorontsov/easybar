@@ -1,7 +1,7 @@
 /////////////////////////////////////////////////////////////////////////////
 //		Проект: EasyBar - media player
 //		Автор(ы): Борис Воронцов и участники проекта
-//		Последнее обновление: 13.02.2009
+//		Последнее обновление: 17.02.2009
 /////////////////////////////////////////////////////////////////////////////
 
 #define _WIN32_WINNT	0x0501
@@ -1370,13 +1370,28 @@ INT_PTR CALLBACK PlayerDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 				case IDM_PLAYBACK_SAVECURRENTFRAME:
 				{
 					WCHAR lpwSDFile[MAX_PATH] = { 0 };
+					WCHAR lpwName[128] = { 0 };
 					WCHAR lpwExt[64] = { 0 };
 					DWORD dwFilterIndex = 1;
+					int intPos;
 					ENGINESTATE eState = pEngine->GetState();
 					if (eState != E_STATE_PAUSED)
 					{
 						PI.psSource = PS_OTHER;
 						pEngine->Pause();
+					}
+					SP_ExtractName(pEngine->m_lpwFileName, lpwName);
+					SP_ExtractLeftPart(lpwName, lpwName, '.');
+					intPos = (int)pEngine->GetPosition();
+					if (((intPos / 1000) / 3600))
+					{
+						swprintf(lpwSDFile, L"%s_%02i%02i%02i.bmp", lpwName, (intPos / 1000) / 3600,
+							((intPos / 1000) / 60) % 60, ((intPos / 1000) % 60));
+					}
+					else
+					{
+						swprintf(lpwSDFile, L"%s_%02i%02i.bmp", lpwName, ((intPos / 1000) / 60) % 60,
+							((intPos / 1000) % 60));
 					}
 					if (GetSaveDialog(hAppInstance, hWnd, L"Save Frame As", lpwSDFile,
 						MAX_PATH - 1, L"Windows Bitmap\0*.bmp;\0", &dwFilterIndex, 0, lpwRecentDir))
@@ -2207,7 +2222,7 @@ Seek_SetPosition:
 					case II_TIME:
 						if (bCtlsFlag1 && bCtlsFlag2)
 						{
-							if (((intPos / 1000) / 3600))
+							if (((intLen / 1000) / 3600))
 							{
 								swprintf(CI.lpwBuffer, L"Position: %02i:%02i:%02i, Length: %02i:%02i:%02i, Rate: %.1f",
 									(intPos / 1000) / 3600, ((intPos / 1000) / 60) % 60, ((intPos / 1000) % 60),

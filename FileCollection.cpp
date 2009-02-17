@@ -41,7 +41,7 @@ int CFileCollection::FileCount()
 
 //Функция добавляет файл к коллекции
 //В случае успеха функция возвращает значение больше нуля, в случае ошибки - нуль
-int CFileCollection::AppendFile(LPWSTR lpwFileName)
+int CFileCollection::AppendFile(LPWSTR lpwFileName, BOOL bSendNfn)
 {
 	ULONG i = 0;
 	for (; i < FC_MAX_FILES; i++)
@@ -53,7 +53,7 @@ int CFileCollection::AppendFile(LPWSTR lpwFileName)
 			wcscpy(m_pFileCollection[i]->lpwPath, lpwFileName);
 			m_pFileCollection[i]->dwRndIndex = 0;
 			m_pFileCollection[i]->lpUserData = NULL;
-			if (m_hCBWnd)
+			if (m_hCBWnd && bSendNfn)
 				SendMessage(m_hCBWnd, WM_FCNOTIFICATION, MAKEWPARAM(0, FCN_FILEADDED), (LPARAM)lpwFileName);
 			SetCurrentFile(lpwFileName);
 			break;
@@ -306,7 +306,7 @@ MoveFile_Begin:
 //Функция удаляет из коллекции указанный или по индексу файл
 //Пожалуй, это самая сложная функция класса...
 //В случае успеха функция возвращает значение больше нуля, в случае ошибки - нуль
-int CFileCollection::DeleteFile(LPCWSTR lpwFileName, DWORD dwIndex, DWORD dwFlag)
+int CFileCollection::DeleteFile(LPCWSTR lpwFileName, DWORD dwIndex, DWORD dwFlag, BOOL bSendNfn)
 {
 	ULONG i, j;
 	LPFCSTRUCT pFCST;
@@ -346,7 +346,7 @@ int CFileCollection::DeleteFile(LPCWSTR lpwFileName, DWORD dwIndex, DWORD dwFlag
 			}
 			else return 0;
 		}
-		if (m_hCBWnd)
+		if (m_hCBWnd && bSendNfn)
 			SendMessage(m_hCBWnd, WM_FCNOTIFICATION, MAKEWPARAM(0, FCN_FILEDELETED), dwIndex);
 		if (_wcsicmp(lpwFile, m_lpwCurrentFile) == 0)
 		{
@@ -395,7 +395,7 @@ int CFileCollection::DeleteFile(LPCWSTR lpwFileName, DWORD dwIndex, DWORD dwFlag
 							delete pFCST;
 						}
 					}
-					if (m_hCBWnd)
+					if (m_hCBWnd && bSendNfn)
 						SendMessage(m_hCBWnd, WM_FCNOTIFICATION, MAKEWPARAM(0, FCN_FILEDELETED), i);
 					if (_wcsicmp(lpwFileName, m_lpwCurrentFile) == 0)
 					{
@@ -442,7 +442,7 @@ int CFileCollection::DeleteFile(LPCWSTR lpwFileName, DWORD dwIndex, DWORD dwFlag
 							delete pFCST;
 						}
 					}
-					if (m_hCBWnd)
+					if (m_hCBWnd && bSendNfn)
 						SendMessage(m_hCBWnd, WM_FCNOTIFICATION, MAKEWPARAM(0, FCN_FILEDELETED), i);
 					if (i > 0)
 					{
@@ -464,7 +464,7 @@ int CFileCollection::DeleteFile(LPCWSTR lpwFileName, DWORD dwIndex, DWORD dwFlag
 }
 
 //Функция очищает коллекцию
-void CFileCollection::Clear()
+void CFileCollection::Clear(BOOL bSendNfn)
 {
 	ULONG i = 0;
 	for (; i < FC_MAX_FILES; i++)
@@ -476,7 +476,7 @@ void CFileCollection::Clear()
 			m_pFileCollection[i] = NULL;
 		}
 	}
-	if (m_hCBWnd)
+	if (m_hCBWnd && bSendNfn)
 		SendMessage(m_hCBWnd, WM_FCNOTIFICATION, MAKEWPARAM(0, FCN_COLCLEARED), 0);
 	SetCurrentFile(NULL);
 }
@@ -515,16 +515,16 @@ int CFileCollection::IsFileAvailable(DWORD dwFlag)
 
 //Функция задает последний файл
 //В случае успеха функция возвращает значение больше нуля, в случае ошибки - нуль
-int CFileCollection::SetRecentFile(LPCWSTR lpwFileName)
+int CFileCollection::SetRecentFile(LPCWSTR lpwFileName, BOOL bSendNfn)
 {
 	if (_wcsicmp(m_lpwCurrentFile, lpwFileName) == 0) return 0;
-	SetCurrentFile(lpwFileName);
+	SetCurrentFile(lpwFileName, bSendNfn);
 	return 1;
 }
 
 //Функция сопоставляет пользовательские данные файлу (по индексу или по имени) в коллекции
 //В случае успеха функция возвращает значение больше нуля, в случае ошибки - нуль
-int CFileCollection::SetUserData(LPCWSTR lpwFileName, DWORD dwIndex, DWORD dwFlag, LONG_PTR lpUD)
+int CFileCollection::SetUserData(LPCWSTR lpwFileName, DWORD dwIndex, DWORD dwFlag, LONG_PTR lpUD, BOOL bSendNfn)
 {
 	ULONG i;
 	if (m_pFileCollection[0] == NULL) return 0;
@@ -534,7 +534,7 @@ int CFileCollection::SetUserData(LPCWSTR lpwFileName, DWORD dwIndex, DWORD dwFla
 		if (m_pFileCollection[dwIndex])
 		{
 			m_pFileCollection[dwIndex]->lpUserData = lpUD;
-			if (m_hCBWnd)
+			if (m_hCBWnd && bSendNfn)
 				SendMessage(m_hCBWnd, WM_FCNOTIFICATION, MAKEWPARAM(0, FCN_FILEUDCHANGED), dwIndex);
 	
 		} else return 0;
@@ -551,7 +551,7 @@ int CFileCollection::SetUserData(LPCWSTR lpwFileName, DWORD dwIndex, DWORD dwFla
 				{
 					
 					m_pFileCollection[i]->lpUserData = lpUD;
-					if (m_hCBWnd)
+					if (m_hCBWnd && bSendNfn)
 						SendMessage(m_hCBWnd, WM_FCNOTIFICATION, MAKEWPARAM(0, FCN_FILEUDCHANGED), i);
 					return 1;
 				}
@@ -562,7 +562,7 @@ int CFileCollection::SetUserData(LPCWSTR lpwFileName, DWORD dwIndex, DWORD dwFla
 				if (_wcsicmp(m_pFileCollection[i]->lpwPath, m_lpwCurrentFile) == 0)
 				{
 					m_pFileCollection[i]->lpUserData = lpUD;
-					if (m_hCBWnd)
+					if (m_hCBWnd && bSendNfn)
 						SendMessage(m_hCBWnd, WM_FCNOTIFICATION, MAKEWPARAM(0, FCN_FILEUDCHANGED), i);
 					return 1;
 				}
@@ -632,7 +632,7 @@ HWND CFileCollection::GetCallbackWnd()
 }
 
 //Приватная функция для инициализации текущего файла
-void CFileCollection::SetCurrentFile(LPCWSTR lpwPath)
+void CFileCollection::SetCurrentFile(LPCWSTR lpwPath, BOOL bSendNfn)
 {
 	if (m_lpwCurrentFile)
 		delete[] m_lpwCurrentFile;
@@ -642,6 +642,6 @@ void CFileCollection::SetCurrentFile(LPCWSTR lpwPath)
 		wcscpy(m_lpwCurrentFile, lpwPath);
 	}
 	else m_lpwCurrentFile = NULL;
-	if (m_hCBWnd)
+	if (m_hCBWnd && bSendNfn)
 		SendMessage(m_hCBWnd, WM_FCNOTIFICATION, MAKEWPARAM(0, FCN_CURFILECHANGED), (LPARAM)lpwPath);
 }

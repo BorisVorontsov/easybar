@@ -46,8 +46,16 @@ INT_PTR CALLBACK PPGeneralDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lP
 			SendDlgItemMessage(hWnd, IDC_EDTMT, WM_SETTEXT, 0, 
 				(pEngine->IsVideo())?(LPARAM)L"Video":(LPARAM)L"Audio");
 			intLen = (int)pEngine->GetLength();
-			swprintf(lpwOut, L"%02i:%02i:%02i", (intLen / 1000) / 3600,
-				((intLen / 1000) / 60) % 60, ((intLen / 1000) % 60));
+			if (((intLen / 1000) / 3600))
+			{
+				swprintf(lpwOut, L"%02i:%02i:%02i", (intLen / 1000) / 3600,
+					((intLen / 1000) / 60) % 60, ((intLen / 1000) % 60));
+			}
+			else
+			{
+				swprintf(lpwOut, L"%02i:%02i", ((intLen / 1000) / 60) % 60,
+					((intLen / 1000) % 60));
+			}
 			SendDlgItemMessage(hWnd, IDC_EDTML, WM_SETTEXT, 0, (LPARAM)lpwOut);
 			if (pEngine->IsVideo())
 			{

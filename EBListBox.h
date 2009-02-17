@@ -84,6 +84,8 @@ public:
 protected:
 	//
 private:
+	static int Compare(LPCVOID pArg1, LPCVOID pArg2);
+	static int CompareReverse(LPCVOID pArg1, LPCVOID pArg2);
 	static LRESULT CALLBACK ListBoxProc(HWND hWnd, UINT uMsg, WPARAM wParam,
 		                                LPARAM lParam);
 	BOOL DrawMark(HDC hDC, LONG lX, LONG lY, BOOL bDisabled, BOOL bSelected);

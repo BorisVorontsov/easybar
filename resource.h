@@ -289,6 +289,9 @@
 #define ID_SORT_REVERSESORTBYTITLE      40214
 #define IDM_SORT_SORTBYTITLE            40215
 #define IDM_SORT_REVERSESORTBYTITLE     40216
+#define ID_SELECTION_CROP               40217
+#define ID_Menu                         40218
+#define IDM_SELECTION_CROP              40219
 
 // Next default values for new objects
 // 
@@ -297,7 +300,7 @@
 #define _APS_NO_MFC                     1
 #define _APS_3D_CONTROLS                     1
 #define _APS_NEXT_RESOURCE_VALUE        166
-#define _APS_NEXT_COMMAND_VALUE         40217
+#define _APS_NEXT_COMMAND_VALUE         40222
 #define _APS_NEXT_CONTROL_VALUE         1153
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
