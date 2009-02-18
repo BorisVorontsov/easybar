@@ -101,7 +101,7 @@ INT_PTR CALLBACK VideoDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam
 			}
 			else
 			{
-				MessageBeep(0);
+				MessageBeep(-1);
 			}
 			return TRUE;
 		}

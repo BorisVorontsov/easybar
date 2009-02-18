@@ -1196,7 +1196,7 @@ INT_PTR CALLBACK PlayerDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 						{
 							if (PI.psSource != PS_OTHER)
 							{
-								MessageBeep(0);
+								MessageBeep(-1);
 								break;
 							}
 						}

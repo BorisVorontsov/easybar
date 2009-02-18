@@ -58,7 +58,7 @@ Find_Begin:
 						intOldIndex = 0;
 						goto Find_Begin;
 					}
-					else MessageBeep(0);
+					else MessageBeep(-1);
 				}
 			}
 		}
@@ -428,7 +428,7 @@ void UpdatePlaylistColors()
 void DeleteItem(int intItemIndex)
 {
 	LPPLITEMDESC pPLID = 0;
-	if (pEBListBox->IsItemHighlighted(intItemIndex))
+	if (pEBListBox->IsItemHighlighted(intItemIndex) && pEngine->m_lpwFileName)
 		SendMessage(hMainWnd, WM_COMMAND, MAKEWPARAM(IDM_FILE_CLOSE, 0), 0);
 	pFileCollection->GetUserData(0, intItemIndex, FCF_BYINDEX, (LONG_PTR &)pPLID);
 	if (pPLID)
