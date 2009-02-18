@@ -337,6 +337,10 @@ void SetActiveItem(LPCWSTR lpwFileName)
 	WCHAR lpwTime[32] = { 0 };
 	LPPLITEMDESC pPLID = 0;
 	int intIndex = pFileCollection->GetFileIndex(lpwFileName, FCF_BYFILENAME);
+	LPBYTE pData = new BYTE[MAX_PATH * sizeof(WCHAR)];
+	ZeroMemory(pData, MAX_PATH * sizeof(WCHAR));
+	if (pEBListBox->GetItemTag(intIndex, pData))
+		pData = pData;
 	SendDlgItemMessage(hPlaylistWnd, IDC_LSTPL, LB_DELETESTRING, intIndex, 0);
 	pFileCollection->GetUserData(0, intIndex, FCF_BYINDEX, (LONG_PTR &)pPLID);
 	wcscpy(lpwText, pPLID->lpwTitle);

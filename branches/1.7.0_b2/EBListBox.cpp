@@ -121,7 +121,10 @@ BOOL CEBListBox::InitEBListBox(HWND hListBox)
 			{
 				pLBID = (LPLBITEMDESC)SendMessage(m_hListBox, LB_GETITEMDATA, i, 0);
 				if ((int)pLBID != LB_ERR && pLBID)
+				{
 					delete pLBID;
+					SendMessage(m_hListBox, LB_SETITEMDATA, i, 0/*NULL*/);
+				}
 			}
 		}
 		SetWindowLongPtr(m_hListBox, GWL_WNDPROC, m_lOldLBProc);
@@ -378,7 +381,10 @@ LRESULT CALLBACK CEBListBox::ListBoxProc(HWND hWnd, UINT uMsg, WPARAM wParam, LP
 			LPLBITEMDESC pLBID = (LPLBITEMDESC)SendMessage(hWnd, LB_GETITEMDATA,
 				wParam, 0);
 			if ((int)pLBID != LB_ERR && pLBID)
+			{
 				delete pLBID;
+				SendMessage(hWnd, LB_SETITEMDATA, wParam, 0/*NULL*/);
+			}
 			break;
 		}
 		case LB_RESETCONTENT:
@@ -391,7 +397,10 @@ LRESULT CALLBACK CEBListBox::ListBoxProc(HWND hWnd, UINT uMsg, WPARAM wParam, LP
 				{
 					pLBID = (LPLBITEMDESC)SendMessage(hWnd, LB_GETITEMDATA, i, 0);
 					if ((int)pLBID != LB_ERR && pLBID)
+					{
 						delete pLBID;
+						SendMessage(hWnd, LB_SETITEMDATA, i, 0/*NULL*/);
+					}
 				}
 			}
 			break;
@@ -890,29 +899,29 @@ BOOL CEBListBox::DrawLBString(HDC hDC, LPCTSTR lpString, RECT RCT,
 			if (bDisabled)
 			{
 				SetTextColor(hDC, GetSysColor(COLOR_GRAYTEXT));
-				DrawText(hDC, lpCol1, -1, &RCC1, DT_VCENTER | DT_LEFT | DT_SINGLELINE | DT_END_ELLIPSIS);
+				DrawText(hDC, lpCol1, -1, &RCC1, DT_VCENTER | DT_LEFT | DT_SINGLELINE | DT_NOPREFIX | DT_END_ELLIPSIS);
 				if (szCol2Size)
 				{
-					DrawText(hDC, lpCol2, -1, &RCC2, DT_VCENTER | DT_RIGHT | DT_SINGLELINE | DT_END_ELLIPSIS);
+					DrawText(hDC, lpCol2, -1, &RCC2, DT_VCENTER | DT_RIGHT | DT_SINGLELINE | DT_NOPREFIX | DT_END_ELLIPSIS);
 				}
 			}
 			else
 			{
 				SetTextColor(hDC, crFontColorTwo);
 				OffsetRect(&RCC1, 1, 1);
-				DrawText(hDC, lpCol1, -1, &RCC1, DT_VCENTER | DT_LEFT | DT_SINGLELINE | DT_END_ELLIPSIS);
+				DrawText(hDC, lpCol1, -1, &RCC1, DT_VCENTER | DT_LEFT | DT_SINGLELINE | DT_NOPREFIX | DT_END_ELLIPSIS);
 				if (szCol2Size)
 				{
 					OffsetRect(&RCC2, 1, 1);
-					DrawText(hDC, lpCol2, -1, &RCC2, DT_VCENTER | DT_RIGHT | DT_SINGLELINE | DT_END_ELLIPSIS);
+					DrawText(hDC, lpCol2, -1, &RCC2, DT_VCENTER | DT_RIGHT | DT_SINGLELINE | DT_NOPREFIX | DT_END_ELLIPSIS);
 				}
 				SetTextColor(hDC, crFontColorOne);
 				OffsetRect(&RCC1, -1, -1);
-				DrawText(hDC, lpCol1, -1, &RCC1, DT_VCENTER | DT_LEFT | DT_SINGLELINE | DT_END_ELLIPSIS);
+				DrawText(hDC, lpCol1, -1, &RCC1, DT_VCENTER | DT_LEFT | DT_SINGLELINE | DT_NOPREFIX | DT_END_ELLIPSIS);
 				if (szCol2Size)
 				{
 					OffsetRect(&RCC2, -1, -1);
-					DrawText(hDC, lpCol2, -1, &RCC2, DT_VCENTER | DT_RIGHT | DT_SINGLELINE | DT_END_ELLIPSIS);
+					DrawText(hDC, lpCol2, -1, &RCC2, DT_VCENTER | DT_RIGHT | DT_SINGLELINE | DT_NOPREFIX | DT_END_ELLIPSIS);
 				}
 			}
 		}
@@ -930,10 +939,10 @@ BOOL CEBListBox::DrawLBString(HDC hDC, LPCTSTR lpString, RECT RCT,
 			{
 				SetTextColor(hDC, crFontColorThree);
 			}
-			DrawText(hDC, lpCol1, -1, &RCC1, DT_VCENTER | DT_LEFT | DT_SINGLELINE | DT_END_ELLIPSIS);
+			DrawText(hDC, lpCol1, -1, &RCC1, DT_VCENTER | DT_LEFT | DT_SINGLELINE | DT_NOPREFIX | DT_END_ELLIPSIS);
 			if (szCol2Size)
 			{
-				DrawText(hDC, lpCol2, -1, &RCC2, DT_VCENTER | DT_RIGHT | DT_SINGLELINE | DT_END_ELLIPSIS);
+				DrawText(hDC, lpCol2, -1, &RCC2, DT_VCENTER | DT_RIGHT | DT_SINGLELINE | DT_NOPREFIX | DT_END_ELLIPSIS);
 			}
 		}
 		SelectObject(hDC, hOldFont);
