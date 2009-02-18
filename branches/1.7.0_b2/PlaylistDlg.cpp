@@ -58,6 +58,7 @@ Find_Begin:
 						intOldIndex = 0;
 						goto Find_Begin;
 					}
+					else MessageBeep(0);
 				}
 			}
 		}
@@ -92,23 +93,23 @@ Find_Begin:
 				int intItemsCnt = SendDlgItemMessage(hWnd, IDC_LSTPL, LB_GETCOUNT, 0, 0);
 				int intCurSel = SendDlgItemMessage(hWnd, IDC_LSTPL, LB_GETCURSEL, 0, 0);
 				EnableMenuItem(GetMenu(hWnd), IDM_SELECTION_MOVEUP,
-					((intItemsCnt && (intItemsCnt != LB_ERR)) && (intCurSel != LB_ERR) && (intCurSel > 0))?MF_ENABLED:MF_DISABLED
+					(((intItemsCnt != LB_ERR) && intItemsCnt) && ((intCurSel != LB_ERR) && (intCurSel > 0)))?MF_ENABLED:MF_DISABLED
 					| MF_GRAYED);
 				EnableMenuItem(GetMenu(hWnd), IDM_SELECTION_MOVEDOWN,
-					((intItemsCnt && (intItemsCnt != LB_ERR)) && (intCurSel != LB_ERR) && (intCurSel < (intItemsCnt - 1)))?MF_ENABLED:
+					(((intItemsCnt != LB_ERR) && intItemsCnt) && ((intCurSel != LB_ERR) && (intCurSel < (intItemsCnt - 1))))?MF_ENABLED:
 					MF_DISABLED | MF_GRAYED);
 				EnableMenuItem(GetMenu(hWnd), IDM_SELECTION_CROP,
-					((intItemsCnt && (intItemsCnt != LB_ERR)) && (intCurSel != LB_ERR))?MF_ENABLED:MF_DISABLED | MF_GRAYED);
+					(((intItemsCnt != LB_ERR) && (intItemsCnt > 1)) && (intCurSel != LB_ERR))?MF_ENABLED:MF_DISABLED | MF_GRAYED);
 				EnableMenuItem(GetMenu(hWnd), IDM_SELECTION_DELETE,
-					((intItemsCnt && (intItemsCnt != LB_ERR)) && (intCurSel != LB_ERR))?MF_ENABLED:MF_DISABLED | MF_GRAYED);
+					(((intItemsCnt != LB_ERR) && intItemsCnt) && (intCurSel != LB_ERR))?MF_ENABLED:MF_DISABLED | MF_GRAYED);
 				EnableMenuItem(GetMenu(hWnd), IDM_MISC_FIND,
-					(intItemsCnt && (intItemsCnt != LB_ERR))?MF_ENABLED:MF_DISABLED | MF_GRAYED);
+					((intItemsCnt != LB_ERR) && intItemsCnt)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
 				EnableMenuItem(GetMenu(hWnd), IDM_SORT_SORTBYTITLE,
-					(intItemsCnt && (intItemsCnt != LB_ERR))?MF_ENABLED:MF_DISABLED | MF_GRAYED);
+					((intItemsCnt != LB_ERR) && (intItemsCnt > 1))?MF_ENABLED:MF_DISABLED | MF_GRAYED);
 				EnableMenuItem(GetMenu(hWnd), IDM_SORT_REVERSESORTBYTITLE,
-					(intItemsCnt && (intItemsCnt != LB_ERR))?MF_ENABLED:MF_DISABLED | MF_GRAYED);
+					((intItemsCnt != LB_ERR) && (intItemsCnt > 1))?MF_ENABLED:MF_DISABLED | MF_GRAYED);
 				EnableMenuItem(GetMenu(hWnd), IDM_MISC_CLEARPLAYLIST,
-					(intItemsCnt && (intItemsCnt != LB_ERR))?MF_ENABLED:MF_DISABLED | MF_GRAYED);
+					((intItemsCnt != LB_ERR) && intItemsCnt)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
 			}
 			return TRUE;
 		case WM_MEASUREITEM:
@@ -217,7 +218,7 @@ Find_Begin:
 				case IDM_FILE_ADDFILES:
 				case IDM_AD_ADDDIRECTORY:
 				case IDM_AD_ADDDIRECTORY_II:
-				case IDM_VIEW_PLAYLIST:
+				case IDM_FILE_ADDURL:
 					PostMessage(hMainWnd, uMsg, wParam, lParam);
 					break;
 				case IDM_SELECTION_MOVEUP:
