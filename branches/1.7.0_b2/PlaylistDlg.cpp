@@ -286,9 +286,9 @@ Find_Begin:
 						pEBListBox->GetItemTag(i, (LPBYTE)lpwFile);
 						pFileCollection->AppendFile(lpwFile, FALSE);
 						pEBListBox->DeleteItemTag(i);
-						if (pEBListBox->IsItemHighlighted(i))
-							pFileCollection->SetRecentFile(lpwFile);
 					}
+					pEBListBox->GetItemTag(pEBListBox->GetHighlightedItemIndex(), (LPBYTE)lpwFile);
+					pFileCollection->SetRecentFile(lpwFile);
 					break;
 				}
 				case IDM_MISC_CLEARPLAYLIST:
