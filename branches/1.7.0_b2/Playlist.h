@@ -21,6 +21,7 @@ DWORD LoadPlaylist(LPCWSTR lpwFileName);
 void SavePlaylist(LPCWSTR lpwFileName);
 
 static DWORD LoadPlaylist_Common(LPCWSTR lpwFileName);
+static DWORD LoadPlaylist_M3U(LPCWSTR lpwFileName);
 static DWORD LoadPlaylist_EBL(LPCWSTR lpwFileName);
 static DWORD LoadPlaylist_WPL(LPCWSTR lpwFileName);
 static DWORD LoadPlaylist_ASX(LPCWSTR lpwFileName);
@@ -29,9 +30,9 @@ static DWORD LoadPlaylist_PLS(LPCWSTR lpwFileName);
 static DWORD LoadPlaylist_MPCPL(LPCWSTR lpwFileName);
 static void SavePlaylist_EBL(LPCWSTR lpwFileName);
 static void SavePlaylist_M3U(LPCWSTR lpwFileName);
-static void SavePlaylist_M3U8(LPCWSTR lpwFileName);
 static void SavePlaylist_ASX(LPCWSTR lpwFileName);
 
 static void CheckPath(LPCWSTR lpwPlaylist, LPCWSTR lpwFile, LPWSTR lpwResult);
+static DWORD TrimNLChr(LPWSTR lpwLine);
 
 #endif

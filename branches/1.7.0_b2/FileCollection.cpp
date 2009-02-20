@@ -67,6 +67,35 @@ int CFileCollection::AppendFile(LPWSTR lpwFileName, BOOL bSendNfn)
 	return 1;
 }
 
+int CFileCollection::AppendFile(LPWSTR lpwFileName, LONG_PTR lpUD, BOOL bSendNfn)
+{
+	ULONG i = 0;
+	for (; i < FC_MAX_FILES; i++)
+	{
+		if (m_pFileCollection[i] == NULL)
+		{
+			m_pFileCollection[i] = new FCSTRUCT;
+			m_pFileCollection[i]->lpwPath = new WCHAR[MAX_PATH];
+			wcscpy(m_pFileCollection[i]->lpwPath, lpwFileName);
+			m_pFileCollection[i]->dwRndIndex = 0;
+			m_pFileCollection[i]->lpUserData = lpUD;
+			if (m_hCBWnd && bSendNfn)
+			{
+				SendMessage(m_hCBWnd, WM_FCNOTIFICATION, MAKEWPARAM(0, FCN_FILEADDED), (LPARAM)lpwFileName);
+				SendMessage(m_hCBWnd, WM_FCNOTIFICATION, MAKEWPARAM(0, FCN_FILEUDCHANGED), (LPARAM)i);
+			}
+			SetCurrentFile(lpwFileName);
+			break;
+		}
+		else
+		{
+			if (i == (FC_MAX_FILES - 1)) return 0;
+			if (_wcsicmp(m_pFileCollection[i]->lpwPath, lpwFileName) == 0) return 0;
+		}
+	}
+	return 1;
+}
+
 //Функция возвращает в lpwFileName текущий или соответствующий указанному
 //индексу (счет с нуля) файл (без инициализации)
 //В случае успеха функция возвращает значение больше нуля, в случае ошибки - нуль
