@@ -41,6 +41,7 @@ public:
 	~CFileCollection();
 	int FileCount();
 	int AppendFile(LPWSTR lpwFileName, BOOL bSendNfn = TRUE);
+	int AppendFile(LPWSTR lpwFileName, LONG_PTR lpUD, BOOL bSendNfn = TRUE);
 	int GetFile(LPWSTR lpwFileName, DWORD dwIndex, DWORD dwFlag);
 	int GetFileIndex(LPCWSTR lpwFileName, DWORD dwFlag);
 	int NextFile(LPWSTR lpwFileName, DWORD dwIndex, DWORD dwFlag);
@@ -49,8 +50,8 @@ public:
 	void Clear(BOOL bSendNfn = TRUE);
 	int IsFileAvailable(DWORD dwFlag);
 	int SetRecentFile(LPCWSTR lpwFileName, BOOL bSendNfn = TRUE);
-	int SetUserData(LPCWSTR lpwFileName, DWORD dwIndex, DWORD dwFlag, LONG_PTR intUD, BOOL bSendNfn = TRUE);
-	int GetUserData(LPCWSTR lpwFileName, DWORD dwIndex, DWORD dwFlag, LONG_PTR& intUD);
+	int SetUserData(LPCWSTR lpwFileName, DWORD dwIndex, DWORD dwFlag, LONG_PTR lpUD, BOOL bSendNfn = TRUE);
+	int GetUserData(LPCWSTR lpwFileName, DWORD dwIndex, DWORD dwFlag, LONG_PTR& lpUD);
 	void SetCallbackWnd(HWND hWnd);
 	HWND GetCallbackWnd();
 protected:
