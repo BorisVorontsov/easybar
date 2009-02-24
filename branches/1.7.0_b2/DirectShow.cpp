@@ -29,6 +29,8 @@ CDirectShow::CDirectShow()
 	m_bNoFGError = FALSE;
 	m_lCounter = 0;
 	m_dwROTRegister = 0;
+	m_lBACount = 0;
+	m_lCurrentBA = 0;
 	m_lDSFilCount = 0;
 	m_lFGFilCount = 0;
 	m_lDMOCount = 0;
@@ -37,16 +39,18 @@ CDirectShow::CDirectShow()
 	m_pMediaControl = NULL;
 	m_pMediaSeeking = NULL;
 	m_pMediaEventEx = NULL;
-	m_pBasicAudio = NULL;
 	m_pBasicVideo2 = NULL;
 	m_pVideoWindow = NULL;
 	m_pVideoFrameStep = NULL;
 	//Инициализация массивов
 	//------------------------------------------------
+	for (m_lCounter = 0; m_lCounter < E_MAX_BA; m_lCounter++)
+		m_pBasicAudio[m_lCounter] = NULL;
+	for (m_lCounter = 0; m_lCounter < E_MAX_BF; m_lCounter++)
+		m_pFGBaseFilter[m_lCounter] = NULL;
 	for (m_lCounter = 0; m_lCounter < E_MAX_ARR_SIZE; m_lCounter++)
 	{
 		m_pDSFMoniker[m_lCounter] = NULL;
-		m_pFGBaseFilter[m_lCounter] = NULL;
 		m_lpwDMONames[m_lCounter] = NULL;
 		ZeroMemory(&m_cDMOCLSIDs[m_lCounter], sizeof(m_cDMOCLSIDs[m_lCounter]));
 	}
@@ -196,7 +200,6 @@ int CDirectShow::Open()
     m_pGraphBuilder->QueryInterface(IID_IMediaControl, (LPVOID *)&m_pMediaControl);
 	m_pGraphBuilder->QueryInterface(IID_IMediaSeeking, (LPVOID *)&m_pMediaSeeking);
     m_pGraphBuilder->QueryInterface(IID_IMediaEventEx, (LPVOID *)&m_pMediaEventEx);
-	m_pGraphBuilder->QueryInterface(IID_IBasicAudio, (LPVOID *)&m_pBasicAudio);
 	m_intPrevVol = 1;
 	m_pGraphBuilder->QueryInterface(IID_IBasicVideo, (LPVOID *)&m_pBasicVideo2);
 	m_pGraphBuilder->QueryInterface(IID_IVideoWindow, (LPVOID *)&m_pVideoWindow);
@@ -252,14 +255,15 @@ void CDirectShow::Close()
 	/*if (m_pVideoWindow)
 		m_pVideoWindow->put_Visible(OAFALSE);*/
 	SR(m_pAMStreamSelect);
-	for (m_lCounter = 0; m_lCounter < E_MAX_ARR_SIZE; m_lCounter++)
+	for (m_lCounter = 0; m_lCounter < E_MAX_BA; m_lCounter++)
+		SR(m_pBasicAudio[m_lCounter]);
+	for (m_lCounter = 0; m_lCounter < E_MAX_BF; m_lCounter++)
 		SR(m_pFGBaseFilter[m_lCounter]);
 	if (m_dwROTRegister)
 		RemoveFGFromROT();
     SR(m_pMediaControl);
 	SR(m_pMediaSeeking);
     SR(m_pMediaEventEx);
-	SR(m_pBasicAudio);
 	SR(m_pBasicVideo2);
 	SR(m_pVideoWindow);
 	SR(m_pVideoFrameStep);
@@ -1114,13 +1118,16 @@ void CDirectShow::UpdateFGFiltersArray()
 {
 	IEnumFilters *pEnumFilters = NULL;
 	if (FAILED(m_pGraphBuilder->EnumFilters(&pEnumFilters))) return;
-	for (m_lCounter = 0; m_lCounter < E_MAX_ARR_SIZE; m_lCounter++)
+	for (m_lCounter = 0; m_lCounter < E_MAX_BF; m_lCounter++)
 	{
-		SR(m_pFGBaseFilter[m_lCounter]);
-		m_pFGBaseFilter[m_lCounter] = NULL;
+		if (m_pFGBaseFilter[m_lCounter])
+		{
+			SR(m_pFGBaseFilter[m_lCounter]);
+			m_pFGBaseFilter[m_lCounter] = NULL;
+		}
 	}
 	pEnumFilters->Reset();
-	pEnumFilters->Next(E_MAX_ARR_SIZE, &m_pFGBaseFilter[0], &m_lFGFilCount);
+	pEnumFilters->Next(E_MAX_BF, &m_pFGBaseFilter[0], &m_lFGFilCount);
 	pEnumFilters->Release();
 	for (m_lCounter = 0; m_lCounter < m_lFGFilCount; m_lCounter++)
 	{
