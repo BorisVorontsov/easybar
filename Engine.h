@@ -25,6 +25,8 @@ public:
 
 #define DS_MEDIAEVENTEX		WM_APP + 0x800
 #define E_MAX_ARR_SIZE		1024
+#define E_MAX_BA			64
+#define E_MAX_BF			128
 
 //Состояния "движка"
 typedef enum _ENGINESTATE
@@ -186,6 +188,8 @@ private:
 	BOOL m_bNoFGError;
 	ULONG m_lCounter;
 	DWORD m_dwROTRegister;
+	ULONG m_lBACount;
+	ULONG m_lCurrentBA;
 	ULONG m_lDSFilCount;
 	ULONG m_lFGFilCount;
 	ULONG m_lDMOCount;
@@ -195,12 +199,12 @@ private:
 	IMediaControl *m_pMediaControl;
 	IMediaSeeking *m_pMediaSeeking;
 	IMediaEventEx *m_pMediaEventEx;
-	IBasicAudio *m_pBasicAudio;
 	IBasicVideo2 *m_pBasicVideo2;
 	IVideoWindow *m_pVideoWindow;
 	IVideoFrameStep *m_pVideoFrameStep;
+	IBasicAudio *m_pBasicAudio[E_MAX_BA];
 	IMoniker *m_pDSFMoniker[E_MAX_ARR_SIZE];
-	IBaseFilter *m_pFGBaseFilter[E_MAX_ARR_SIZE];
+	IBaseFilter *m_pFGBaseFilter[E_MAX_BF];
 	LPWSTR m_lpwDMONames[E_MAX_ARR_SIZE];
 	CLSID m_cDMOCLSIDs[E_MAX_ARR_SIZE];
 	GUID m_gidRecentDMOCat;
