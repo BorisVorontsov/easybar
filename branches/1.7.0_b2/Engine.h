@@ -148,10 +148,11 @@ public:
 		             LPCWSTR lpwStmName);
 	BOOL IsStreamSelected(DSSTREAMTYPE dStreamType,
 		                  LPCWSTR lpwStmName);
-	//Возможно, внутренний механизм переключения потоков аудио
-	//int GetAudioStreamsCount();
-	//int SelectAudioStream(int intStmIndex);
-	//BOOL IsStreamSelected(int intStmIndex);
+
+	int GetAudioStreamsCount_E();
+	int SelectAudioStream_E(int intStmIndex);
+	BOOL IsAudioStreamSelected_E(int intStmIndex);
+
 	int AddFGToROT();
 	int GetDSFiltersNames(LPWSTR *lpwDSFilArr,
 		                  LPDWORD pArrSize,
@@ -189,7 +190,7 @@ private:
 	ULONG m_lCounter;
 	DWORD m_dwROTRegister;
 	ULONG m_lBACount;
-	ULONG m_lCurrentBA;
+	int m_intCurrentBA;
 	ULONG m_lDSFilCount;
 	ULONG m_lFGFilCount;
 	ULONG m_lDMOCount;

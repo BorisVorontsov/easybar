@@ -30,7 +30,7 @@ CDirectShow::CDirectShow()
 	m_lCounter = 0;
 	m_dwROTRegister = 0;
 	m_lBACount = 0;
-	m_lCurrentBA = 0;
+	m_intCurrentBA = -1;
 	m_lDSFilCount = 0;
 	m_lFGFilCount = 0;
 	m_lDMOCount = 0;
@@ -205,6 +205,8 @@ int CDirectShow::Open()
 	m_pGraphBuilder->QueryInterface(IID_IVideoWindow, (LPVOID *)&m_pVideoWindow);
 	m_pGraphBuilder->QueryInterface(IID_IVideoFrameStep, (LPVOID *)&m_pVideoFrameStep);
 	UpdateFGFiltersArray();
+	if (m_lBACount)
+		SelectAudioStream_E(0);
 	if (m_pMediaSeeking)
 		m_pMediaSeeking->SetTimeFormat(&TIME_FORMAT_MEDIA_TIME);
 	if (m_pVideoWindow)
@@ -255,10 +257,14 @@ void CDirectShow::Close()
 	/*if (m_pVideoWindow)
 		m_pVideoWindow->put_Visible(OAFALSE);*/
 	SR(m_pAMStreamSelect);
-	for (m_lCounter = 0; m_lCounter < E_MAX_BA; m_lCounter++)
+	for (m_lCounter = 0; m_lCounter < m_lBACount; m_lCounter++)
 		SR(m_pBasicAudio[m_lCounter]);
-	for (m_lCounter = 0; m_lCounter < E_MAX_BF; m_lCounter++)
+	m_lBACount = 0;
+	m_intCurrentBA = -1;
+	for (m_lCounter = 0; m_lCounter < m_lFGFilCount; m_lCounter++)
 		SR(m_pFGBaseFilter[m_lCounter]);
+	m_lFGFilCount = 0;
+	m_lDMOCount = 0;
 	if (m_dwROTRegister)
 		RemoveFGFromROT();
     SR(m_pMediaControl);
@@ -354,7 +360,7 @@ void CDirectShow::SetLength(__int64 intNewLen, BOOL bInMS)
 
 int CDirectShow::GetMute()
 {
-	if (m_pBasicAudio)
+	if (m_pBasicAudio[m_intCurrentBA])
 	{
 		return (m_intPrevVol == 1)?0:1;
 	} else return 0;
@@ -362,21 +368,21 @@ int CDirectShow::GetMute()
 
 void CDirectShow::SetMute(int intValue)
 {
-	if (m_pBasicAudio)
+	if (m_pBasicAudio[m_intCurrentBA])
 	{
 		if (intValue)
 		{
 			if (m_intPrevVol == 1)
 			{
-				m_pBasicAudio->get_Volume((long *)&m_intPrevVol);
-				m_pBasicAudio->put_Volume(-10000);
+				m_pBasicAudio[m_intCurrentBA]->get_Volume((long *)&m_intPrevVol);
+				m_pBasicAudio[m_intCurrentBA]->put_Volume(-10000);
 			}
 		}
 		else
 		{
 			if (m_intPrevVol < 1)
 			{
-				m_pBasicAudio->put_Volume((long)m_intPrevVol);
+				m_pBasicAudio[m_intCurrentBA]->put_Volume((long)m_intPrevVol);
 				m_intPrevVol = 1;
 			}
 		}
@@ -385,12 +391,12 @@ void CDirectShow::SetMute(int intValue)
 
 int CDirectShow::GetVolume()
 {
-	if (m_pBasicAudio)
+	if (m_pBasicAudio[m_intCurrentBA])
 	{
 		if (m_intPrevVol == 1)
 		{
 			long lTmp;
-			m_pBasicAudio->get_Volume(&lTmp);
+			m_pBasicAudio[m_intCurrentBA]->get_Volume(&lTmp);
 			return (int)lTmp;
 		}
 		else
@@ -403,21 +409,21 @@ int CDirectShow::GetVolume()
 //От -10000 (-100 dB) до 0 (0 dB)
 void CDirectShow::SetVolume(int intValue)
 {
-	if (m_pBasicAudio)
+	if (m_pBasicAudio[m_intCurrentBA])
 	{
 		if (m_intPrevVol == 1)
 		{
-			m_pBasicAudio->put_Volume((long)intValue);
+			m_pBasicAudio[m_intCurrentBA]->put_Volume((long)intValue);
 		} else m_intPrevVol = intValue;
 	}
 }
 
 int CDirectShow::GetBalance()
 {
-	if (m_pBasicAudio)
+	if (m_pBasicAudio[m_intCurrentBA])
 	{
 		long lTmp;
-		m_pBasicAudio->get_Balance(&lTmp);
+		m_pBasicAudio[m_intCurrentBA]->get_Balance(&lTmp);
 		return (int)lTmp;
 	} else return 0;
 }
@@ -425,8 +431,8 @@ int CDirectShow::GetBalance()
 //От -10000 (L) до 10000 (R)
 void CDirectShow::SetBalance(int intValue)
 {
-	if (m_pBasicAudio)
-		m_pBasicAudio->put_Balance((long)intValue);
+	if (m_pBasicAudio[m_intCurrentBA])
+		m_pBasicAudio[m_intCurrentBA]->put_Balance((long)intValue);
 }
 
 //Возвращает состояние воспроизведения
@@ -785,6 +791,38 @@ BOOL CDirectShow::IsStreamSelected(DSSTREAMTYPE dStreamType, LPCWSTR lpwStmName)
 	return bResult;
 }
 
+int CDirectShow::GetAudioStreamsCount_E()
+{
+	return m_lBACount;
+}
+
+int CDirectShow::SelectAudioStream_E(int intStmIndex)
+{
+	if (!m_lBACount) return -1;
+	if ((intStmIndex < 0) || (intStmIndex > (int)m_lBACount)) return -1;
+	long lCurBal, lCurVol;
+	m_pBasicAudio[m_intCurrentBA]->get_Balance(&lCurBal);
+	if (m_intPrevVol == 1)
+		m_pBasicAudio[m_intCurrentBA]->get_Volume(&lCurVol);
+	for (m_lCounter = 0; m_lCounter < m_lBACount; m_lCounter++)
+	{
+		if (m_lCounter != intStmIndex)
+			m_pBasicAudio[m_lCounter]->put_Volume(-10000);
+	}
+	m_pBasicAudio[intStmIndex]->put_Balance(lCurBal);
+	if (m_intPrevVol == 1)
+		m_pBasicAudio[intStmIndex]->put_Volume(lCurVol);
+	m_intCurrentBA = intStmIndex;
+	return 0;
+}
+
+BOOL CDirectShow::IsAudioStreamSelected_E(int intStmIndex)
+{
+	if (!m_lBACount) return -1;
+	if ((intStmIndex < 0) || (intStmIndex > (int)m_lBACount)) return -1;
+	return (m_intCurrentBA == intStmIndex);
+}
+
 //Добавляет текущий Filter Graph в ROT (Running Object Table)
 //В случае ошибки функция вернет значение меньше нуля
 int CDirectShow::AddFGToROT()
@@ -1117,6 +1155,8 @@ int CDirectShow::FGFiltersPropertyPages(LPCWSTR lpwFGFilName, BOOL bCheck)
 void CDirectShow::UpdateFGFiltersArray()
 {
 	IEnumFilters *pEnumFilters = NULL;
+	IBasicAudio *pBasicAudio = NULL;
+	IAMStreamSelect *pStreamSelect = NULL;
 	if (FAILED(m_pGraphBuilder->EnumFilters(&pEnumFilters))) return;
 	for (m_lCounter = 0; m_lCounter < E_MAX_BF; m_lCounter++)
 	{
@@ -1131,8 +1171,16 @@ void CDirectShow::UpdateFGFiltersArray()
 	pEnumFilters->Release();
 	for (m_lCounter = 0; m_lCounter < m_lFGFilCount; m_lCounter++)
 	{
-		m_pFGBaseFilter[m_lCounter]->QueryInterface(IID_IAMStreamSelect, (LPVOID *)&m_pAMStreamSelect);
-		if (m_pAMStreamSelect) break;
+		if (SUCCEEDED(m_pFGBaseFilter[m_lCounter]->QueryInterface(IID_IBasicAudio, (LPVOID *)&pBasicAudio)))
+		{
+			m_pBasicAudio[++m_intCurrentBA] = pBasicAudio;
+			m_lBACount++;
+		}
+		if (!m_pAMStreamSelect)
+		{
+			if (SUCCEEDED(m_pFGBaseFilter[m_lCounter]->QueryInterface(IID_IAMStreamSelect, (LPVOID *)&pStreamSelect)))
+				m_pAMStreamSelect = pStreamSelect;
+		}
 	}
 }
 
