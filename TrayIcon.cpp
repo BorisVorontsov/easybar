@@ -12,6 +12,7 @@
 #include "easybar.h"
 #include "trayicon.h"
 
+extern HANDLE hMutex;
 extern HINSTANCE hAppInstance;
 extern HWND hMainWnd;
 
@@ -26,18 +27,25 @@ static NOTIFYICONDATA NID = { 0 };
 void InitTrayCBWnd(BOOL bCreate)
 {
 	LONG i, lMMItemCnt, lTMItemCnt;
+	HMENU hMainMenu = GetMenu(hMainWnd);
 	if (bCreate)
 	{
 		WCHAR lpwText[MAX_PATH] = { 0 };
+		HMENU hTraySubMenu;
 		hTrayMenu = CreatePopupMenu();
 		AppendMenu(hTrayMenu, MF_STRING, IDM_TRAY_HIDESHOW, L"&Hide/Show Player");
 		AppendMenu(hTrayMenu, MF_SEPARATOR, 0, 0);
-		lMMItemCnt = GetMenuItemCount(GetMenu(hMainWnd));
+		lMMItemCnt = GetMenuItemCount(hMainMenu);
 		for (i = 0; i < lMMItemCnt; i++)
 		{
-			GetMenuString(GetMenu(hMainWnd), i, lpwText, MAX_PATH, MF_BYPOSITION);
-			AppendMenu(hTrayMenu, MF_STRING | MF_POPUP, (UINT_PTR)GetSubMenu(GetMenu(hMainWnd),
-				i), lpwText);
+			GetMenuString(hMainMenu, i, lpwText, MAX_PATH, MF_BYPOSITION);
+			hTraySubMenu = GetSubMenu(hMainMenu, i);
+			//debug
+			//--------------------------------------
+			DWORD e = GetLastError();
+			e = e; //1401
+			//--------------------------------------
+			AppendMenu(hTrayMenu, MF_STRING | MF_POPUP, (UINT_PTR)hTraySubMenu, lpwText);
 		}
 		AppendMenu(hTrayMenu, MF_SEPARATOR, 0, 0);
 		AppendMenu(hTrayMenu, MF_STRING, IDM_TRAY_EXIT, L"&Exit");
@@ -62,7 +70,7 @@ void InitTrayCBWnd(BOOL bCreate)
 	else
 	{
 		if (!dwNoOwnerDrawMenu) pEBMenuTray->InitEBMenu(0);
-		lMMItemCnt = GetMenuItemCount(GetMenu(hMainWnd));
+		lMMItemCnt = GetMenuItemCount(hMainMenu);
 		lTMItemCnt = GetMenuItemCount(hTrayMenu);
 		for (i = (lTMItemCnt - 1); i >= (lTMItemCnt - lMMItemCnt); i--)
 		{
@@ -119,6 +127,11 @@ static LRESULT CALLBACK TrayCBWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARA
 				case IDM_TRAY_EXIT:
 					if (dwMultipleInstances)
 					{
+						if (hMutex)
+						{
+							ReleaseMutex(hMutex);
+							hMutex = 0;
+						}
 						HANDLE hMtx = CreateMutex(0, TRUE, APP_NAME);
 						if (GetLastError() == ERROR_ALREADY_EXISTS)
 						{

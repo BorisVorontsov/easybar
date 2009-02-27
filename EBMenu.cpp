@@ -69,8 +69,9 @@ DWORD CEBMenu::MeasureItem(WPARAM wParam, LPARAM lParam)
 	MENUITEMINFO MII = { 0 };
 	MII.cbSize = sizeof(MII);
 	MII.fMask = MIIM_TYPE;
+	HMENU hMenu = GetMenu(m_hMenuOwner);
 
-	GetMenuItemInfo(GetMenu(m_hMenuOwner), pMIS->itemID, FALSE, &MII);
+	GetMenuItemInfo(hMenu, pMIS->itemID, FALSE, &MII);
 
 	if ((MII.fType & MFT_SEPARATOR) == MFT_SEPARATOR)
 	{
@@ -85,7 +86,7 @@ DWORD CEBMenu::MeasureItem(WPARAM wParam, LPARAM lParam)
 		MII.fMask = MIIM_STRING;
 		MII.dwTypeData = lpText;
 		MII.cch = MAX_PATH;
-		GetMenuItemInfo(GetMenu(m_hMenuOwner), pMIS->itemID, FALSE, &MII);
+		GetMenuItemInfo(hMenu, pMIS->itemID, FALSE, &MII);
 		RECT RCI = { 0 }, RCA = { 0 };
 		LPVOID pTabPos = _tcschr(lpText, '\t');
 		if (pTabPos)
@@ -101,7 +102,7 @@ DWORD CEBMenu::MeasureItem(WPARAM wParam, LPARAM lParam)
 		HBITMAP hTBitmap = CreateCompatibleBitmap(hTDC, 512, 32);
 		SelectObject(hTDC, hTBitmap);
 		MII.fMask = MIIM_STATE;
-		GetMenuItemInfo(GetMenu(m_hMenuOwner), pMIS->itemID, FALSE, &MII);
+		GetMenuItemInfo(hMenu, pMIS->itemID, FALSE, &MII);
 		if ((MII.fState & MFS_DEFAULT) == MFS_DEFAULT)
 		{
 			SelectObject(hTDC, hFntDefaultItem);
@@ -115,7 +116,7 @@ DWORD CEBMenu::MeasureItem(WPARAM wParam, LPARAM lParam)
 		lItemWidth = RCI.right;
 		lAccelWidth = RCA.right;
 		MII.fMask = MIIM_DATA;
-		GetMenuItemInfo(GetMenu(m_hMenuOwner), pMIS->itemID, FALSE, &MII);
+		GetMenuItemInfo(hMenu, pMIS->itemID, FALSE, &MII);
 		if ((MII.dwItemData & EBM_ITEM_DATA_TLMENU) == EBM_ITEM_DATA_TLMENU)
 		{
 			pMIS->itemWidth = EBM_METRICS_TLMENU_LEFT_TEXT_INDENT + lItemWidth +
@@ -148,8 +149,9 @@ DWORD CEBMenu::DrawItem(WPARAM wParam, LPARAM lParam)
 	TCHAR lpText[MAX_PATH] = { 0 };
 	MII.cbSize = sizeof(MII);
 	MII.fMask = MIIM_TYPE;
+	HMENU hMenu = GetMenu(m_hMenuOwner);
 
-	GetMenuItemInfo(GetMenu(m_hMenuOwner), pDIS->itemID, FALSE, &MII);
+	GetMenuItemInfo(hMenu, pDIS->itemID, FALSE, &MII);
 	if ((MII.fType & MFT_SEPARATOR) == MFT_SEPARATOR)
 	{
 		bSeparator = TRUE;
@@ -159,10 +161,10 @@ DWORD CEBMenu::DrawItem(WPARAM wParam, LPARAM lParam)
 		MII.fMask = MIIM_STRING;
 		MII.dwTypeData = lpText;
 		MII.cch = MAX_PATH;
-		GetMenuItemInfo(GetMenu(m_hMenuOwner), pDIS->itemID, FALSE, &MII);
+		GetMenuItemInfo(hMenu, pDIS->itemID, FALSE, &MII);
 	}
 	MII.fMask = MIIM_DATA;
-	GetMenuItemInfo(GetMenu(m_hMenuOwner), pDIS->itemID, FALSE, &MII);
+	GetMenuItemInfo(hMenu, pDIS->itemID, FALSE, &MII);
 
 	if ((MII.dwItemData & EBM_ITEM_DATA_TLMENU) == EBM_ITEM_DATA_TLMENU)
 	{
@@ -202,7 +204,7 @@ DWORD CEBMenu::DrawItem(WPARAM wParam, LPARAM lParam)
 			if ((pDIS->itemState & ODS_CHECKED) == ODS_CHECKED)
 			{
 				MII.fMask = MIIM_TYPE;
-				GetMenuItemInfo(GetMenu(m_hMenuOwner), pDIS->itemID, FALSE, &MII);
+				GetMenuItemInfo(hMenu, pDIS->itemID, FALSE, &MII);
 				CopyRect(&RCP, &pDIS->rcItem);
 				DrawCheckMark(pDIS->hDC, RCP.left + EBM_METRICS_STD_INDENT, RCP.top +
 					EBM_METRICS_STD_INDENT, ((pDIS->itemState & ODS_GRAYED) == ODS_GRAYED),
@@ -313,7 +315,7 @@ DWORD CEBMenu::DrawItem(WPARAM wParam, LPARAM lParam)
 			GR.LowerRight = 1;
 			GradientFill(pDIS->hDC, &TV[0], 2, (PVOID)&GR, 1, GRADIENT_FILL_RECT_V);
 			MII.fMask = MIIM_DATA;
-			GetMenuItemInfo(GetMenu(m_hMenuOwner), pDIS->itemID, FALSE, &MII);
+			GetMenuItemInfo(hMenu, pDIS->itemID, FALSE, &MII);
 			if ((MII.dwItemData & EBM_ITEM_DATA_TLMENU) == EBM_ITEM_DATA_TLMENU)
 			{
 				RCP.left += EBM_METRICS_STD_INDENT;
@@ -327,7 +329,7 @@ DWORD CEBMenu::DrawItem(WPARAM wParam, LPARAM lParam)
 				if ((pDIS->itemState & ODS_CHECKED) == ODS_CHECKED)
 				{
 					MII.fMask = MIIM_TYPE;
-					GetMenuItemInfo(GetMenu(m_hMenuOwner), pDIS->itemID, FALSE, &MII);
+					GetMenuItemInfo(hMenu, pDIS->itemID, FALSE, &MII);
 					CopyRect(&RCP, &pDIS->rcItem);
 					DrawCheckMark(pDIS->hDC, RCP.left + EBM_METRICS_STD_INDENT, RCP.top +
 						EBM_METRICS_STD_INDENT, ((pDIS->itemState & ODS_GRAYED) == ODS_GRAYED),

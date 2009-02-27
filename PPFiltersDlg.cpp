@@ -20,8 +20,7 @@ INT_PTR CALLBACK PPFiltersDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lP
 
 			PPSetDefFileInfo(hWnd, pEngine->m_lpwFileName);
 			GetFGFilters();
-			GetFGStreams();
-			GetFGStreams(TRUE);
+			GetFGAudioStreams();
 			PostMessage(hWnd, WM_COMMAND, MAKEWPARAM(IDC_LSTFILTERS, LBN_SELCHANGE), 0);
 			return TRUE;
 		case WM_COMMAND:
@@ -48,8 +47,7 @@ INT_PTR CALLBACK PPFiltersDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lP
 				}
 				case IDC_BTNREFR:
 					GetFGFilters();
-					GetFGStreams();
-					GetFGStreams(TRUE);
+					GetFGAudioStreams();
 					break;
 				case IDC_BTNPROP:
 				{

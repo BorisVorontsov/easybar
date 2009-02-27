@@ -51,7 +51,7 @@
 
 extern HWND hFindTextWnd;
 
-static HANDLE hMutex;
+HANDLE hMutex = 0;
 
 HINSTANCE hAppInstance;
 WCHAR lpwAppPath[MAX_PATH] = { 0 };
@@ -282,7 +282,8 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, LPWSTR lpwCmdLine, int nShow
 ExitFunction:
 #endif
 	SaveSettings();
-	ReleaseMutex(hMutex);
+	if (hMutex)
+		ReleaseMutex(hMutex);
 	SDO(pEBMenuMain);
 	SDO(pToolTipsMain);
 	SDO(pFileCollection);
@@ -1099,7 +1100,7 @@ INT_PTR CALLBACK PlayerDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 					break;
 				case IDM_OPACITY_OPAQUEONFOCUS:
 					dwOpaqueOnFocus = !dwOpaqueOnFocus;
-					CheckMenuItem(GetMenu(hMainWnd), IDM_OPACITY_OPAQUEONFOCUS, MF_BYCOMMAND |
+					CheckMenuItem(GetMenu(hWnd), IDM_OPACITY_OPAQUEONFOCUS, MF_BYCOMMAND |
 						(dwOpaqueOnFocus)?MF_CHECKED:MF_UNCHECKED);
 					UpdateOpacityState();
 					UpdateOpacityState(hPlaylistWnd);
@@ -1114,7 +1115,7 @@ INT_PTR CALLBACK PlayerDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 					break;
 				case IDM_AS_RESUMEPLAYBACK:
 					dwASResumePlayback = !dwASResumePlayback;
-					CheckMenuItem(GetMenu(hMainWnd), IDM_AS_RESUMEPLAYBACK, MF_BYCOMMAND |
+					CheckMenuItem(GetMenu(hWnd), IDM_AS_RESUMEPLAYBACK, MF_BYCOMMAND |
 						(dwASResumePlayback)?MF_CHECKED:MF_UNCHECKED);
 					break;
 				case IDM_REPEAT_REPEATOFF:
@@ -1605,163 +1606,164 @@ INT_PTR CALLBACK PlayerDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 				BOOL bMFFlag5 = IsWindowVisible(hWnd);
 				BOOL bMFFlag6 = (pEngine->GetState() != E_STATE_STOPPED);
 				BOOL bMFFlag7 = (VWD.dwVWPosFlag == VWPF_NORMAL);
-				EnableMenuItem(GetMenu(hWnd), IDM_FILE_NEWPLAYER,
+				HMENU hMainMenu = GetMenu(hWnd);
+				EnableMenuItem(hMainMenu, IDM_FILE_NEWPLAYER,
 					(dwMultipleInstances)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
-				EnableMenuItem(GetMenu(hWnd), IDM_FILE_REOPENCURRENT,
+				EnableMenuItem(hMainMenu, IDM_FILE_REOPENCURRENT,
 					(pFileCollection->FileCount())?MF_ENABLED:MF_DISABLED | MF_GRAYED);
-				EnableMenuItem(GetMenu(hWnd), IDM_FILE_CLOSE,
+				EnableMenuItem(hMainMenu, IDM_FILE_CLOSE,
 					(bMFFlag1)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
-				EnableMenuItem(GetMenu(hWnd), IDM_FILE_DELETEFROMPLAYLIST,
+				EnableMenuItem(hMainMenu, IDM_FILE_DELETEFROMPLAYLIST,
 					(bMFFlag1)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
-				EnableMenuItem(GetMenu(hWnd), IDM_FILE_SAVEFILEAS,
+				EnableMenuItem(hMainMenu, IDM_FILE_SAVEFILEAS,
 					(bMFFlag1 && !IsURL(pEngine->m_lpwFileName))?MF_ENABLED:MF_DISABLED | MF_GRAYED);
-				EnableMenuItem(GetMenu(hWnd), IDM_FILE_SAVEPLAYLISTAS,
+				EnableMenuItem(hMainMenu, IDM_FILE_SAVEPLAYLISTAS,
 					(bMFFlag1 || (pFileCollection->FileCount()))?MF_ENABLED:MF_DISABLED | MF_GRAYED);
-				EnableMenuItem(GetMenu(hWnd), IDM_FILE_PROPERTIES,
+				EnableMenuItem(hMainMenu, IDM_FILE_PROPERTIES,
 					(bMFFlag1)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
-				EnableMenuItem(GetMenu(hWnd), IDM_FILE_EXIT,
+				EnableMenuItem(hMainMenu, IDM_FILE_EXIT,
 					(dwMultipleInstances)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
-				EnableMenuItem(GetMenu(hWnd), IDM_INTERFACE_DEFINECOLORS,
+				EnableMenuItem(hMainMenu, IDM_INTERFACE_DEFINECOLORS,
 					(!dwUseSystemColors)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
-				EnableMenuItem(GetMenu(hWnd), IDM_WB_NORMALWINDOW,
+				EnableMenuItem(hMainMenu, IDM_WB_NORMALWINDOW,
 					(bMFFlag5)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
-				EnableMenuItem(GetMenu(hWnd), IDM_WB_TOOLWINDOW,
+				EnableMenuItem(hMainMenu, IDM_WB_TOOLWINDOW,
 					(bMFFlag5)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
-				EnableMenuItem(GetMenu(hWnd), IDM_VIEW_MAINCONTROLS,
+				EnableMenuItem(hMainMenu, IDM_VIEW_MAINCONTROLS,
 					(bMFFlag5)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
-				EnableMenuItem(GetMenu(hWnd), IDM_TB_DISPLAYFULLPATH,
+				EnableMenuItem(hMainMenu, IDM_TB_DISPLAYFULLPATH,
 					(bMFFlag5 && !dwTBDoNotChangeTitle)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
-				EnableMenuItem(GetMenu(hWnd), IDM_TB_DISPLAYFILENAMEONLY,
+				EnableMenuItem(hMainMenu, IDM_TB_DISPLAYFILENAMEONLY,
 					(bMFFlag5 && !dwTBDoNotChangeTitle)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
-				EnableMenuItem(GetMenu(hWnd), IDM_TB_DONOTCHANGETITLE,
+				EnableMenuItem(hMainMenu, IDM_TB_DONOTCHANGETITLE,
 					(bMFFlag5)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
-				EnableMenuItem(GetMenu(hWnd), IDM_INTERFACE_USESYSTEMCOLORS,
+				EnableMenuItem(hMainMenu, IDM_INTERFACE_USESYSTEMCOLORS,
 					(bMFFlag5)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
-				EnableMenuItem(GetMenu(hWnd), IDM_INTERFACE_DEFINECOLORS,
+				EnableMenuItem(hMainMenu, IDM_INTERFACE_DEFINECOLORS,
 					(bMFFlag5)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
-				EnableMenuItem(GetMenu(hWnd), IDM_ONTOP_NEVER,
+				EnableMenuItem(hMainMenu, IDM_ONTOP_NEVER,
 					(bMFFlag5)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
-				EnableMenuItem(GetMenu(hWnd), IDM_ONTOP_ALWAYS,
+				EnableMenuItem(hMainMenu, IDM_ONTOP_ALWAYS,
 					(bMFFlag5)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
-				EnableMenuItem(GetMenu(hWnd), IDM_ONTOP_WHILEPLAYING,
+				EnableMenuItem(hMainMenu, IDM_ONTOP_WHILEPLAYING,
 					(bMFFlag5)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
-				EnableMenuItem(GetMenu(hWnd), IDM_PAS_SCREENCENTER,
+				EnableMenuItem(hMainMenu, IDM_PAS_SCREENCENTER,
 					(bMFFlag5)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
-				EnableMenuItem(GetMenu(hWnd), IDM_PAS_RESTOREPREVIOUS,
+				EnableMenuItem(hMainMenu, IDM_PAS_RESTOREPREVIOUS,
 					(bMFFlag5)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
-				EnableMenuItem(GetMenu(hWnd), IDM_PAS_RANDOM,
+				EnableMenuItem(hMainMenu, IDM_PAS_RANDOM,
 					(bMFFlag5)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
-				EnableMenuItem(GetMenu(hWnd), IDM_OPACITY_100,
+				EnableMenuItem(hMainMenu, IDM_OPACITY_100,
 					(bMFFlag5)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
-				EnableMenuItem(GetMenu(hWnd), IDM_OPACITY_75,
+				EnableMenuItem(hMainMenu, IDM_OPACITY_75,
 					(bMFFlag5)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
-				EnableMenuItem(GetMenu(hWnd), IDM_OPACITY_50,
+				EnableMenuItem(hMainMenu, IDM_OPACITY_50,
 					(bMFFlag5)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
-				EnableMenuItem(GetMenu(hWnd), IDM_OPACITY_25,
+				EnableMenuItem(hMainMenu, IDM_OPACITY_25,
 					(bMFFlag5)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
-				EnableMenuItem(GetMenu(hWnd), IDM_OPACITY_CUSTOM,
+				EnableMenuItem(hMainMenu, IDM_OPACITY_CUSTOM,
 					(bMFFlag5)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
-				EnableMenuItem(GetMenu(hWnd), IDM_OPACITY_OPAQUEONFOCUS,
+				EnableMenuItem(hMainMenu, IDM_OPACITY_OPAQUEONFOCUS,
 					(bMFFlag5)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
-				EnableMenuItem(GetMenu(hWnd), IDM_VIEW_TRAYICON,
+				EnableMenuItem(hMainMenu, IDM_VIEW_TRAYICON,
 					(bMFFlag5)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
-				EnableMenuItem(GetMenu(hWnd), IDM_AS_RESUMEPLAYBACK,
+				EnableMenuItem(hMainMenu, IDM_AS_RESUMEPLAYBACK,
 					(dwRememberPlaylist && !dwShuffle)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
-				EnableMenuItem(GetMenu(hWnd), IDM_PLAYBACK_PREVIOUSFILE,
+				EnableMenuItem(hMainMenu, IDM_PLAYBACK_PREVIOUSFILE,
 					((dwShuffle)?(pFileCollection->FileCount() > 1):
 					(pFileCollection->IsFileAvailable(FCF_BACKWARD)))?MF_ENABLED:MF_DISABLED | MF_GRAYED);
-				EnableMenuItem(GetMenu(hWnd), IDM_PLAYBACK_NEXTFILE,
+				EnableMenuItem(hMainMenu, IDM_PLAYBACK_NEXTFILE,
 					((dwShuffle)?(pFileCollection->FileCount() > 1):
 					(pFileCollection->IsFileAvailable(FCF_FORWARD)))?MF_ENABLED:MF_DISABLED | MF_GRAYED);
-				EnableMenuItem(GetMenu(hWnd), IDM_PLAYBACK_PLAYPAUSE,
+				EnableMenuItem(hMainMenu, IDM_PLAYBACK_PLAYPAUSE,
 					(bMFFlag1)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
-				EnableMenuItem(GetMenu(hWnd), IDM_PLAYBACK_STOP,
+				EnableMenuItem(hMainMenu, IDM_PLAYBACK_STOP,
 					(bMFFlag1)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
-				EnableMenuItem(GetMenu(hWnd), IDM_PLAYBACK_FRAMESTEP,
+				EnableMenuItem(hMainMenu, IDM_PLAYBACK_FRAMESTEP,
 					(bMFFlag3 && bMFFlag4)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
-				EnableMenuItem(GetMenu(hWnd), IDM_RATE_NORMAL,
+				EnableMenuItem(hMainMenu, IDM_RATE_NORMAL,
 					(bMFFlag1)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
-				EnableMenuItem(GetMenu(hWnd), IDM_RATE_DECREASE,
+				EnableMenuItem(hMainMenu, IDM_RATE_DECREASE,
 					(bMFFlag1)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
-				EnableMenuItem(GetMenu(hWnd), IDM_RATE_INCREASE,
+				EnableMenuItem(hMainMenu, IDM_RATE_INCREASE,
 					(bMFFlag1)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
-				EnableMenuItem(GetMenu(hWnd), IDM_SEEK_STEPBACKWARD,
+				EnableMenuItem(hMainMenu, IDM_SEEK_STEPBACKWARD,
 					((bMFFlag1 && bMFFlag2))?MF_ENABLED:MF_DISABLED | MF_GRAYED);
-				EnableMenuItem(GetMenu(hWnd), IDM_SEEK_STEPFORWARD,
+				EnableMenuItem(hMainMenu, IDM_SEEK_STEPFORWARD,
 					((bMFFlag1 && bMFFlag2))?MF_ENABLED:MF_DISABLED | MF_GRAYED);
-				EnableMenuItem(GetMenu(hWnd), IDM_SEEK_JUMPBACKWARD,
+				EnableMenuItem(hMainMenu, IDM_SEEK_JUMPBACKWARD,
 					((bMFFlag1 && bMFFlag2))?MF_ENABLED:MF_DISABLED | MF_GRAYED);
-				EnableMenuItem(GetMenu(hWnd), IDM_SEEK_JUMPFORWARD,
+				EnableMenuItem(hMainMenu, IDM_SEEK_JUMPFORWARD,
 					((bMFFlag1 && bMFFlag2))?MF_ENABLED:MF_DISABLED | MF_GRAYED);
-				EnableMenuItem(GetMenu(hWnd), IDM_SEEK_LONGJUMPBACKWARD,
+				EnableMenuItem(hMainMenu, IDM_SEEK_LONGJUMPBACKWARD,
 					((bMFFlag1 && bMFFlag2))?MF_ENABLED:MF_DISABLED | MF_GRAYED);
-				EnableMenuItem(GetMenu(hWnd), IDM_SEEK_LONGJUMPFORWARD,
+				EnableMenuItem(hMainMenu, IDM_SEEK_LONGJUMPFORWARD,
 					((bMFFlag1 && bMFFlag2))?MF_ENABLED:MF_DISABLED | MF_GRAYED);
-				EnableMenuItem(GetMenu(hWnd), IDM_SEEK_REWIND,
+				EnableMenuItem(hMainMenu, IDM_SEEK_REWIND,
 					((bMFFlag1 && bMFFlag2))?MF_ENABLED:MF_DISABLED | MF_GRAYED);
-				EnableMenuItem(GetMenu(hWnd), IDM_VOLUME_MUTE,
+				EnableMenuItem(hMainMenu, IDM_VOLUME_MUTE,
 					(bMFFlag1)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
-				EnableMenuItem(GetMenu(hWnd), IDM_VOLUME_DECREASE,
+				EnableMenuItem(hMainMenu, IDM_VOLUME_DECREASE,
 					(bMFFlag1)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
-				EnableMenuItem(GetMenu(hWnd), IDM_VOLUME_INCREASE,
+				EnableMenuItem(hMainMenu, IDM_VOLUME_INCREASE,
 					(bMFFlag1)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
-				EnableMenuItem(GetMenu(hWnd), IDM_BALANCE_NORMAL,
+				EnableMenuItem(hMainMenu, IDM_BALANCE_NORMAL,
 					(bMFFlag1)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
-				EnableMenuItem(GetMenu(hWnd), IDM_BALANCE_LEFT,
+				EnableMenuItem(hMainMenu, IDM_BALANCE_LEFT,
 					(bMFFlag1)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
-				EnableMenuItem(GetMenu(hWnd), IDM_BALANCE_RIGHT,
+				EnableMenuItem(hMainMenu, IDM_BALANCE_RIGHT,
 					(bMFFlag1)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
-				EnableMenuItem(GetMenu(hWnd), IDM_PLAYBACK_SAVECURRENTFRAME,
+				EnableMenuItem(hMainMenu, IDM_PLAYBACK_SAVECURRENTFRAME,
 					(bMFFlag4 && bMFFlag6)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
-				EnableMenuItem(GetMenu(hWnd), IDM_AR_KEEPASPECTRATIO,
+				EnableMenuItem(hMainMenu, IDM_AR_KEEPASPECTRATIO,
 					(bMFFlag4)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
-				EnableMenuItem(GetMenu(hWnd), IDM_AR_DEFAULT,
+				EnableMenuItem(hMainMenu, IDM_AR_DEFAULT,
 					(bMFFlag4 && dwKeepAspectRatio)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
-				EnableMenuItem(GetMenu(hWnd), IDM_AR_43,
+				EnableMenuItem(hMainMenu, IDM_AR_43,
 					(bMFFlag4 && dwKeepAspectRatio)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
-				EnableMenuItem(GetMenu(hWnd), IDM_AR_54,
+				EnableMenuItem(hMainMenu, IDM_AR_54,
 					(bMFFlag4 && dwKeepAspectRatio)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
-				EnableMenuItem(GetMenu(hWnd), IDM_AR_169,
+				EnableMenuItem(hMainMenu, IDM_AR_169,
 					(bMFFlag4 && dwKeepAspectRatio)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
-				EnableMenuItem(GetMenu(hWnd), IDM_ZOOM_HALFSIZE,
+				EnableMenuItem(hMainMenu, IDM_ZOOM_HALFSIZE,
 					(bMFFlag4 && bMFFlag7)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
-				EnableMenuItem(GetMenu(hWnd), IDM_ZOOM_NORMALSIZE,
+				EnableMenuItem(hMainMenu, IDM_ZOOM_NORMALSIZE,
 					(bMFFlag4 && bMFFlag7)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
-				EnableMenuItem(GetMenu(hWnd), IDM_ZOOM_DOUBLESIZE,
+				EnableMenuItem(hMainMenu, IDM_ZOOM_DOUBLESIZE,
 					(bMFFlag4 && bMFFlag7)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
-				EnableMenuItem(GetMenu(hWnd), IDM_FULLSCREEN_FULLSCREENNORMAL,
+				EnableMenuItem(hMainMenu, IDM_FULLSCREEN_FULLSCREENNORMAL,
 					(bMFFlag4)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
-				EnableMenuItem(GetMenu(hWnd), IDM_SAE_PARAMEQ,
+				EnableMenuItem(hMainMenu, IDM_SAE_PARAMEQ,
 					(dwUseDMO)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
-				EnableMenuItem(GetMenu(hWnd), IDM_SAE_WAVESREVERB,
+				EnableMenuItem(hMainMenu, IDM_SAE_WAVESREVERB,
 					(dwUseDMO)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
-				EnableMenuItem(GetMenu(hWnd), IDM_SAE_GARGLE,
+				EnableMenuItem(hMainMenu, IDM_SAE_GARGLE,
 					(dwUseDMO)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
-				EnableMenuItem(GetMenu(hWnd), IDM_SAE_DISTORTION,
+				EnableMenuItem(hMainMenu, IDM_SAE_DISTORTION,
 					(dwUseDMO)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
-				EnableMenuItem(GetMenu(hWnd), IDM_SAE_COMPRESSOR,
+				EnableMenuItem(hMainMenu, IDM_SAE_COMPRESSOR,
 					(dwUseDMO)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
-				EnableMenuItem(GetMenu(hWnd), IDM_SAE_ECHO,
+				EnableMenuItem(hMainMenu, IDM_SAE_ECHO,
 					(dwUseDMO)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
-				EnableMenuItem(GetMenu(hWnd), IDM_SAE_FLANGER,
+				EnableMenuItem(hMainMenu, IDM_SAE_FLANGER,
 					(dwUseDMO)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
-				EnableMenuItem(GetMenu(hWnd), IDM_SAE_CHORUS,
+				EnableMenuItem(hMainMenu, IDM_SAE_CHORUS,
 					(dwUseDMO)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
-				EnableMenuItem(GetMenu(hWnd), IDM_SAE_I3DL2REVERB,
+				EnableMenuItem(hMainMenu, IDM_SAE_I3DL2REVERB,
 					(dwUseDMO)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
-				EnableMenuItem(GetMenu(hWnd), IDM_AP_CLOSEWINDOW,
+				EnableMenuItem(hMainMenu, IDM_AP_CLOSEWINDOW,
 					(dwRepeatIndex == 0)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
-				EnableMenuItem(GetMenu(hWnd), IDM_AP_EXIT,
+				EnableMenuItem(hMainMenu, IDM_AP_EXIT,
 					((dwRepeatIndex == 0) && dwMultipleInstances)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
-				EnableMenuItem(GetMenu(hWnd), IDM_AP_STANDBY,
+				EnableMenuItem(hMainMenu, IDM_AP_STANDBY,
 					(dwRepeatIndex == 0)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
-				EnableMenuItem(GetMenu(hWnd), IDM_AP_HIBERNATE,
+				EnableMenuItem(hMainMenu, IDM_AP_HIBERNATE,
 					(dwRepeatIndex == 0)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
-				EnableMenuItem(GetMenu(hWnd), IDM_AP_SHUTDOWN,
+				EnableMenuItem(hMainMenu, IDM_AP_SHUTDOWN,
 					(dwRepeatIndex == 0)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
-				EnableMenuItem(GetMenu(hWnd), IDM_AP_LOGOFF,
+				EnableMenuItem(hMainMenu, IDM_AP_LOGOFF,
 					(dwRepeatIndex == 0)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
-				EnableMenuItem(GetMenu(hWnd), IDM_AP_DONOTHING,
+				EnableMenuItem(hMainMenu, IDM_AP_DONOTHING,
 					(dwRepeatIndex == 0)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
 			}
 			return TRUE;
@@ -2408,18 +2410,19 @@ Seek_SetPosition:
 
 void ApplySettings()
 {
-	CheckMenuItem(GetMenu(hMainWnd), IDM_FILE_MULTIPLEINSTANCES, MF_BYCOMMAND |
+	HMENU hMainMenu = GetMenu(hMainWnd);
+	CheckMenuItem(hMainMenu, IDM_FILE_MULTIPLEINSTANCES, MF_BYCOMMAND |
 		(dwMultipleInstances)?MF_CHECKED:MF_UNCHECKED);
-	CheckMenuItem(GetMenu(hMainWnd), IDM_FILE_REMEMBERPLAYLIST, MF_BYCOMMAND |
+	CheckMenuItem(hMainMenu, IDM_FILE_REMEMBERPLAYLIST, MF_BYCOMMAND |
 		(dwRememberPlaylist)?MF_CHECKED:MF_UNCHECKED);
 	switch (dwWindowBorderIndex)
 	{
 		case 0:
-			CheckMenuRadioItem(GetMenu(hMainWnd), IDM_WB_NORMALWINDOW,
+			CheckMenuRadioItem(hMainMenu, IDM_WB_NORMALWINDOW,
 				IDM_WB_TOOLWINDOW, IDM_WB_NORMALWINDOW, MF_BYCOMMAND);
 			break;
 		case 1:
-			CheckMenuRadioItem(GetMenu(hMainWnd), IDM_WB_NORMALWINDOW,
+			CheckMenuRadioItem(hMainMenu, IDM_WB_NORMALWINDOW,
 				IDM_WB_TOOLWINDOW, IDM_WB_TOOLWINDOW, MF_BYCOMMAND);
 			break;
 	}
@@ -2427,41 +2430,41 @@ void ApplySettings()
 	UpdateBorderStyle(hPlaylistWnd);
 	if (hVideoWnd)
 		UpdateBorderStyle(hVideoWnd);
-	CheckMenuItem(GetMenu(hMainWnd), IDM_VIEW_MAINCONTROLS, MF_BYCOMMAND |
+	CheckMenuItem(hMainMenu, IDM_VIEW_MAINCONTROLS, MF_BYCOMMAND |
 		(dwMainControls)?MF_CHECKED:MF_UNCHECKED);
 	UpdateMainControlsState();
-	CheckMenuItem(GetMenu(hMainWnd), IDM_VIEW_PLAYLIST, MF_BYCOMMAND |
+	CheckMenuItem(hMainMenu, IDM_VIEW_PLAYLIST, MF_BYCOMMAND |
 		(dwPlaylist)?MF_CHECKED:MF_UNCHECKED);
 	//if (dwPlaylist)
 	//	ShowWindow(hPlaylistWnd, SW_SHOW);
 	switch (dwTitleBarIndex)
 	{
 		case 0:
-			CheckMenuRadioItem(GetMenu(hMainWnd), IDM_TB_DISPLAYFULLPATH,
+			CheckMenuRadioItem(hMainMenu, IDM_TB_DISPLAYFULLPATH,
 				IDM_TB_DISPLAYFILENAMEONLY, IDM_TB_DISPLAYFULLPATH, MF_BYCOMMAND);
 			break;
 		case 1:
-			CheckMenuRadioItem(GetMenu(hMainWnd), IDM_TB_DISPLAYFULLPATH,
+			CheckMenuRadioItem(hMainMenu, IDM_TB_DISPLAYFULLPATH,
 				IDM_TB_DISPLAYFILENAMEONLY, IDM_TB_DISPLAYFILENAMEONLY, MF_BYCOMMAND);
 			break;
 	}
-	CheckMenuItem(GetMenu(hMainWnd), IDM_TB_DONOTCHANGETITLE, MF_BYCOMMAND |
+	CheckMenuItem(hMainMenu, IDM_TB_DONOTCHANGETITLE, MF_BYCOMMAND |
 		(dwTBDoNotChangeTitle)?MF_CHECKED:MF_UNCHECKED);
-	CheckMenuItem(GetMenu(hMainWnd), IDM_INTERFACE_USESYSTEMCOLORS, MF_BYCOMMAND |
+	CheckMenuItem(hMainMenu, IDM_INTERFACE_USESYSTEMCOLORS, MF_BYCOMMAND |
 		(dwUseSystemColors)?MF_CHECKED:MF_UNCHECKED);
 	UpdateEBColors();
 	switch (dwOnTopIndex)
 	{
 		case 0:
-			CheckMenuRadioItem(GetMenu(hMainWnd), IDM_ONTOP_NEVER,
+			CheckMenuRadioItem(hMainMenu, IDM_ONTOP_NEVER,
 				IDM_ONTOP_WHILEPLAYING, IDM_ONTOP_NEVER, MF_BYCOMMAND);
 			break;
 		case 1:
-			CheckMenuRadioItem(GetMenu(hMainWnd), IDM_ONTOP_NEVER,
+			CheckMenuRadioItem(hMainMenu, IDM_ONTOP_NEVER,
 				IDM_ONTOP_WHILEPLAYING, IDM_ONTOP_ALWAYS, MF_BYCOMMAND);
 			break;
 		case 2:
-			CheckMenuRadioItem(GetMenu(hMainWnd), IDM_ONTOP_NEVER,
+			CheckMenuRadioItem(hMainMenu, IDM_ONTOP_NEVER,
 				IDM_ONTOP_WHILEPLAYING, IDM_ONTOP_WHILEPLAYING, MF_BYCOMMAND);
 			break;
 	}
@@ -2469,15 +2472,15 @@ void ApplySettings()
 	switch (dwPositionAtStartupIndex)
 	{
 		case 0:
-			CheckMenuRadioItem(GetMenu(hMainWnd), IDM_PAS_SCREENCENTER,
+			CheckMenuRadioItem(hMainMenu, IDM_PAS_SCREENCENTER,
 				IDM_PAS_RANDOM, IDM_PAS_SCREENCENTER, MF_BYCOMMAND);
 			break;
 		case 1:
-			CheckMenuRadioItem(GetMenu(hMainWnd), IDM_PAS_SCREENCENTER,
+			CheckMenuRadioItem(hMainMenu, IDM_PAS_SCREENCENTER,
 				IDM_PAS_RANDOM, IDM_PAS_RESTOREPREVIOUS, MF_BYCOMMAND);
 			break;
 		case 2:
-			CheckMenuRadioItem(GetMenu(hMainWnd), IDM_PAS_SCREENCENTER,
+			CheckMenuRadioItem(hMainMenu, IDM_PAS_SCREENCENTER,
 				IDM_PAS_RANDOM, IDM_PAS_RANDOM, MF_BYCOMMAND);
 			break;
 	}
@@ -2485,23 +2488,23 @@ void ApplySettings()
 	switch (dwOpacityLevel)
 	{
 		case 100:
-			CheckMenuRadioItem(GetMenu(hMainWnd), IDM_OPACITY_100,
+			CheckMenuRadioItem(hMainMenu, IDM_OPACITY_100,
 				IDM_OPACITY_CUSTOM, IDM_OPACITY_100, MF_BYCOMMAND);
 			break;
 		case 75:
-			CheckMenuRadioItem(GetMenu(hMainWnd), IDM_OPACITY_100,
+			CheckMenuRadioItem(hMainMenu, IDM_OPACITY_100,
 				IDM_OPACITY_CUSTOM, IDM_OPACITY_75, MF_BYCOMMAND);
 			break;
 		case 50:
-			CheckMenuRadioItem(GetMenu(hMainWnd), IDM_OPACITY_100,
+			CheckMenuRadioItem(hMainMenu, IDM_OPACITY_100,
 				IDM_OPACITY_CUSTOM, IDM_OPACITY_50, MF_BYCOMMAND);
 			break;
 		case 25:
-			CheckMenuRadioItem(GetMenu(hMainWnd), IDM_OPACITY_100,
+			CheckMenuRadioItem(hMainMenu, IDM_OPACITY_100,
 				IDM_OPACITY_CUSTOM, IDM_OPACITY_25, MF_BYCOMMAND);
 			break;
 		default:
-			CheckMenuRadioItem(GetMenu(hMainWnd), IDM_OPACITY_100,
+			CheckMenuRadioItem(hMainMenu, IDM_OPACITY_100,
 				IDM_OPACITY_CUSTOM, IDM_OPACITY_CUSTOM, MF_BYCOMMAND);
 			break;
 	}
@@ -2509,106 +2512,106 @@ void ApplySettings()
 	UpdateOpacityState(hPlaylistWnd);
 	/*if (hVideoWnd)
 		UpdateOpacityState(hVideoWnd);*/
-	CheckMenuItem(GetMenu(hMainWnd), IDM_OPACITY_OPAQUEONFOCUS, MF_BYCOMMAND |
+	CheckMenuItem(hMainMenu, IDM_OPACITY_OPAQUEONFOCUS, MF_BYCOMMAND |
 		(dwOpaqueOnFocus)?MF_CHECKED:MF_UNCHECKED);
-	CheckMenuItem(GetMenu(hMainWnd), IDM_VIEW_TRAYICON, MF_BYCOMMAND |
+	CheckMenuItem(hMainMenu, IDM_VIEW_TRAYICON, MF_BYCOMMAND |
 		(dwTrayIcon)?MF_CHECKED:MF_UNCHECKED);
 	if (dwTrayIcon) InitTrayIcon(); else RemoveTrayIcon();
-	CheckMenuItem(GetMenu(hMainWnd), IDM_AS_RESUMEPLAYBACK, MF_BYCOMMAND |
+	CheckMenuItem(hMainMenu, IDM_AS_RESUMEPLAYBACK, MF_BYCOMMAND |
 		(dwASResumePlayback)?MF_CHECKED:MF_UNCHECKED);
 	switch (dwRepeatIndex)
 	{
 		case 0:
-			CheckMenuRadioItem(GetMenu(hMainWnd), IDM_REPEAT_REPEATOFF,
+			CheckMenuRadioItem(hMainMenu, IDM_REPEAT_REPEATOFF,
 				IDM_REPEAT_REPEATONE, IDM_REPEAT_REPEATOFF, MF_BYCOMMAND);
 			break;
 		case 1:
-			CheckMenuRadioItem(GetMenu(hMainWnd), IDM_REPEAT_REPEATOFF,
+			CheckMenuRadioItem(hMainMenu, IDM_REPEAT_REPEATOFF,
 				IDM_REPEAT_REPEATONE, IDM_REPEAT_REPEATALL, MF_BYCOMMAND);
 			break;
 		case 2:
-			CheckMenuRadioItem(GetMenu(hMainWnd), IDM_REPEAT_REPEATOFF,
+			CheckMenuRadioItem(hMainMenu, IDM_REPEAT_REPEATOFF,
 				IDM_REPEAT_REPEATONE, IDM_REPEAT_REPEATONE, MF_BYCOMMAND);
 			break;
 	}
-	CheckMenuItem(GetMenu(hMainWnd), IDM_PLAYBACK_SHUFFLE, MF_BYCOMMAND |
+	CheckMenuItem(hMainMenu, IDM_PLAYBACK_SHUFFLE, MF_BYCOMMAND |
 		(dwShuffle)?MF_CHECKED:MF_UNCHECKED);
-	CheckMenuItem(GetMenu(hMainWnd), IDM_SEEK_SEEKBYKEYFRAMES, MF_BYCOMMAND |
+	CheckMenuItem(hMainMenu, IDM_SEEK_SEEKBYKEYFRAMES, MF_BYCOMMAND |
 		(dwSeekByKeyFrames)?MF_CHECKED:MF_UNCHECKED);
-	CheckMenuItem(GetMenu(hMainWnd), IDM_VOLUME_MUTE, MF_BYCOMMAND |
+	CheckMenuItem(hMainMenu, IDM_VOLUME_MUTE, MF_BYCOMMAND |
 		(dwMute)?MF_CHECKED:MF_UNCHECKED);
 	UpdateMuteButtonState();
-	CheckMenuItem(GetMenu(hMainWnd), IDM_AR_KEEPASPECTRATIO, MF_BYCOMMAND |
+	CheckMenuItem(hMainMenu, IDM_AR_KEEPASPECTRATIO, MF_BYCOMMAND |
 		(dwKeepAspectRatio)?MF_CHECKED:MF_UNCHECKED);
 	switch (dwAspectRatioIndex)
 	{
 		case 0:
-			CheckMenuRadioItem(GetMenu(hMainWnd), IDM_AR_DEFAULT,
+			CheckMenuRadioItem(hMainMenu, IDM_AR_DEFAULT,
 				IDM_AR_169, IDM_AR_DEFAULT, MF_BYCOMMAND);
 			break;
 		case 1:
-			CheckMenuRadioItem(GetMenu(hMainWnd), IDM_AR_DEFAULT,
+			CheckMenuRadioItem(hMainMenu, IDM_AR_DEFAULT,
 				IDM_AR_169, IDM_AR_43, MF_BYCOMMAND);
 			break;
 		case 2:
-			CheckMenuRadioItem(GetMenu(hMainWnd), IDM_AR_DEFAULT,
+			CheckMenuRadioItem(hMainMenu, IDM_AR_DEFAULT,
 				IDM_AR_169, IDM_AR_54, MF_BYCOMMAND);
 			break;
 		case 3:
-			CheckMenuRadioItem(GetMenu(hMainWnd), IDM_AR_DEFAULT,
+			CheckMenuRadioItem(hMainMenu, IDM_AR_DEFAULT,
 				IDM_AR_169, IDM_AR_169, MF_BYCOMMAND);
 			break;
 	}
-	CheckMenuItem(GetMenu(hMainWnd), IDM_PB_ADV_AGTROT, MF_BYCOMMAND |
+	CheckMenuItem(hMainMenu, IDM_PB_ADV_AGTROT, MF_BYCOMMAND |
 		(dwAddGraphToROT)?MF_CHECKED:MF_UNCHECKED);
-	CheckMenuItem(GetMenu(hMainWnd), IDM_DMO_USEDMO, MF_BYCOMMAND |
+	CheckMenuItem(hMainMenu, IDM_DMO_USEDMO, MF_BYCOMMAND |
 		(dwUseDMO)?MF_CHECKED:MF_UNCHECKED);
-	CheckMenuItem(GetMenu(hMainWnd), IDM_SAE_PARAMEQ, MF_BYCOMMAND |
+	CheckMenuItem(hMainMenu, IDM_SAE_PARAMEQ, MF_BYCOMMAND |
 		(dwDMOAEParamEq)?MF_CHECKED:MF_UNCHECKED);
-	CheckMenuItem(GetMenu(hMainWnd), IDM_SAE_WAVESREVERB, MF_BYCOMMAND |
+	CheckMenuItem(hMainMenu, IDM_SAE_WAVESREVERB, MF_BYCOMMAND |
 		(dwDMOAEWavesReverb)?MF_CHECKED:MF_UNCHECKED);
-	CheckMenuItem(GetMenu(hMainWnd), IDM_SAE_GARGLE, MF_BYCOMMAND |
+	CheckMenuItem(hMainMenu, IDM_SAE_GARGLE, MF_BYCOMMAND |
 		(dwDMOAEGargle)?MF_CHECKED:MF_UNCHECKED);
-	CheckMenuItem(GetMenu(hMainWnd), IDM_SAE_DISTORTION, MF_BYCOMMAND |
+	CheckMenuItem(hMainMenu, IDM_SAE_DISTORTION, MF_BYCOMMAND |
 		(dwDMOAEDistortion)?MF_CHECKED:MF_UNCHECKED);
-	CheckMenuItem(GetMenu(hMainWnd), IDM_SAE_COMPRESSOR, MF_BYCOMMAND |
+	CheckMenuItem(hMainMenu, IDM_SAE_COMPRESSOR, MF_BYCOMMAND |
 		(dwDMOAECompressor)?MF_CHECKED:MF_UNCHECKED);
-	CheckMenuItem(GetMenu(hMainWnd), IDM_SAE_ECHO, MF_BYCOMMAND |
+	CheckMenuItem(hMainMenu, IDM_SAE_ECHO, MF_BYCOMMAND |
 		(dwDMOAEEcho)?MF_CHECKED:MF_UNCHECKED);
-	CheckMenuItem(GetMenu(hMainWnd), IDM_SAE_FLANGER, MF_BYCOMMAND |
+	CheckMenuItem(hMainMenu, IDM_SAE_FLANGER, MF_BYCOMMAND |
 		(dwDMOAEFlanger)?MF_CHECKED:MF_UNCHECKED);
-	CheckMenuItem(GetMenu(hMainWnd), IDM_SAE_CHORUS, MF_BYCOMMAND |
+	CheckMenuItem(hMainMenu, IDM_SAE_CHORUS, MF_BYCOMMAND |
 		(dwDMOAEChorus)?MF_CHECKED:MF_UNCHECKED);
-	CheckMenuItem(GetMenu(hMainWnd), IDM_SAE_I3DL2REVERB, MF_BYCOMMAND |
+	CheckMenuItem(hMainMenu, IDM_SAE_I3DL2REVERB, MF_BYCOMMAND |
 		(dwDMOAEI3DL2Reverb)?MF_CHECKED:MF_UNCHECKED);
 	switch (dwAfterPlaybackIndex)
 	{
 		case 0:
-			CheckMenuRadioItem(GetMenu(hMainWnd), IDM_AP_CLOSEWINDOW, IDM_AP_DONOTHING,
+			CheckMenuRadioItem(hMainMenu, IDM_AP_CLOSEWINDOW, IDM_AP_DONOTHING,
 				IDM_AP_CLOSEWINDOW, MF_BYCOMMAND);
 			break;
 		case 1:
-			CheckMenuRadioItem(GetMenu(hMainWnd), IDM_AP_CLOSEWINDOW, IDM_AP_DONOTHING,
+			CheckMenuRadioItem(hMainMenu, IDM_AP_CLOSEWINDOW, IDM_AP_DONOTHING,
 				IDM_AP_EXIT, MF_BYCOMMAND);
 			break;
 		case 2:
-			CheckMenuRadioItem(GetMenu(hMainWnd), IDM_AP_CLOSEWINDOW, IDM_AP_DONOTHING,
+			CheckMenuRadioItem(hMainMenu, IDM_AP_CLOSEWINDOW, IDM_AP_DONOTHING,
 				IDM_AP_STANDBY, MF_BYCOMMAND);
 			break;
 		case 3:
-			CheckMenuRadioItem(GetMenu(hMainWnd), IDM_AP_CLOSEWINDOW, IDM_AP_DONOTHING,
+			CheckMenuRadioItem(hMainMenu, IDM_AP_CLOSEWINDOW, IDM_AP_DONOTHING,
 				IDM_AP_HIBERNATE, MF_BYCOMMAND);
 			break;
 		case 4:
-			CheckMenuRadioItem(GetMenu(hMainWnd), IDM_AP_CLOSEWINDOW, IDM_AP_DONOTHING,
+			CheckMenuRadioItem(hMainMenu, IDM_AP_CLOSEWINDOW, IDM_AP_DONOTHING,
 				IDM_AP_SHUTDOWN, MF_BYCOMMAND);
 			break;
 		case 5:
-			CheckMenuRadioItem(GetMenu(hMainWnd), IDM_AP_CLOSEWINDOW, IDM_AP_DONOTHING,
+			CheckMenuRadioItem(hMainMenu, IDM_AP_CLOSEWINDOW, IDM_AP_DONOTHING,
 				IDM_AP_LOGOFF, MF_BYCOMMAND);
 			break;
 		case 6:
-			CheckMenuRadioItem(GetMenu(hMainWnd), IDM_AP_CLOSEWINDOW, IDM_AP_DONOTHING,
+			CheckMenuRadioItem(hMainMenu, IDM_AP_CLOSEWINDOW, IDM_AP_DONOTHING,
 				IDM_AP_DONOTHING, MF_BYCOMMAND);
 			break;
 	}
