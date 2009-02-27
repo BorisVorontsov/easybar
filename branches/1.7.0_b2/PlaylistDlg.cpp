@@ -92,23 +92,24 @@ Find_Begin:
 			{
 				int intItemsCnt = SendDlgItemMessage(hWnd, IDC_LSTPL, LB_GETCOUNT, 0, 0);
 				int intCurSel = SendDlgItemMessage(hWnd, IDC_LSTPL, LB_GETCURSEL, 0, 0);
-				EnableMenuItem(GetMenu(hWnd), IDM_SELECTION_MOVEUP,
+				HMENU hPlaylistMenu = GetMenu(hWnd);
+				EnableMenuItem(hPlaylistMenu, IDM_SELECTION_MOVEUP,
 					(((intItemsCnt != LB_ERR) && intItemsCnt) && ((intCurSel != LB_ERR) && (intCurSel > 0)))?MF_ENABLED:MF_DISABLED
 					| MF_GRAYED);
-				EnableMenuItem(GetMenu(hWnd), IDM_SELECTION_MOVEDOWN,
+				EnableMenuItem(hPlaylistMenu, IDM_SELECTION_MOVEDOWN,
 					(((intItemsCnt != LB_ERR) && intItemsCnt) && ((intCurSel != LB_ERR) && (intCurSel < (intItemsCnt - 1))))?MF_ENABLED:
 					MF_DISABLED | MF_GRAYED);
-				EnableMenuItem(GetMenu(hWnd), IDM_SELECTION_CROP,
+				EnableMenuItem(hPlaylistMenu, IDM_SELECTION_CROP,
 					(((intItemsCnt != LB_ERR) && (intItemsCnt > 1)) && (intCurSel != LB_ERR))?MF_ENABLED:MF_DISABLED | MF_GRAYED);
-				EnableMenuItem(GetMenu(hWnd), IDM_SELECTION_DELETE,
+				EnableMenuItem(hPlaylistMenu, IDM_SELECTION_DELETE,
 					(((intItemsCnt != LB_ERR) && intItemsCnt) && (intCurSel != LB_ERR))?MF_ENABLED:MF_DISABLED | MF_GRAYED);
-				EnableMenuItem(GetMenu(hWnd), IDM_MISC_FIND,
+				EnableMenuItem(hPlaylistMenu, IDM_MISC_FIND,
 					((intItemsCnt != LB_ERR) && intItemsCnt)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
-				EnableMenuItem(GetMenu(hWnd), IDM_SORT_SORTBYTITLE,
+				EnableMenuItem(hPlaylistMenu, IDM_SORT_SORTBYTITLE,
 					((intItemsCnt != LB_ERR) && (intItemsCnt > 1))?MF_ENABLED:MF_DISABLED | MF_GRAYED);
-				EnableMenuItem(GetMenu(hWnd), IDM_SORT_REVERSESORTBYTITLE,
+				EnableMenuItem(hPlaylistMenu, IDM_SORT_REVERSESORTBYTITLE,
 					((intItemsCnt != LB_ERR) && (intItemsCnt > 1))?MF_ENABLED:MF_DISABLED | MF_GRAYED);
-				EnableMenuItem(GetMenu(hWnd), IDM_MISC_CLEARPLAYLIST,
+				EnableMenuItem(hPlaylistMenu, IDM_MISC_CLEARPLAYLIST,
 					((intItemsCnt != LB_ERR) && intItemsCnt)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
 			}
 			return TRUE;

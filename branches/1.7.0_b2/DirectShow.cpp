@@ -791,11 +791,14 @@ BOOL CDirectShow::IsStreamSelected(DSSTREAMTYPE dStreamType, LPCWSTR lpwStmName)
 	return bResult;
 }
 
+//Возвращает количество аудио потоков (внутренний механизм)
 int CDirectShow::GetAudioStreamsCount_E()
 {
 	return m_lBACount;
 }
 
+//Вибирает аудио поток (внутренний механизм)
+//В случае ошибки функция вернет значение меньше нуля
 int CDirectShow::SelectAudioStream_E(int intStmIndex)
 {
 	if (!m_lBACount) return -1;
@@ -816,9 +819,10 @@ int CDirectShow::SelectAudioStream_E(int intStmIndex)
 	return 0;
 }
 
+//Позволяет узнать, выбран ли аудио поток (внутренний механизм)
 BOOL CDirectShow::IsAudioStreamSelected_E(int intStmIndex)
 {
-	if (!m_lBACount) return -1;
+	if (!m_lBACount) return FALSE;
 	if ((intStmIndex < 0) || (intStmIndex > (int)m_lBACount)) return -1;
 	return (m_intCurrentBA == intStmIndex);
 }
@@ -1148,7 +1152,7 @@ int CDirectShow::FGFiltersPropertyPages(LPCWSTR lpwFGFilName, BOOL bCheck)
 }
 
 //Обновляет массив m_pFGBaseFilter[], хранящий список фильтров DirectShow в текущем Filter Graph
-//А так же инициализирует интерфейс m_pAMStreamSelect
+//А так же инициализирует массив m_pBasicAudio и интерфейс m_pAMStreamSelect
 //Функция Open() вызывает эту функцию автоматически
 //Однако, крайне желательно вызывать её повторно перед вызовом функций,
 //работающих с m_pFGBaseFilter[] массивом
@@ -1156,6 +1160,7 @@ void CDirectShow::UpdateFGFiltersArray()
 {
 	IEnumFilters *pEnumFilters = NULL;
 	IBasicAudio *pBasicAudio = NULL;
+	//CLSID cBF;
 	IAMStreamSelect *pStreamSelect = NULL;
 	if (FAILED(m_pGraphBuilder->EnumFilters(&pEnumFilters))) return;
 	for (m_lCounter = 0; m_lCounter < E_MAX_BF; m_lCounter++)
@@ -1169,13 +1174,19 @@ void CDirectShow::UpdateFGFiltersArray()
 	pEnumFilters->Reset();
 	pEnumFilters->Next(E_MAX_BF, &m_pFGBaseFilter[0], &m_lFGFilCount);
 	pEnumFilters->Release();
+	m_lBACount = 0;
+	m_intCurrentBA = -1;
 	for (m_lCounter = 0; m_lCounter < m_lFGFilCount; m_lCounter++)
 	{
-		if (SUCCEEDED(m_pFGBaseFilter[m_lCounter]->QueryInterface(IID_IBasicAudio, (LPVOID *)&pBasicAudio)))
-		{
-			m_pBasicAudio[++m_intCurrentBA] = pBasicAudio;
-			m_lBACount++;
-		}
+		//m_pFGBaseFilter[m_lCounter]->GetClassID(&cBF);
+		//if (IsEqualCLSID(cBF, CLSID_AudioRender) || IsEqualCLSID(cBF, CLSID_DSoundRender))
+		//{
+			if (SUCCEEDED(m_pFGBaseFilter[m_lCounter]->QueryInterface(IID_IBasicAudio, (LPVOID *)&pBasicAudio)))
+			{
+				m_pBasicAudio[++m_intCurrentBA] = pBasicAudio;
+				m_lBACount++;
+			}
+		//}
 		if (!m_pAMStreamSelect)
 		{
 			if (SUCCEEDED(m_pFGBaseFilter[m_lCounter]->QueryInterface(IID_IAMStreamSelect, (LPVOID *)&pStreamSelect)))

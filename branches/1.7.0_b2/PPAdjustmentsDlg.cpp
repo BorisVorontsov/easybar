@@ -1,4 +1,5 @@
 #include <windows.h>
+#include <stdio.h>
 
 #include "resource.h"
 #include "engine.h"
@@ -16,22 +17,18 @@ INT_PTR CALLBACK PPAdjustmentsDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARA
 			//--------------------------------------------------------------------
 			hPPAdjustments = hWnd;
 			PPSetDefFileInfo(hWnd, pEngine->m_lpwFileName);
-			GetFGStreams();
-			GetFGStreams(TRUE);
+			GetFGAudioStreams();
 			if (SendDlgItemMessage(hWnd, IDC_CBOAS, CB_GETCOUNT, 0, 0))
 				PostMessage(hWnd, WM_COMMAND, MAKEWPARAM(IDC_CBOAS, CBN_SELCHANGE), 0);
-			if (SendDlgItemMessage(hWnd, IDC_CBOVS, CB_GETCOUNT, 0, 0))
-				PostMessage(hWnd, WM_COMMAND, MAKEWPARAM(IDC_CBOVS, CBN_SELCHANGE), 0);
 			return TRUE;
 		case WM_COMMAND:
 			switch (LOWORD(wParam))
 			{
 				case IDC_CBOAS:
-				case IDC_CBOVS:
 				{
 					if (HIWORD(wParam) == CBN_SELCHANGE)
 					{
-						LPWSTR lpwText;
+						/*LPWSTR lpwText;
 						BOOL bVideoStm = (LOWORD(wParam) == IDC_CBOVS);
 						BOOL bStmState;
 						int intSelItem = SendDlgItemMessage(hWnd, (bVideoStm)?IDC_CBOVS:IDC_CBOAS, CB_GETCURSEL, 0, 0);
@@ -41,14 +38,13 @@ INT_PTR CALLBACK PPAdjustmentsDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARA
 						SendDlgItemMessage(hWnd, (bVideoStm)?IDC_CBOVS:IDC_CBOAS, CB_GETLBTEXT, intSelItem, (LPARAM)lpwText);
 						bStmState = pEngine->IsStreamSelected((bVideoStm)?DSST_VIDEO:DSST_AUDIO, lpwText);
 						EnableWindow(GetDlgItem(hWnd, (bVideoStm)?IDC_BTNSVS:IDC_BTNSAS), !bStmState);
-						delete[] lpwText;
+						delete[] lpwText;*/
 					}
 					break;
 				}
 				case IDC_BTNSAS:
-				case IDC_BTNSVS:
 				{
-					LPWSTR lpwText;
+					/*LPWSTR lpwText;
 					BOOL bVideoStm = (LOWORD(wParam) == IDC_BTNSVS);
 					int intSelItem = SendDlgItemMessage(hWnd, (bVideoStm)?IDC_CBOVS:IDC_CBOAS, CB_GETCURSEL, 0, 0);
 					DWORD dwTextSize = SendDlgItemMessage(hWnd, (bVideoStm)?IDC_CBOVS:IDC_CBOAS, CB_GETLBTEXTLEN, intSelItem, 0);
@@ -58,44 +54,40 @@ INT_PTR CALLBACK PPAdjustmentsDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARA
 					pEngine->SelectStream((bVideoStm)?DSST_VIDEO:DSST_AUDIO, lpwText);
 					EnableWindow(GetDlgItem(hWnd, (bVideoStm)?IDC_BTNSVS:IDC_BTNSAS), FALSE);
 					delete[] lpwText;
-					break;
+					break;*/
 				}
 			}
+			return TRUE;
+		case WM_DESTROY:
+			hPPAdjustments = 0;
 			return TRUE;
 	}
 	return FALSE;
 }
 
-//Обновляет списки потоков (аудио/видео)
-void GetFGStreams(BOOL bVideo)
+//Обновляет списки потоков (аудио)
+void GetFGAudioStreams()
 {
 	if (!hPPAdjustments) return;
-	ULONG i;
-	DWORD dwFGSASize = 0;
+	ULONG i, lFGASCnt;
 	int intSelStm = 0;
-	pEngine->GetAvailableStreams((bVideo)?DSST_VIDEO:DSST_AUDIO, 0, &dwFGSASize, 0);
-	if (!dwFGSASize)
+	WCHAR lpwText[128] = { 0 };
+	lFGASCnt = (ULONG)pEngine->GetAudioStreamsCount_E();
+
+	if (!lFGASCnt)
 	{
-		EnableWindow(GetDlgItem(hPPAdjustments, (bVideo)?IDC_CBOVS:IDC_CBOAS), FALSE);
-		EnableWindow(GetDlgItem(hPPAdjustments, (bVideo)?IDC_BTNSVS:IDC_BTNSAS), FALSE);
+		EnableWindow(GetDlgItem(hPPAdjustments, IDC_CBOAS), FALSE);
+		EnableWindow(GetDlgItem(hPPAdjustments, IDC_BTNSAS), FALSE);
+		return;
 	}
-	LPWSTR *lpwFGStreams = new LPWSTR[dwFGSASize];
-	for (i = 0; i < dwFGSASize; i++)
-		lpwFGStreams[i] = new WCHAR[MAX_PATH];
-	if (pEngine->GetAvailableStreams((bVideo)?DSST_VIDEO:DSST_AUDIO, &lpwFGStreams[0],
-		&dwFGSASize, MAX_PATH) >= 0)
+	
+	SendDlgItemMessage(hPPAdjustments, IDC_CBOAS, CB_RESETCONTENT, 0, 0);
+	for (i = 0; i < lFGASCnt; i++)
 	{
-		SendDlgItemMessage(hPPAdjustments, (bVideo)?IDC_CBOVS:IDC_CBOAS, CB_RESETCONTENT, 0, 0);
-		for (i = 0; i < dwFGSASize; i++)
-		{
-			int intIndex = SendDlgItemMessage(hPPAdjustments, (bVideo)?IDC_CBOVS:IDC_CBOAS, CB_ADDSTRING, 0,
-				(LPARAM)lpwFGStreams[i]);
-			if (pEngine->IsStreamSelected((bVideo)?DSST_VIDEO:DSST_AUDIO, lpwFGStreams[i]))
-				intSelStm = i;
-		}
-		SendDlgItemMessage(hPPAdjustments, (bVideo)?IDC_CBOVS:IDC_CBOAS, CB_SETCURSEL, intSelStm, 0);
+		swprintf(lpwText, L"Audio stream #%i", i);
+		SendDlgItemMessage(hPPAdjustments, IDC_CBOAS, CB_ADDSTRING, 0, (LPARAM)lpwText);
+		if (pEngine->IsAudioStreamSelected_E(i))
+			intSelStm = i;
 	}
-	for (i = 0; i < dwFGSASize; i++)
-		delete[] lpwFGStreams[i];
-	delete[] lpwFGStreams;
+	SendDlgItemMessage(hPPAdjustments, IDC_CBOAS, CB_SETCURSEL, intSelStm, 0);
 }
