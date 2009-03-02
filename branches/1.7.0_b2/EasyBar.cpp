@@ -511,62 +511,57 @@ INT_PTR CALLBACK PlayerDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 			}
 			return TRUE;
 		}
-		case WM_KEYDOWN:
-			switch (wParam)
+		case WM_APPCOMMAND:
+			switch (GET_APPCOMMAND_LPARAM(lParam))
 			{
-				case VK_VOLUME_DOWN:
-					PostMessage(hWnd, WM_COMMAND, MAKEWPARAM(IDM_VOLUME_DECREASE, 0), 0);
-					break;
-				case VK_VOLUME_UP:
-					PostMessage(hWnd, WM_COMMAND, MAKEWPARAM(IDM_VOLUME_INCREASE, 0), 0);
-					break;
-			}
-		case WM_KEYUP:
-			switch (wParam)
-			{
-				case VK_MEDIA_PREV_TRACK:
+				case APPCOMMAND_MEDIA_PREVIOUSTRACK:
 					if (((dwShuffle)?(pFileCollection->FileCount() > 1):
 						(pFileCollection->IsFileAvailable(FCF_BACKWARD))))
 					{
 						PostMessage(hWnd, WM_COMMAND, MAKEWPARAM(IDM_PLAYBACK_PREVIOUSFILE, 0), 0);
 					}
-					break;
-				case VK_MEDIA_PLAY_PAUSE:
+					return TRUE;
+				case APPCOMMAND_MEDIA_PLAY_PAUSE:
 					PostMessage(hWnd, WM_COMMAND, MAKEWPARAM(IDM_PLAYBACK_PLAYPAUSE, 0), 0);
-					break;
-				case VK_MEDIA_STOP:
+					return TRUE;
+				case APPCOMMAND_MEDIA_STOP:
 					PostMessage(hWnd, WM_COMMAND, MAKEWPARAM(IDM_PLAYBACK_STOP, 0), 0);
-					break;
-				case VK_MEDIA_NEXT_TRACK:
+					return TRUE;
+				case APPCOMMAND_MEDIA_NEXTTRACK:
 					if (((dwShuffle)?(pFileCollection->FileCount() > 1):
 						(pFileCollection->IsFileAvailable(FCF_FORWARD))))
 					{
 						PostMessage(hWnd, WM_COMMAND, MAKEWPARAM(IDM_PLAYBACK_NEXTFILE, 0), 0);
 					}
-					break;
-				case VK_VOLUME_MUTE:
+					return TRUE;
+				case APPCOMMAND_VOLUME_DOWN:
+					PostMessage(hWnd, WM_COMMAND, MAKEWPARAM(IDM_VOLUME_DECREASE, 0), 0);
+					return TRUE;
+				case APPCOMMAND_VOLUME_UP:
+					PostMessage(hWnd, WM_COMMAND, MAKEWPARAM(IDM_VOLUME_INCREASE, 0), 0);
+					return TRUE;
+				case APPCOMMAND_VOLUME_MUTE:
 					PostMessage(hWnd, WM_COMMAND, MAKEWPARAM(IDM_VOLUME_MUTE, 0), 0);
-					break;
+					return TRUE;
 			}
-		case WM_XBUTTONUP:
-			switch (HIWORD(wParam))
+			switch (GET_KEYSTATE_LPARAM(lParam))
 			{
-				case XBUTTON1:
+				case MK_XBUTTON1:
 					if (((dwShuffle)?(pFileCollection->FileCount() > 1):
 						(pFileCollection->IsFileAvailable(FCF_BACKWARD))))
 					{
 						PostMessage(hWnd, WM_COMMAND, MAKEWPARAM(IDM_PLAYBACK_PREVIOUSFILE, 0), 0);
 					}
-					break;
-				case XBUTTON2:
+					return TRUE;
+				case MK_XBUTTON2:
 					if (((dwShuffle)?(pFileCollection->FileCount() > 1):
 						(pFileCollection->IsFileAvailable(FCF_FORWARD))))
 					{
 						PostMessage(hWnd, WM_COMMAND, MAKEWPARAM(IDM_PLAYBACK_NEXTFILE, 0), 0);
 					}
-					break;
+					return TRUE;
 			}
-			break;
+			return FALSE;
 		case WM_MOUSEWHEEL:
 			if (GET_WHEEL_DELTA_WPARAM(wParam) < 0)
 			{

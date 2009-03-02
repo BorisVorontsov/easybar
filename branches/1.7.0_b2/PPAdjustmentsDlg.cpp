@@ -84,7 +84,7 @@ void GetFGAudioStreams()
 	SendDlgItemMessage(hPPAdjustments, IDC_CBOAS, CB_RESETCONTENT, 0, 0);
 	for (i = 0; i < lFGASCnt; i++)
 	{
-		swprintf(lpwText, L"Audio stream #%i", i);
+		swprintf(lpwText, L"Audio stream #%i", i + 1);
 		SendDlgItemMessage(hPPAdjustments, IDC_CBOAS, CB_ADDSTRING, 0, (LPARAM)lpwText);
 		if (pEngine->IsAudioStreamSelected_E(i))
 			intSelStm = i;

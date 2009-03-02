@@ -26,10 +26,11 @@ static NOTIFYICONDATA NID = { 0 };
 
 void InitTrayCBWnd(BOOL bCreate)
 {
-	LONG i, lMMItemCnt, lTMItemCnt;
+	LONG i, lTMItemCnt;
 	HMENU hMainMenu = GetMenu(hMainWnd);
 	if (bCreate)
 	{
+		LONG lMMItemCnt;
 		WCHAR lpwText[MAX_PATH] = { 0 };
 		HMENU hTraySubMenu;
 		hTrayMenu = CreatePopupMenu();
@@ -40,11 +41,6 @@ void InitTrayCBWnd(BOOL bCreate)
 		{
 			GetMenuString(hMainMenu, i, lpwText, MAX_PATH, MF_BYPOSITION);
 			hTraySubMenu = GetSubMenu(hMainMenu, i);
-			//debug
-			//--------------------------------------
-			DWORD e = GetLastError();
-			e = e; //1401
-			//--------------------------------------
 			AppendMenu(hTrayMenu, MF_STRING | MF_POPUP, (UINT_PTR)hTraySubMenu, lpwText);
 		}
 		AppendMenu(hTrayMenu, MF_SEPARATOR, 0, 0);
@@ -70,12 +66,10 @@ void InitTrayCBWnd(BOOL bCreate)
 	else
 	{
 		if (!dwNoOwnerDrawMenu) pEBMenuTray->InitEBMenu(0);
-		lMMItemCnt = GetMenuItemCount(hMainMenu);
 		lTMItemCnt = GetMenuItemCount(hTrayMenu);
-		for (i = (lTMItemCnt - 1); i >= (lTMItemCnt - lMMItemCnt); i--)
-		{
+		for (i = (lTMItemCnt - 1); i >= 0; i--)
 			RemoveMenu(hTrayMenu, i, MF_BYPOSITION);
-		}
+
 		DestroyMenu(hTrayMenu);
 		hTrayMenu = 0;
 		DestroyWindow(hTrayCBWnd);
@@ -132,18 +126,18 @@ static LRESULT CALLBACK TrayCBWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARA
 							ReleaseMutex(hMutex);
 							hMutex = 0;
 						}
-						HANDLE hMtx = CreateMutex(0, TRUE, APP_NAME);
+						HANDLE hMutex2 = CreateMutex(0, TRUE, APP_NAME);
 						if (GetLastError() == ERROR_ALREADY_EXISTS)
 						{
 							if (MessageBox(hWnd, L"Close all instances?", APP_NAME, MB_YESNO | MB_ICONQUESTION |
 								MB_DEFBUTTON2) == IDYES)
 							{
 								PostMessage(hMainWnd, WM_COMMAND, MAKEWPARAM(IDM_FILE_EXIT, 0), 0);
-								ReleaseMutex(hMtx);
+								ReleaseMutex(hMutex2);
 								break;
 							}
 						}
-						ReleaseMutex(hMtx);
+						ReleaseMutex(hMutex2);
 					}
 					PostMessage(hMainWnd, WM_COMMAND, MAKEWPARAM(IDM_FILE_CLOSEWINDOW, 0), 0);
 					break;
