@@ -54,6 +54,9 @@ INT_PTR CALLBACK VideoDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam
 			FillRect(hDC, &RCW, (HBRUSH)GetStockObject(BLACK_BRUSH));
 			return TRUE;
 		}
+		case WM_APPCOMMAND:
+			PostMessage(hMainWnd, uMsg, wParam, lParam);
+			return TRUE;
 		case WM_LBUTTONDOWN:
 		case WM_MBUTTONDOWN:
 		case WM_RBUTTONDOWN:

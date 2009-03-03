@@ -14,7 +14,7 @@
 
 #define EBL_SIGNATURE				L"EBL"
 
-__declspec(selectany) LPCWSTR EBL_SUPPORTED_VERSIONS[] = { L"1.0", L"1.1", 0 };
+__declspec(selectany) LPCWSTR EBL_SUPPORTED_VERSIONS[] = { L"1.0", L"1.1", L"1.2", 0 };
 __declspec(selectany) LPCWSTR EBL_SUPPORTED_ENCODINGS[] = { L"UTF-8", 0 };
 
 DWORD LoadPlaylist(LPCWSTR lpwFileName);

@@ -184,13 +184,24 @@ DWORD LoadPlaylist_M3U(LPCWSTR lpwFileName)
 				sizeof(lpwLine) / sizeof(WCHAR));
 			lLineSize = TrimNLChr(lpwLine);
 			CheckPath(lpwFileName, lpwLine, lpwLine);
-			if (pPLID)
+			if (IsFile(lpwLine) || IsURL(lpwLine))
 			{
-				pFileCollection->AppendFile(lpwLine, (LONG_PTR)pPLID);
-				pPLID = 0;
+				if (pPLID)
+				{
+					pFileCollection->AppendFile(lpwLine, (LONG_PTR)pPLID);
+					pPLID = 0;
+				}
+				else
+					pFileCollection->AppendFile(lpwLine);
 			}
 			else
-				pFileCollection->AppendFile(lpwLine);
+			{
+				if (pPLID)
+				{
+					delete pPLID;
+					pPLID = 0;
+				}
+			}
 			lFileCnt++;
 			lLineCnt += 2;
 		}
@@ -208,7 +219,8 @@ DWORD LoadPlaylist_EBL(LPCWSTR lpwFileName)
 	BOOL SignatureOK = FALSE, EncodingOK = FALSE;
 	char lpLine[MAX_PATH * sizeof(WCHAR)] = { 0 };
 	WCHAR lpwLine[MAX_PATH] = { 0 };
-	LPWSTR pArgs[3];
+	LPWSTR pArgs[4];
+	LPPLITEMDESC pPLID = 0;
 	pPlaylist = _wfopen(lpwFileName, L"rt");
 	while (!feof(pPlaylist))
 	{
@@ -218,7 +230,7 @@ DWORD LoadPlaylist_EBL(LPCWSTR lpwFileName)
 		MultiByteToWideChar(CP_UTF8, 0, lpLine, -1, lpwLine, sizeof(lpwLine) / sizeof(WCHAR));
 		lLineSize = TrimNLChr(lpwLine);
 		ZeroMemory(pArgs, sizeof(pArgs));
-		lArgsCnt = SP_Split(lpwLine, &pArgs[0], ',', 3);
+		lArgsCnt = SP_Split(lpwLine, &pArgs[0], ',', 4);
 		if (lArgsCnt >= 2)
 		{
 			if (!SignatureOK)
@@ -258,10 +270,32 @@ DWORD LoadPlaylist_EBL(LPCWSTR lpwFileName)
 				{
 					SP_TrimEx(pArgs[1], pArgs[1], ' ');
 					CheckPath(lpwFileName, pArgs[1], lpwLine);
+					if (lArgsCnt == 4)
+					{
+						pPLID = new PLITEMDESC;
+						SP_TrimEx(pArgs[2], pArgs[2], ' ');
+						wcsncpy(pPLID->lpwTitle, pArgs[2], 127);
+						SP_TrimEx(pArgs[3], pArgs[3], ' ');
+						pPLID->uDuration = _wtoi(pArgs[3]);
+					}
 					if (IsFile(lpwLine) || IsURL(lpwLine))
 					{
-						pFileCollection->AppendFile(lpwLine);
+						if (pPLID)
+						{
+							pFileCollection->AppendFile(lpwLine, (LONG_PTR)pPLID);
+							pPLID = 0;
+						}
+						else
+							pFileCollection->AppendFile(lpwLine);
 						lFileCnt++;
+					}
+					else
+					{
+						if (pPLID)
+						{
+							delete pPLID;
+							pPLID = 0;
+						}
 					}
 				}
 			}
@@ -273,6 +307,7 @@ DWORD LoadPlaylist_EBL(LPCWSTR lpwFileName)
 		if (pArgs[0]) delete[] pArgs[0];
 		if (pArgs[1]) delete[] pArgs[1];
 		if (pArgs[2]) delete[] pArgs[2];
+		if (pArgs[3]) delete[] pArgs[3];
 		lLineCnt++;
 	}
 ExitFunction:
@@ -280,6 +315,7 @@ ExitFunction:
 	if (pArgs[0]) delete[] pArgs[0];
 	if (pArgs[1]) delete[] pArgs[1];
 	if (pArgs[2]) delete[] pArgs[2];
+	if (pArgs[3]) delete[] pArgs[3];
 #endif
 	fclose(pPlaylist);
 	return lFileCnt;
@@ -540,11 +576,13 @@ DWORD LoadPlaylist_MPCPL(LPCWSTR lpwFileName)
 void SavePlaylist_EBL(LPCWSTR lpwFileName)
 {
 	FILE *pPlaylist;
-	ULONG i, lFCFileCnt = 0;
+	ULONG i, lTime, lFCFileCnt = 0;
 	char lpLine[MAX_PATH * sizeof(WCHAR)] = { 0 };
-	char lpTmp1[256] = { 0 }, lpTmp2[256] = { 0 }, lpTmp3[256] = { 0 };
-	WCHAR lpwLine[MAX_PATH] = { 0 };
+	char lpTmp1[256] = { 0 }, lpTmp2[256] = { 0 }, lpTmp3[/*64*/256] = { 0 };
 	WCHAR lpwTitle[128] = { 0 };
+	WCHAR lpwName[128] = { 0 };
+	WCHAR lpwLine[MAX_PATH] = { 0 };
+	LPPLITEMDESC pPLID = 0;
 	lFCFileCnt = pFileCollection->FileCount();
 	pPlaylist = _wfopen(lpwFileName, L"wt");
 	WideCharToMultiByte(CP_UTF8, 0, EBL_KEYWORD_SIGNATURE, -1, lpTmp1, sizeof(lpTmp1), 0, 0);
@@ -581,9 +619,22 @@ void SavePlaylist_EBL(LPCWSTR lpwFileName)
 	fprintf(pPlaylist, "%s, %i\n", lpTmp1, lFCFileCnt);
 	for (; i < lFCFileCnt; i++)
 	{
+		pPLID = 0;
+		pFileCollection->GetUserData(0, i, FCF_BYINDEX, (LONG_PTR&)pPLID);
 		pFileCollection->GetFile(lpwLine, i, FCF_BYINDEX);
+		if (pPLID)
+		{
+			lTime = pPLID->uDuration;
+			wcscpy(lpwName, pPLID->lpwTitle);
+		}
+		else
+		{
+			lTime = 0;
+			GetTitle(lpwLine, lpwName);
+		}
 		WideCharToMultiByte(CP_UTF8, 0, lpwLine, -1, lpLine, sizeof(lpLine), 0, 0);
-		fprintf(pPlaylist, "%i, %s\n", i + 1, lpLine);
+		WideCharToMultiByte(CP_UTF8, 0, lpwName, -1, lpTmp1, sizeof(lpTmp1), 0, 0);
+		fprintf(pPlaylist, "%i, %s, %s, %i\n", i + 1, lpLine, lpTmp1, lTime);
 	}
 	fclose(pPlaylist);
 }

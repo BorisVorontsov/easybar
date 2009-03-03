@@ -544,7 +544,9 @@ INT_PTR CALLBACK PlayerDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 					PostMessage(hWnd, WM_COMMAND, MAKEWPARAM(IDM_VOLUME_MUTE, 0), 0);
 					return TRUE;
 			}
-			switch (GET_KEYSTATE_LPARAM(lParam))
+			return FALSE;
+		case WM_XBUTTONUP:
+			switch (LOWORD(wParam))
 			{
 				case MK_XBUTTON1:
 					if (((dwShuffle)?(pFileCollection->FileCount() > 1):
@@ -552,16 +554,16 @@ INT_PTR CALLBACK PlayerDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 					{
 						PostMessage(hWnd, WM_COMMAND, MAKEWPARAM(IDM_PLAYBACK_PREVIOUSFILE, 0), 0);
 					}
-					return TRUE;
+					break;
 				case MK_XBUTTON2:
 					if (((dwShuffle)?(pFileCollection->FileCount() > 1):
 						(pFileCollection->IsFileAvailable(FCF_FORWARD))))
 					{
 						PostMessage(hWnd, WM_COMMAND, MAKEWPARAM(IDM_PLAYBACK_NEXTFILE, 0), 0);
 					}
-					return TRUE;
+					break;
 			}
-			return FALSE;
+			return TRUE;
 		case WM_MOUSEWHEEL:
 			if (GET_WHEEL_DELTA_WPARAM(wParam) < 0)
 			{
@@ -2682,14 +2684,13 @@ LONG InitTrack(DWORD dwFCFlag, DWORD dwFCIndex)
 	intTmp2 = (intTmp1 >= 0)?abs(intTmp2):intTmp2;
 	pEngine->SetBalance(intTmp2);
 	pFileCollection->GetUserData(0, 0, FCF_RECENT, (LONG_PTR &)pPLID);
-	if (!pPLID)
-	{
-		pPLID = new PLITEMDESC;
-		ZeroMemory(pPLID, sizeof(PLITEMDESC));
-		GetTitle(lpwFileName, pPLID->lpwTitle);
-		pPLID->uDuration = (UINT)pEngine->GetLength();
-		pFileCollection->SetUserData(0, 0, FCF_RECENT, (LONG_PTR)pPLID);
-	}
+	if (pPLID)
+		delete pPLID;
+	pPLID = new PLITEMDESC;
+	ZeroMemory(pPLID, sizeof(PLITEMDESC));
+	GetTitle(lpwFileName, pPLID->lpwTitle);
+	pPLID->uDuration = (UINT)pEngine->GetLength();
+	pFileCollection->SetUserData(0, 0, FCF_RECENT, (LONG_PTR)pPLID);
 	SetActiveItem(lpwFileName);
 	UpdateCFTitle(lpwFileName);
 	return 0;
@@ -3266,8 +3267,16 @@ void GetTitle(LPCWSTR lpwFileName, LPWSTR lpwResult)
 	else
 	{
 GetTitle_CreateFromFile:
-		SP_ExtractName(lpwFileName, lpwName);
-		SP_ExtractLeftPart(lpwName, lpwName, '.');
+		if (IsURL(lpwFileName))
+		{
+			wcsncpy(lpwName, lpwFileName, 124);
+			wcscat(lpwName, L"...");
+		}
+		else
+		{
+			SP_ExtractName(lpwFileName, lpwName);
+			SP_ExtractLeftPart(lpwName, lpwName, '.');
+		}
 	}
 	wcscpy(lpwResult, lpwName);
 }
