@@ -25,36 +25,17 @@ INT_PTR CALLBACK PPAdjustmentsDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARA
 			switch (LOWORD(wParam))
 			{
 				case IDC_CBOAS:
-				{
 					if (HIWORD(wParam) == CBN_SELCHANGE)
 					{
-						/*LPWSTR lpwText;
-						BOOL bVideoStm = (LOWORD(wParam) == IDC_CBOVS);
-						BOOL bStmState;
-						int intSelItem = SendDlgItemMessage(hWnd, (bVideoStm)?IDC_CBOVS:IDC_CBOAS, CB_GETCURSEL, 0, 0);
-						DWORD dwTextSize = SendDlgItemMessage(hWnd, (bVideoStm)?IDC_CBOVS:IDC_CBOAS, CB_GETLBTEXTLEN, intSelItem, 0);
-						lpwText = new WCHAR[dwTextSize + 1];
-						ZeroMemory(lpwText, (dwTextSize + 1) * sizeof(WCHAR));
-						SendDlgItemMessage(hWnd, (bVideoStm)?IDC_CBOVS:IDC_CBOAS, CB_GETLBTEXT, intSelItem, (LPARAM)lpwText);
-						bStmState = pEngine->IsStreamSelected((bVideoStm)?DSST_VIDEO:DSST_AUDIO, lpwText);
-						EnableWindow(GetDlgItem(hWnd, (bVideoStm)?IDC_BTNSVS:IDC_BTNSAS), !bStmState);
-						delete[] lpwText;*/
+						int intSelItem = SendDlgItemMessage(hWnd, IDC_CBOAS, CB_GETCURSEL, 0, 0);
+						BOOL bASSelected = pEngine->IsAudioStreamSelected_E(intSelItem);
+						EnableWindow(GetDlgItem(hWnd, IDC_BTNSAS), !bASSelected);
 					}
 					break;
-				}
 				case IDC_BTNSAS:
 				{
-					/*LPWSTR lpwText;
-					BOOL bVideoStm = (LOWORD(wParam) == IDC_BTNSVS);
-					int intSelItem = SendDlgItemMessage(hWnd, (bVideoStm)?IDC_CBOVS:IDC_CBOAS, CB_GETCURSEL, 0, 0);
-					DWORD dwTextSize = SendDlgItemMessage(hWnd, (bVideoStm)?IDC_CBOVS:IDC_CBOAS, CB_GETLBTEXTLEN, intSelItem, 0);
-					lpwText = new WCHAR[dwTextSize + 1];
-					ZeroMemory(lpwText, (dwTextSize + 1) * sizeof(WCHAR));
-					SendDlgItemMessage(hWnd, (bVideoStm)?IDC_CBOVS:IDC_CBOAS, CB_GETLBTEXT, intSelItem, (LPARAM)lpwText);
-					pEngine->SelectStream((bVideoStm)?DSST_VIDEO:DSST_AUDIO, lpwText);
-					EnableWindow(GetDlgItem(hWnd, (bVideoStm)?IDC_BTNSVS:IDC_BTNSAS), FALSE);
-					delete[] lpwText;
-					break;*/
+					int intSelItem = SendDlgItemMessage(hWnd, IDC_CBOAS, CB_GETCURSEL, 0, 0);
+					pEngine->SelectAudioStream_E(intSelItem);
 				}
 			}
 			return TRUE;

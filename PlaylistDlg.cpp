@@ -189,6 +189,9 @@ Find_Begin:
 					break;
 			}
 			return TRUE;
+		case WM_APPCOMMAND:
+			PostMessage(hMainWnd, uMsg, wParam, lParam);
+			return TRUE;
 		case WM_COMMAND:
 			switch (LOWORD(wParam))
 			{
