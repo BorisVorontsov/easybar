@@ -12,6 +12,7 @@
 #include "easybar.h"
 #include "trayicon.h"
 
+extern WCHAR lpwMutexName[128];
 extern HANDLE hMutex;
 extern HINSTANCE hAppInstance;
 extern HWND hMainWnd;
@@ -123,21 +124,20 @@ static LRESULT CALLBACK TrayCBWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARA
 					{
 						if (hMutex)
 						{
-							ReleaseMutex(hMutex);
+							CloseHandle(hMutex);
 							hMutex = 0;
 						}
-						HANDLE hMutex2 = CreateMutex(0, TRUE, APP_NAME);
+						HANDLE hMutex2 = CreateMutex(0, TRUE, lpwMutexName);
 						if (GetLastError() == ERROR_ALREADY_EXISTS)
 						{
 							if (MessageBox(hWnd, L"Close all instances?", APP_NAME, MB_YESNO | MB_ICONQUESTION |
 								MB_DEFBUTTON2) == IDYES)
 							{
 								PostMessage(hMainWnd, WM_COMMAND, MAKEWPARAM(IDM_FILE_EXIT, 0), 0);
-								ReleaseMutex(hMutex2);
 								break;
 							}
 						}
-						ReleaseMutex(hMutex2);
+						CloseHandle(hMutex2);
 					}
 					PostMessage(hMainWnd, WM_COMMAND, MAKEWPARAM(IDM_FILE_CLOSEWINDOW, 0), 0);
 					break;
