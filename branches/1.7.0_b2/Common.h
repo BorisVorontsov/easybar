@@ -29,6 +29,7 @@ DWORD GetSaveDialog(HINSTANCE hInstance, HWND hWnd, LPCWSTR lpwTitle, LPWSTR lpw
 BOOL GetColorDialog(HINSTANCE hInstance, HWND hWnd, LPCOLORREF crColor);
 DWORD GetBrowseForFolderDialog(HWND hWnd, LPWSTR lpwFolder, LPCWSTR lpwTitle, LPCWSTR lpwInitDir = NULL);
 static int CALLBACK BFFCallbackProc(HWND hWnd, UINT uMsg, LPARAM lParam, LPARAM lpData);
+LPWSTR CreateUniqueName();
 void AdjustPrivilege(LPWSTR lpwPrivilege);
 BOOL IsFile(LPWSTR lpwPath);
 BOOL IsDirectory(LPWSTR lpwPath);

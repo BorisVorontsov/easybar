@@ -1,7 +1,7 @@
 /////////////////////////////////////////////////////////////////////////////
 //		Проект: EasyBar - media player
 //		Автор(ы): Борис Воронцов и участники проекта
-//		Последнее обновление: 18.02.2009
+//		Последнее обновление: 03.03.2009
 /////////////////////////////////////////////////////////////////////////////
 
 #define _WIN32_WINNT	0x0501
@@ -51,6 +51,7 @@
 
 extern HWND hFindTextWnd;
 
+WCHAR lpwMutexName[128] = { 0 };
 HANDLE hMutex = 0;
 
 HINSTANCE hAppInstance;
@@ -100,9 +101,14 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, LPWSTR lpwCmdLine, int nShow
 	{
 #endif
 		GetSettings();
+		wcscpy(lpwMutexName, APP_NAME);
+		LPWSTR lpwUN = CreateUniqueName();
+		if (wcslen(lpwUN) < (128 - wcslen(APP_NAME)))
+			wcscat(lpwMutexName, CreateUniqueName());
+		delete[] lpwUN;
 		if (!dwMultipleInstances)
 		{
-			hMutex = CreateMutex(0, TRUE, APP_NAME);
+			hMutex = CreateMutex(0, TRUE, lpwMutexName);
 			if (GetLastError() == ERROR_ALREADY_EXISTS)
 			{
 				HWND hAppWnd = FindWindow(APP_MAIN_WND_CLASS, 0);
@@ -283,7 +289,7 @@ ExitFunction:
 #endif
 	SaveSettings();
 	if (hMutex)
-		ReleaseMutex(hMutex);
+		CloseHandle(hMutex);
 	SDO(pEBMenuMain);
 	SDO(pToolTipsMain);
 	SDO(pFileCollection);
@@ -492,7 +498,7 @@ INT_PTR CALLBACK PlayerDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 					//{
 						if (!dwNoAutomaticPause)
 						{
-							HANDLE hMtx = CreateMutex(0, TRUE, APP_NAME);
+							HANDLE hMtx = CreateMutex(0, TRUE, lpwMutexName);
 							if (GetLastError() == ERROR_ALREADY_EXISTS)
 							{
 								if (pEngine->GetState() == E_STATE_PAUSED)

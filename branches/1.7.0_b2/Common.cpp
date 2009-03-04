@@ -3,6 +3,7 @@
 
 #include <windows.h>
 #include <shlobj.h>
+#include <stdio.h>
 
 #include "common.h"
 
@@ -343,6 +344,48 @@ int CALLBACK BFFCallbackProc(HWND hWnd, UINT uMsg, LPARAM lParam, LPARAM lpData)
 			SendMessage(hWnd, BFFM_SETSELECTION, TRUE, lpData);
 	}
 	return 0;
+}
+
+//ѕолучение уникального имени в формате "_им€_раб._стола_-_ID_сессии_"
+//¬ызывающий ответственнен за удаление строки посредством delete[]
+LPWSTR CreateUniqueName()
+{
+	LPWSTR lpwDesktopName = NULL, lpwResult;
+	WCHAR lpwSessionID[32] = { 0 };
+	SIZE_T szDesktopNameSize, szSessionIDSize;
+	HDESK hDesktop;
+	HANDLE hToken;
+	PTOKEN_STATISTICS pTS;
+	DWORD dwTSSize;
+
+	hDesktop = GetThreadDesktop(GetCurrentThreadId());
+	GetUserObjectInformation(hDesktop, UOI_NAME, lpwDesktopName, 0, &szDesktopNameSize);
+	lpwDesktopName = new WCHAR[szDesktopNameSize / sizeof(WCHAR)];
+	ZeroMemory(lpwDesktopName, szDesktopNameSize);
+	GetUserObjectInformation(hDesktop, UOI_NAME, lpwDesktopName, szDesktopNameSize,
+		&szDesktopNameSize);
+
+	OpenProcessToken(GetCurrentProcess(), TOKEN_QUERY, &hToken);
+	GetTokenInformation(hToken, TokenStatistics, NULL, 0, &dwTSSize);
+
+	pTS = (PTOKEN_STATISTICS)new BYTE[dwTSSize];
+
+	if (GetTokenInformation(hToken, TokenStatistics, (LPVOID)pTS, dwTSSize, &dwTSSize))
+	{
+		swprintf(lpwSessionID, L"-%08x%08x", pTS->AuthenticationId.HighPart,
+			pTS->AuthenticationId.LowPart);
+	}
+
+	delete[] pTS;
+
+	szDesktopNameSize /= sizeof(WCHAR);
+	szSessionIDSize =  wcslen(lpwSessionID);
+	lpwResult = new WCHAR[szDesktopNameSize + szSessionIDSize + 1];
+	wcscpy(lpwResult, lpwDesktopName);
+	wcscat(lpwResult, lpwSessionID);
+	lpwResult[szDesktopNameSize + szSessionIDSize] = '\0';
+
+	return lpwResult;
 }
 
 void AdjustPrivilege(LPWSTR lpwPrivilege)
