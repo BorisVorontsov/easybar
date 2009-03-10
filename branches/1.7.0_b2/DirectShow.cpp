@@ -455,7 +455,17 @@ ENGINESTATE CDirectShow::GetState()
 	} else return E_STATE_STOPPED;
 }
 
-int CDirectShow::IsVideo()
+int CDirectShow::HasAudio()
+{
+	if (m_lBACount && m_pBasicAudio[m_intCurrentBA])
+	{
+		long lTmp = 0;
+		if (SUCCEEDED(m_pBasicAudio[m_intCurrentBA]->get_Volume(&lTmp))) return 1; else return 0;
+	}
+	else return 0;
+}
+
+int CDirectShow::HasVideo()
 {
 	if (m_pVideoWindow)
 	{

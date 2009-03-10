@@ -43,8 +43,21 @@ INT_PTR CALLBACK PPGeneralDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lP
 				swprintf(lpwOut, L"%.1f MB (%i bytes)", dblSizeMB, (int)intSizeB);
 			}
 			SendDlgItemMessage(hWnd, IDC_EDTFS, WM_SETTEXT, 0, (LPARAM)lpwOut);
-			SendDlgItemMessage(hWnd, IDC_EDTMT, WM_SETTEXT, 0, 
-				(pEngine->IsVideo())?(LPARAM)L"Video":(LPARAM)L"Audio");
+			if (pEngine->HasVideo())
+			{
+				wcscpy(lpwOut, L"Video");
+				if (pEngine->HasAudio())
+					wcscat(lpwOut, L" (with audio)");
+			}
+			else if (pEngine->HasAudio())
+			{
+				wcscpy(lpwOut, L"Audio");
+			}
+			else
+			{
+				wcscpy(lpwOut, L"Unknown");
+			}
+			SendDlgItemMessage(hWnd, IDC_EDTMT, WM_SETTEXT, 0, (LPARAM)lpwOut);
 			intLen = (int)pEngine->GetLength();
 			if (((intLen / 1000) / 3600))
 			{
@@ -57,7 +70,7 @@ INT_PTR CALLBACK PPGeneralDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lP
 					((intLen / 1000) % 60));
 			}
 			SendDlgItemMessage(hWnd, IDC_EDTML, WM_SETTEXT, 0, (LPARAM)lpwOut);
-			if (pEngine->IsVideo())
+			if (pEngine->HasVideo())
 			{
 				pEngine->GetOriginalVideoSize(&SZ);
 				swprintf(lpwOut, L"%i x %i", SZ.cx, SZ.cy);
