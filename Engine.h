@@ -122,7 +122,8 @@ public:
 	int GetBalance();
 	void SetBalance(int intValue);
 	ENGINESTATE GetState();
-	int IsVideo();
+	int HasAudio();
+	int HasVideo();
 	int CanStep(DWORD dwFrames);
 	void FrameStep(DWORD dwFrames);
 	int GetOriginalVideoSize(LPSIZE pSZ);

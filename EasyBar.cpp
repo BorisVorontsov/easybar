@@ -1,11 +1,7 @@
 /////////////////////////////////////////////////////////////////////////////
 //		Проект: EasyBar - media player
 //		Автор(ы): Борис Воронцов и участники проекта
-<<<<<<< .mine
-//		Последнее обновление: 08.03.2009
-=======
-//		Последнее обновление: 03.03.2009
->>>>>>> .r32
+//		Последнее обновление: 10.03.2009
 /////////////////////////////////////////////////////////////////////////////
 
 #define _WIN32_WINNT	0x0501
@@ -105,22 +101,14 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, LPWSTR lpwCmdLine, int nShow
 	{
 #endif
 		GetSettings();
-<<<<<<< .mine
 		wcscpy(lpwMutexName, APP_NAME);
 		LPWSTR lpwUN = CreateUniqueName();
-		if (wcslen(lpwUN) < (128 - wcslen(APP_NAME)))
+		if (wcslen(lpwUN) < (128 - (wcslen(APP_NAME) + 1)))
 		{
 			wcscat(lpwMutexName, L"-");
 			wcscat(lpwMutexName, CreateUniqueName());
 		}
 		delete[] lpwUN;
-=======
-		wcscpy(lpwMutexName, APP_NAME);
-		LPWSTR lpwUN = CreateUniqueName();
-		if (wcslen(lpwUN) < (128 - wcslen(APP_NAME)))
-			wcscat(lpwMutexName, CreateUniqueName());
-		delete[] lpwUN;
->>>>>>> .r32
 		if (!dwMultipleInstances)
 		{
 			hMutex = CreateMutex(0, TRUE, lpwMutexName);
@@ -513,11 +501,7 @@ INT_PTR CALLBACK PlayerDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 					//{
 						if (!dwNoAutomaticPause)
 						{
-<<<<<<< .mine
 							HANDLE hMutex2 = CreateMutex(0, TRUE, lpwMutexName);
-=======
-							HANDLE hMtx = CreateMutex(0, TRUE, lpwMutexName);
->>>>>>> .r32
 							if (GetLastError() == ERROR_ALREADY_EXISTS)
 							{
 								if (pEngine->GetState() == E_STATE_PAUSED)
@@ -560,27 +544,30 @@ INT_PTR CALLBACK PlayerDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 					}
 					return TRUE;
 				case APPCOMMAND_VOLUME_DOWN:
-					PostMessage(hWnd, WM_COMMAND, MAKEWPARAM(IDM_VOLUME_DECREASE, 0), 0);
+					if (pEngine->HasAudio())
+						PostMessage(hWnd, WM_COMMAND, MAKEWPARAM(IDM_VOLUME_DECREASE, 0), 0);
 					return TRUE;
 				case APPCOMMAND_VOLUME_UP:
-					PostMessage(hWnd, WM_COMMAND, MAKEWPARAM(IDM_VOLUME_INCREASE, 0), 0);
+					if (pEngine->HasAudio())
+						PostMessage(hWnd, WM_COMMAND, MAKEWPARAM(IDM_VOLUME_INCREASE, 0), 0);
 					return TRUE;
 				case APPCOMMAND_VOLUME_MUTE:
-					PostMessage(hWnd, WM_COMMAND, MAKEWPARAM(IDM_VOLUME_MUTE, 0), 0);
+					if (pEngine->HasAudio())
+						PostMessage(hWnd, WM_COMMAND, MAKEWPARAM(IDM_VOLUME_MUTE, 0), 0);
 					return TRUE;
 			}
 			return FALSE;
-		case WM_XBUTTONUP:
-			switch (LOWORD(wParam))
+		case WM_XBUTTONDOWN:
+			switch (HIWORD(wParam))
 			{
-				case MK_XBUTTON1:
+				case XBUTTON1:
 					if (((dwShuffle)?(pFileCollection->FileCount() > 1):
 						(pFileCollection->IsFileAvailable(FCF_BACKWARD))))
 					{
 						PostMessage(hWnd, WM_COMMAND, MAKEWPARAM(IDM_PLAYBACK_PREVIOUSFILE, 0), 0);
 					}
 					break;
-				case MK_XBUTTON2:
+				case XBUTTON2:
 					if (((dwShuffle)?(pFileCollection->FileCount() > 1):
 						(pFileCollection->IsFileAvailable(FCF_FORWARD))))
 					{
@@ -590,13 +577,16 @@ INT_PTR CALLBACK PlayerDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 			}
 			return TRUE;
 		case WM_MOUSEWHEEL:
-			if (GET_WHEEL_DELTA_WPARAM(wParam) < 0)
+			if (pEngine->HasAudio())
 			{
-				PostMessage(hWnd, WM_COMMAND, MAKEWPARAM(IDM_VOLUME_DECREASE, 0), 0);
-			}
-			else
-			{
-				PostMessage(hWnd, WM_COMMAND, MAKEWPARAM(IDM_VOLUME_INCREASE, 0), 0);
+				if (GET_WHEEL_DELTA_WPARAM(wParam) < 0)
+				{
+					PostMessage(hWnd, WM_COMMAND, MAKEWPARAM(IDM_VOLUME_DECREASE, 0), 0);
+				}
+				else
+				{
+					PostMessage(hWnd, WM_COMMAND, MAKEWPARAM(IDM_VOLUME_INCREASE, 0), 0);
+				}
 			}
 			break;
 		case WM_COMMAND:
@@ -965,7 +955,7 @@ INT_PTR CALLBACK PlayerDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 					UpdateBorderStyle();
 					UpdateMainControlsState();
 					UpdateBorderStyle(hPlaylistWnd);
-					if (hVideoWnd/*pEngine->IsVideo()*/)
+					if (hVideoWnd/*pEngine->HasVideo()*/)
 						UpdateBorderStyle(hVideoWnd);
 					break;
 				case IDM_WB_TOOLWINDOW:
@@ -975,7 +965,7 @@ INT_PTR CALLBACK PlayerDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 					UpdateBorderStyle();
 					UpdateMainControlsState();
 					UpdateBorderStyle(hPlaylistWnd);
-					if (hVideoWnd/*pEngine->IsVideo()*/)
+					if (hVideoWnd/*pEngine->HasVideo()*/)
 						UpdateBorderStyle(hVideoWnd);
 					break;
 				case IDM_VIEW_MAINCONTROLS:
@@ -1621,74 +1611,75 @@ INT_PTR CALLBACK PlayerDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 			//Если это не системное меню, устанавливаем доступность/недоступность для пунктов
 			if (!HIWORD(lParam))
 			{
-				BOOL bMFFlag1 = (pEngine->m_lpwFileName != 0);
-				BOOL bMFFlag2 = (pEngine->IsSeekable() != 0);
-				BOOL bMFFlag3 = (pEngine->CanStep(1) != 0);
-				BOOL bMFFlag4 = (pEngine->IsVideo() != 0);
-				BOOL bMFFlag5 = IsWindowVisible(hWnd);
-				BOOL bMFFlag6 = (pEngine->GetState() != E_STATE_STOPPED);
-				BOOL bMFFlag7 = (VWD.dwVWPosFlag == VWPF_NORMAL);
+				BOOL bMenuFlag1 = (pEngine->m_lpwFileName != 0);
+				BOOL bMenuFlag2 = (pEngine->IsSeekable() != 0);
+				BOOL bMenuFlag3 = (pEngine->CanStep(1) != 0);
+				BOOL bMenuFlag4 = (pEngine->HasAudio() != 0);
+				BOOL bMenuFlag5 = (pEngine->HasVideo() != 0);
+				BOOL bMenuFlag6 = IsWindowVisible(hWnd);
+				BOOL bMenuFlag7 = (pEngine->GetState() != E_STATE_STOPPED);
+				BOOL bMenuFlag8 = (VWD.dwVWPosFlag == VWPF_NORMAL);
 				HMENU hMainMenu = GetMenu(hWnd);
 				EnableMenuItem(hMainMenu, IDM_FILE_NEWPLAYER,
 					(dwMultipleInstances)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
 				EnableMenuItem(hMainMenu, IDM_FILE_REOPENCURRENT,
 					(pFileCollection->FileCount())?MF_ENABLED:MF_DISABLED | MF_GRAYED);
 				EnableMenuItem(hMainMenu, IDM_FILE_CLOSE,
-					(bMFFlag1)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
+					(bMenuFlag1)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
 				EnableMenuItem(hMainMenu, IDM_FILE_DELETEFROMPLAYLIST,
-					(bMFFlag1)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
+					(bMenuFlag1)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
 				EnableMenuItem(hMainMenu, IDM_FILE_SAVEFILEAS,
-					(bMFFlag1 && !IsURL(pEngine->m_lpwFileName))?MF_ENABLED:MF_DISABLED | MF_GRAYED);
+					(bMenuFlag1 && !IsURL(pEngine->m_lpwFileName))?MF_ENABLED:MF_DISABLED | MF_GRAYED);
 				EnableMenuItem(hMainMenu, IDM_FILE_SAVEPLAYLISTAS,
-					(bMFFlag1 || (pFileCollection->FileCount()))?MF_ENABLED:MF_DISABLED | MF_GRAYED);
+					(bMenuFlag1 || (pFileCollection->FileCount()))?MF_ENABLED:MF_DISABLED | MF_GRAYED);
 				EnableMenuItem(hMainMenu, IDM_FILE_PROPERTIES,
-					(bMFFlag1)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
+					(bMenuFlag1)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
 				EnableMenuItem(hMainMenu, IDM_FILE_EXIT,
 					(dwMultipleInstances)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
 				EnableMenuItem(hMainMenu, IDM_INTERFACE_DEFINECOLORS,
 					(!dwUseSystemColors)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
 				EnableMenuItem(hMainMenu, IDM_WB_NORMALWINDOW,
-					(bMFFlag5)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
+					(bMenuFlag6)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
 				EnableMenuItem(hMainMenu, IDM_WB_TOOLWINDOW,
-					(bMFFlag5)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
+					(bMenuFlag6)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
 				EnableMenuItem(hMainMenu, IDM_VIEW_MAINCONTROLS,
-					(bMFFlag5)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
+					(bMenuFlag6)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
 				EnableMenuItem(hMainMenu, IDM_TB_DISPLAYFULLPATH,
-					(bMFFlag5 && !dwTBDoNotChangeTitle)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
+					(bMenuFlag6 && !dwTBDoNotChangeTitle)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
 				EnableMenuItem(hMainMenu, IDM_TB_DISPLAYFILENAMEONLY,
-					(bMFFlag5 && !dwTBDoNotChangeTitle)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
+					(bMenuFlag6 && !dwTBDoNotChangeTitle)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
 				EnableMenuItem(hMainMenu, IDM_TB_DONOTCHANGETITLE,
-					(bMFFlag5)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
+					(bMenuFlag6)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
 				EnableMenuItem(hMainMenu, IDM_INTERFACE_USESYSTEMCOLORS,
-					(bMFFlag5)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
+					(bMenuFlag6)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
 				EnableMenuItem(hMainMenu, IDM_INTERFACE_DEFINECOLORS,
-					(bMFFlag5)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
+					(bMenuFlag6)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
 				EnableMenuItem(hMainMenu, IDM_ONTOP_NEVER,
-					(bMFFlag5)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
+					(bMenuFlag6)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
 				EnableMenuItem(hMainMenu, IDM_ONTOP_ALWAYS,
-					(bMFFlag5)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
+					(bMenuFlag6)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
 				EnableMenuItem(hMainMenu, IDM_ONTOP_WHILEPLAYING,
-					(bMFFlag5)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
+					(bMenuFlag6)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
 				EnableMenuItem(hMainMenu, IDM_PAS_SCREENCENTER,
-					(bMFFlag5)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
+					(bMenuFlag6)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
 				EnableMenuItem(hMainMenu, IDM_PAS_RESTOREPREVIOUS,
-					(bMFFlag5)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
+					(bMenuFlag6)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
 				EnableMenuItem(hMainMenu, IDM_PAS_RANDOM,
-					(bMFFlag5)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
+					(bMenuFlag6)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
 				EnableMenuItem(hMainMenu, IDM_OPACITY_100,
-					(bMFFlag5)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
+					(bMenuFlag6)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
 				EnableMenuItem(hMainMenu, IDM_OPACITY_75,
-					(bMFFlag5)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
+					(bMenuFlag6)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
 				EnableMenuItem(hMainMenu, IDM_OPACITY_50,
-					(bMFFlag5)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
+					(bMenuFlag6)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
 				EnableMenuItem(hMainMenu, IDM_OPACITY_25,
-					(bMFFlag5)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
+					(bMenuFlag6)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
 				EnableMenuItem(hMainMenu, IDM_OPACITY_CUSTOM,
-					(bMFFlag5)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
+					(bMenuFlag6)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
 				EnableMenuItem(hMainMenu, IDM_OPACITY_OPAQUEONFOCUS,
-					(bMFFlag5)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
+					(bMenuFlag6)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
 				EnableMenuItem(hMainMenu, IDM_VIEW_TRAYICON,
-					(bMFFlag5)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
+					(bMenuFlag6)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
 				EnableMenuItem(hMainMenu, IDM_AS_RESUMEPLAYBACK,
 					(dwRememberPlaylist && !dwShuffle)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
 				EnableMenuItem(hMainMenu, IDM_PLAYBACK_PREVIOUSFILE,
@@ -1698,63 +1689,63 @@ INT_PTR CALLBACK PlayerDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 					((dwShuffle)?(pFileCollection->FileCount() > 1):
 					(pFileCollection->IsFileAvailable(FCF_FORWARD)))?MF_ENABLED:MF_DISABLED | MF_GRAYED);
 				EnableMenuItem(hMainMenu, IDM_PLAYBACK_PLAYPAUSE,
-					(bMFFlag1)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
+					(bMenuFlag1)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
 				EnableMenuItem(hMainMenu, IDM_PLAYBACK_STOP,
-					(bMFFlag1)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
+					(bMenuFlag1)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
 				EnableMenuItem(hMainMenu, IDM_PLAYBACK_FRAMESTEP,
-					(bMFFlag3 && bMFFlag4)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
+					(bMenuFlag3 && bMenuFlag5)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
 				EnableMenuItem(hMainMenu, IDM_RATE_NORMAL,
-					(bMFFlag1)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
+					(bMenuFlag1)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
 				EnableMenuItem(hMainMenu, IDM_RATE_DECREASE,
-					(bMFFlag1)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
+					(bMenuFlag1)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
 				EnableMenuItem(hMainMenu, IDM_RATE_INCREASE,
-					(bMFFlag1)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
+					(bMenuFlag1)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
 				EnableMenuItem(hMainMenu, IDM_SEEK_STEPBACKWARD,
-					((bMFFlag1 && bMFFlag2))?MF_ENABLED:MF_DISABLED | MF_GRAYED);
+					((bMenuFlag1 && bMenuFlag2))?MF_ENABLED:MF_DISABLED | MF_GRAYED);
 				EnableMenuItem(hMainMenu, IDM_SEEK_STEPFORWARD,
-					((bMFFlag1 && bMFFlag2))?MF_ENABLED:MF_DISABLED | MF_GRAYED);
+					((bMenuFlag1 && bMenuFlag2))?MF_ENABLED:MF_DISABLED | MF_GRAYED);
 				EnableMenuItem(hMainMenu, IDM_SEEK_JUMPBACKWARD,
-					((bMFFlag1 && bMFFlag2))?MF_ENABLED:MF_DISABLED | MF_GRAYED);
+					((bMenuFlag1 && bMenuFlag2))?MF_ENABLED:MF_DISABLED | MF_GRAYED);
 				EnableMenuItem(hMainMenu, IDM_SEEK_JUMPFORWARD,
-					((bMFFlag1 && bMFFlag2))?MF_ENABLED:MF_DISABLED | MF_GRAYED);
+					((bMenuFlag1 && bMenuFlag2))?MF_ENABLED:MF_DISABLED | MF_GRAYED);
 				EnableMenuItem(hMainMenu, IDM_SEEK_LONGJUMPBACKWARD,
-					((bMFFlag1 && bMFFlag2))?MF_ENABLED:MF_DISABLED | MF_GRAYED);
+					((bMenuFlag1 && bMenuFlag2))?MF_ENABLED:MF_DISABLED | MF_GRAYED);
 				EnableMenuItem(hMainMenu, IDM_SEEK_LONGJUMPFORWARD,
-					((bMFFlag1 && bMFFlag2))?MF_ENABLED:MF_DISABLED | MF_GRAYED);
+					((bMenuFlag1 && bMenuFlag2))?MF_ENABLED:MF_DISABLED | MF_GRAYED);
 				EnableMenuItem(hMainMenu, IDM_SEEK_REWIND,
-					((bMFFlag1 && bMFFlag2))?MF_ENABLED:MF_DISABLED | MF_GRAYED);
+					((bMenuFlag1 && bMenuFlag2))?MF_ENABLED:MF_DISABLED | MF_GRAYED);
 				EnableMenuItem(hMainMenu, IDM_VOLUME_MUTE,
-					(bMFFlag1)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
+					(bMenuFlag1 && bMenuFlag4)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
 				EnableMenuItem(hMainMenu, IDM_VOLUME_DECREASE,
-					(bMFFlag1)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
+					(bMenuFlag1 && bMenuFlag4)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
 				EnableMenuItem(hMainMenu, IDM_VOLUME_INCREASE,
-					(bMFFlag1)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
+					(bMenuFlag1 && bMenuFlag4)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
 				EnableMenuItem(hMainMenu, IDM_BALANCE_NORMAL,
-					(bMFFlag1)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
+					(bMenuFlag1 && bMenuFlag4)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
 				EnableMenuItem(hMainMenu, IDM_BALANCE_LEFT,
-					(bMFFlag1)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
+					(bMenuFlag1 && bMenuFlag4)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
 				EnableMenuItem(hMainMenu, IDM_BALANCE_RIGHT,
-					(bMFFlag1)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
+					(bMenuFlag1 && bMenuFlag4)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
 				EnableMenuItem(hMainMenu, IDM_PLAYBACK_SAVECURRENTFRAME,
-					(bMFFlag4 && bMFFlag6)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
+					(bMenuFlag5 && bMenuFlag7)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
 				EnableMenuItem(hMainMenu, IDM_AR_KEEPASPECTRATIO,
-					(bMFFlag4)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
+					(bMenuFlag5)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
 				EnableMenuItem(hMainMenu, IDM_AR_DEFAULT,
-					(bMFFlag4 && dwKeepAspectRatio)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
+					(bMenuFlag5 && dwKeepAspectRatio)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
 				EnableMenuItem(hMainMenu, IDM_AR_43,
-					(bMFFlag4 && dwKeepAspectRatio)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
+					(bMenuFlag5 && dwKeepAspectRatio)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
 				EnableMenuItem(hMainMenu, IDM_AR_54,
-					(bMFFlag4 && dwKeepAspectRatio)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
+					(bMenuFlag5 && dwKeepAspectRatio)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
 				EnableMenuItem(hMainMenu, IDM_AR_169,
-					(bMFFlag4 && dwKeepAspectRatio)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
+					(bMenuFlag5 && dwKeepAspectRatio)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
 				EnableMenuItem(hMainMenu, IDM_ZOOM_HALFSIZE,
-					(bMFFlag4 && bMFFlag7)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
+					(bMenuFlag5 && bMenuFlag8)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
 				EnableMenuItem(hMainMenu, IDM_ZOOM_NORMALSIZE,
-					(bMFFlag4 && bMFFlag7)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
+					(bMenuFlag5 && bMenuFlag8)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
 				EnableMenuItem(hMainMenu, IDM_ZOOM_DOUBLESIZE,
-					(bMFFlag4 && bMFFlag7)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
+					(bMenuFlag5 && bMenuFlag8)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
 				EnableMenuItem(hMainMenu, IDM_FULLSCREEN_FULLSCREENNORMAL,
-					(bMFFlag4)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
+					(bMenuFlag5)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
 				EnableMenuItem(hMainMenu, IDM_SAE_PARAMEQ,
 					(dwUseDMO)?MF_ENABLED:MF_DISABLED | MF_GRAYED);
 				EnableMenuItem(hMainMenu, IDM_SAE_WAVESREVERB,
@@ -1989,7 +1980,7 @@ INT_PTR CALLBACK PlayerDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 							bSeekFlag = FALSE;
 Seek_SetPosition:
 							int intPos = SendDlgItemMessage(hWnd, IDC_EBSLDSEEK, EBSM_GETPOS, 0, 0);
-							if (pEngine->IsVideo())
+							if (pEngine->HasVideo())
 							{
 								pEngine->SetPosition(intPos, TRUE, dwSeekByKeyFrames);
 							}
@@ -2056,7 +2047,7 @@ Seek_SetPosition:
 					}
 					if (!dwNoAutomaticPause)
 					{
-						if (pEngine->IsVideo())
+						if (pEngine->HasVideo())
 						{
 							if (pEngine->GetState() == E_STATE_PLAYING)
 							{
@@ -2070,7 +2061,7 @@ Seek_SetPosition:
 					RedrawWindow(hWnd, 0, 0, RDW_ERASE | RDW_INVALIDATE);
 					if (!dwNoAutomaticPause)
 					{
-						if (pEngine->IsVideo())
+						if (pEngine->HasVideo())
 						{
 							if (pEngine->GetState() == E_STATE_PAUSED)
 							{
@@ -2095,6 +2086,7 @@ Seek_SetPosition:
 				int intMin = 0, intMax = 0, intCur = 0, intTmp = 0;
 				BOOL bCtlsFlag1 = (pEngine->m_lpwFileName != 0);
 				BOOL bCtlsFlag2 = (pEngine->IsSeekable() != 0);
+				BOOL bCtlsFlag3 = (pEngine->HasAudio() != 0);
 				BOOL bSSActive, bEndOfPlayback;
 				EnableWindow(GetDlgItem(hWnd, IDC_EBFMAIN), bCtlsFlag1);
 				EnableWindow(GetDlgItem(hWnd, IDC_EBDMAIN), bCtlsFlag1);
@@ -2106,10 +2098,10 @@ Seek_SetPosition:
 				EnableWindow(GetDlgItem(hWnd, IDC_EBBNF), ((dwShuffle)?(pFileCollection->FileCount() > 1):
 					(pFileCollection->IsFileAvailable(FCF_FORWARD))));
 				EnableWindow(GetDlgItem(hWnd, IDC_EBSLDSEEK), (bCtlsFlag1 && bCtlsFlag2));
-				EnableWindow(GetDlgItem(hWnd, IDC_EBBMUT), bCtlsFlag1);
-				EnableWindow(GetDlgItem(hWnd, IDC_EBSLDVOL), bCtlsFlag1);
-				EnableWindow(GetDlgItem(hWnd, IDC_EBBBN), bCtlsFlag1);
-				EnableWindow(GetDlgItem(hWnd, IDC_EBSLDBAL), bCtlsFlag1);
+				EnableWindow(GetDlgItem(hWnd, IDC_EBBMUT), bCtlsFlag1 && bCtlsFlag3);
+				EnableWindow(GetDlgItem(hWnd, IDC_EBSLDVOL), bCtlsFlag1 && bCtlsFlag3);
+				EnableWindow(GetDlgItem(hWnd, IDC_EBBBN), bCtlsFlag1 && bCtlsFlag3);
+				EnableWindow(GetDlgItem(hWnd, IDC_EBSLDBAL), bCtlsFlag1 && bCtlsFlag3);
 				//----------------------------------------------------------------
 				if (pEngine->GetState() == E_STATE_PLAYING)
 				{
@@ -2684,7 +2676,7 @@ LONG InitTrack(DWORD dwFCFlag, DWORD dwFCIndex)
 	//Добавление графа в 'ROT'
 	if (dwAddGraphToROT) pEngine->AddFGToROT();
 	pEngine->Open();
-	if (pEngine->IsVideo())
+	if (pEngine->HasVideo())
 	{
 		if (dwTrayIcon && !IsWindowVisible(hMainWnd))
 		{
@@ -2724,7 +2716,7 @@ LONG InitTrack(DWORD dwFCFlag, DWORD dwFCIndex)
 //Закрытие трека
 void CloseTrack()
 {
-	if (pEngine->IsVideo())
+	if (pEngine->HasVideo())
 	{
 		if (VWD.dwVWPosFlag == VWPF_FULLSCREEN)
 		{
