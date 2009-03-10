@@ -12,29 +12,40 @@
 #include "easybar.h"
 #include "trayicon.h"
 
-WNDCLASSEX WCEX = { 0 };
-HWND hTrayCBWnd = 0;
-HMENU hTrayMenu = 0;
-NOTIFYICONDATA NID = { 0 };
+extern WCHAR lpwMutexName[128];
+extern HANDLE hMutex;
+extern HINSTANCE hAppInstance;
+extern HWND hMainWnd;
 
-CEBMenu *pEBMenuTray = 0;
+static CEBMenu *pEBMenuTray = 0;
+
+HWND hTrayCBWnd = 0;
+
+static WNDCLASSEX WCEX = { 0 };
+static HMENU hTrayMenu = 0;
+static NOTIFYICONDATA NID = { 0 };
 
 void InitTrayCBWnd(BOOL bCreate)
 {
-	LONG i, lMMItemCnt, lTMItemCnt;
+	LONG i, lTMItemCnt;
+	HMENU hMainMenu = GetMenu(hMainWnd);
 	if (bCreate)
 	{
+		LONG lMMItemCnt;
 		WCHAR lpwText[MAX_PATH] = { 0 };
+		HMENU hTraySubMenu;
 		hTrayMenu = CreatePopupMenu();
 		AppendMenu(hTrayMenu, MF_STRING, IDM_TRAY_HIDESHOW, L"&Hide/Show Player");
 		AppendMenu(hTrayMenu, MF_SEPARATOR, 0, 0);
-		lMMItemCnt = GetMenuItemCount(GetMenu(hMainWnd));
+		lMMItemCnt = GetMenuItemCount(hMainMenu);
 		for (i = 0; i < lMMItemCnt; i++)
 		{
-			GetMenuString(GetMenu(hMainWnd), i, lpwText, MAX_PATH, MF_BYPOSITION);
-			AppendMenu(hTrayMenu, MF_STRING | MF_POPUP, (UINT_PTR)GetSubMenu(GetMenu(hMainWnd),
-				i), lpwText);
+			GetMenuString(hMainMenu, i, lpwText, MAX_PATH, MF_BYPOSITION);
+			hTraySubMenu = GetSubMenu(hMainMenu, i);
+			AppendMenu(hTrayMenu, MF_STRING | MF_POPUP, (UINT_PTR)hTraySubMenu, lpwText);
 		}
+		AppendMenu(hTrayMenu, MF_SEPARATOR, 0, 0);
+		AppendMenu(hTrayMenu, MF_STRING, IDM_TRAY_EXIT, L"&Exit");
 		SetMenuDefaultItem(hTrayMenu, IDM_TRAY_HIDESHOW, FALSE);
 		WCEX.cbSize = sizeof(WNDCLASSEX); 
 		WCEX.lpfnWndProc = (WNDPROC)TrayCBWndProc;
@@ -56,12 +67,10 @@ void InitTrayCBWnd(BOOL bCreate)
 	else
 	{
 		if (!dwNoOwnerDrawMenu) pEBMenuTray->InitEBMenu(0);
-		lMMItemCnt = GetMenuItemCount(GetMenu(hMainWnd));
 		lTMItemCnt = GetMenuItemCount(hTrayMenu);
-		for (i = (lTMItemCnt - 1); i >= (lTMItemCnt - lMMItemCnt); i--)
-		{
+		for (i = (lTMItemCnt - 1); i >= 0; i--)
 			RemoveMenu(hTrayMenu, i, MF_BYPOSITION);
-		}
+
 		DestroyMenu(hTrayMenu);
 		hTrayMenu = 0;
 		DestroyWindow(hTrayCBWnd);
@@ -109,6 +118,28 @@ static LRESULT CALLBACK TrayCBWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARA
 						ShowWindow(hMainWnd, SW_RESTORE);
 						SetForegroundWindow(hMainWnd);
 					}
+					break;
+				case IDM_TRAY_EXIT:
+					if (dwMultipleInstances)
+					{
+						if (hMutex)
+						{
+							CloseHandle(hMutex);
+							hMutex = 0;
+						}
+						HANDLE hMutex2 = CreateMutex(0, TRUE, lpwMutexName);
+						if (GetLastError() == ERROR_ALREADY_EXISTS)
+						{
+							if (MessageBox(hWnd, L"Close all instances?", APP_NAME, MB_YESNO | MB_ICONQUESTION |
+								MB_DEFBUTTON2) == IDYES)
+							{
+								PostMessage(hMainWnd, WM_COMMAND, MAKEWPARAM(IDM_FILE_EXIT, 0), 0);
+								break;
+							}
+						}
+						CloseHandle(hMutex2);
+					}
+					PostMessage(hMainWnd, WM_COMMAND, MAKEWPARAM(IDM_FILE_CLOSEWINDOW, 0), 0);
 					break;
 				default:
 					PostMessage(hMainWnd, WM_COMMAND, wParam, lParam);
