@@ -75,6 +75,11 @@ Find_Begin:
 		case WM_INITDIALOG:
 			//Инициализация диалога
 			//--------------------------------------------------------------------
+			SendMessage(hWnd, WM_SETICON, ICON_BIG,
+				(LPARAM)LoadImage(hAppInstance, MAKEINTRESOURCE(IDI_MAIN), IMAGE_ICON, 32, 32, 0));
+			SendMessage(hWnd, WM_SETICON, ICON_SMALL,
+				(LPARAM)LoadImage(hAppInstance, MAKEINTRESOURCE(IDI_MAIN), IMAGE_ICON, 16, 16, 0));
+
 			if (!dwNoOwnerDrawMenu)
 			{
 				pEBMenuPL->hBmpCheck = (HBITMAP)LoadImage(hAppInstance, MAKEINTRESOURCE(IDB_CHECKMARK),
@@ -291,7 +296,7 @@ Find_Begin:
 						pFileCollection->AppendFile(lpwFile, FALSE);
 						pEBListBox->DeleteItemTag(i);
 					}
-					pEBListBox->GetItemTag(pEBListBox->GetHighlightedItemIndex(), (LPBYTE)lpwFile);
+					pFileCollection->GetFile(lpwFile, pEBListBox->GetHighlightedItemIndex(), FCF_BYINDEX);
 					pFileCollection->SetRecentFile(lpwFile);
 					break;
 				}
@@ -324,6 +329,10 @@ Find_Begin:
 				| SWP_NOSENDCHANGING);
 			return TRUE;
 		}
+		case WM_CLOSE:
+			if (IsWindowVisible(hWnd)/*dwPlaylist*/)
+				PostMessage(hMainWnd, WM_COMMAND, MAKEWPARAM(IDM_VIEW_PLAYLIST, 0), 0);
+			return TRUE;
 		case WM_DESTROY:
 		{
 			WINDOWPLACEMENT WP = { 0 };
