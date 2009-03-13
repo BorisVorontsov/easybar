@@ -235,7 +235,8 @@ void CDirectShow::Stop()
 {
 	if (m_pMediaControl)
 	{
-		m_pMediaControl->Stop();
+		if (!HasVideo())
+			m_pMediaControl->Stop();
 		if (m_pMediaSeeking)
 		{
 			OAFilterState fState;
@@ -244,7 +245,7 @@ void CDirectShow::Stop()
 			m_pMediaSeeking->SetPositions(&intPos, AM_SEEKING_AbsolutePositioning, NULL,
 				AM_SEEKING_NoPositioning);
 		}
-		if (m_pVideoWindow)
+		if (HasVideo())
 			m_pMediaControl->StopWhenReady();
 	}
 }
@@ -254,8 +255,11 @@ void CDirectShow::Close()
 {
 	if (m_pMediaEventEx)
 		m_pMediaEventEx->SetNotifyWindow(NULL, 0, 0);
-	/*if (m_pVideoWindow)
-		m_pVideoWindow->put_Visible(OAFALSE);*/
+	if (m_pVideoWindow)
+	{
+		//m_pVideoWindow->put_Visible(OAFALSE);
+		m_pVideoWindow->put_MessageDrain(NULL);
+	}
 	SR(m_pAMStreamSelect);
 	for (m_lCounter = 0; m_lCounter < m_lBACount; m_lCounter++)
 		SR(m_pBasicAudio[m_lCounter]);

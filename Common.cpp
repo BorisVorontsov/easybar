@@ -74,12 +74,14 @@ void SetLBHorizontalExtent(HWND hListBox)
 {
 	WCHAR lpwText[MAX_PATH] = { 0 };
 	HDC hDC;
-	HFONT hOldFont;
+	HFONT hLBFont, hOldLBFont;
 	RECT RCL = { 0 };
 	LONG lLBStyle, lMaxTextWidth = 0;
 	ULONG i, uItemsCnt;
 	hDC = GetDC(hListBox);
-	hOldFont = (HFONT)SelectObject(hDC, (HFONT)GetStockObject(DEFAULT_GUI_FONT));
+	if (!(hLBFont = (HFONT)SendMessage(hListBox, WM_GETFONT, 0, 0)))
+		hLBFont = (HFONT)GetStockObject(DEFAULT_GUI_FONT);
+	hOldLBFont = (HFONT)SelectObject(hDC, hLBFont);
 	uItemsCnt = SendMessage(hListBox, LB_GETCOUNT, 0, 0);
 	for (i = 0; i < uItemsCnt; i++)
 	{
@@ -91,7 +93,7 @@ void SetLBHorizontalExtent(HWND hListBox)
 	if ((lLBStyle & WS_VSCROLL) == WS_VSCROLL)
 		lMaxTextWidth += GetSystemMetrics(SM_CXVSCROLL);
 	SendMessage(hListBox, LB_SETHORIZONTALEXTENT, lMaxTextWidth, 0);
-	SelectObject(hDC, hOldFont);
+	SelectObject(hDC, hOldLBFont);
 	ReleaseDC(hListBox, hDC);
 }
 

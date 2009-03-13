@@ -1,7 +1,7 @@
 /////////////////////////////////////////////////////////////////////////////
 //		Проект: EasyBar - media player
 //		Автор(ы): Борис Воронцов и участники проекта
-//		Последнее обновление: 10.03.2009
+//		Последнее обновление: 13.03.2009 (Пятница 13!)
 /////////////////////////////////////////////////////////////////////////////
 
 #define _WIN32_WINNT	0x0501
@@ -2689,6 +2689,7 @@ LONG InitTrack(DWORD dwFCFlag, DWORD dwFCIndex)
 		//UpdateOpacityState(hVideoWnd);
 		AutoMoveVideoDlg(hVideoWnd);
 		ShowWindow(hVideoWnd, SW_SHOW);
+		SystemParametersInfo(SPI_SETSCREENSAVEACTIVE, FALSE, 0, 0);
 	}
 	SendDlgItemMessage(hMainWnd, IDC_EBSLDSEEK, EBSM_SETRANGE, 0, (LPARAM)pEngine->GetLength());
 	if (pEngine->HasAudio())
@@ -2729,6 +2730,7 @@ void CloseTrack()
 		pEngine->SetVideoOwner(0);
 		DestroyWindow(hVideoWnd);
 		hVideoWnd = 0;
+		SystemParametersInfo(SPI_SETSCREENSAVEACTIVE, TRUE, 0, 0);
 	}
 	if (pEngine->GetState() != E_STATE_STOPPED) pEngine->Stop();
 	pEngine->Close();

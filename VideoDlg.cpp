@@ -51,7 +51,18 @@ INT_PTR CALLBACK VideoDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam
 			RECT RCW = { 0 };
 			HDC hDC = (HDC)wParam;
 			GetClientRect(hWnd, &RCW);
-			FillRect(hDC, &RCW, (HBRUSH)GetStockObject(BLACK_BRUSH));
+			PatBlt(hDC, 0, 0, RCW.right - RCW.left, RCW.bottom - RCW.top, BLACKNESS);
+
+			//Обход проблемы с неперерисовкой Logo от Jenya
+			//-------------------------------------------------------------------------------
+            /*PatBlt(hDC, 0, 0, RCW.right - RCW.left, RCW.bottom - RCW.top, BLACKNESS);
+            if (IsWindowVisible(GetDlgItem(hWnd, IDC_STCLOGO)))
+            {
+                InvalidateRect(GetDlgItem(hWnd,IDC_STCLOGO),NULL,TRUE);
+                UpdateWindow(GetDlgItem(hWnd,IDC_STCLOGO));
+            }*/
+			//-------------------------------------------------------------------------------
+
 			return TRUE;
 		}
 		case WM_APPCOMMAND:
