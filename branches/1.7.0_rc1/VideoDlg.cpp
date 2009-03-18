@@ -15,6 +15,7 @@
 extern HWND hMainWnd;
 extern VWDATA VWD;
 
+static BOOL bProcessOnClick;
 static POINT PTMM = { 0 };
 
 static LONG lOldWndStyle;
@@ -69,6 +70,7 @@ INT_PTR CALLBACK VideoDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam
 			PostMessage(hMainWnd, uMsg, wParam, lParam);
 			return TRUE;
 		case WM_LBUTTONDOWN:
+			bProcessOnClick = TRUE;
 		case WM_MBUTTONDOWN:
 		case WM_RBUTTONDOWN:
 			if (VWD.dwVWPosFlag == VWPF_FULLSCREEN)
@@ -89,16 +91,25 @@ INT_PTR CALLBACK VideoDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam
 					VWD.dwSMPTimeout = GetTickCount();
 				}
 			}
+			if ((wParam & MK_LBUTTON) == MK_LBUTTON)
+			{
+				ReleaseCapture();
+				SendMessage(hWnd, WM_NCLBUTTONDOWN, HTCAPTION, 0);
+				bProcessOnClick = FALSE;
+			}
 			return TRUE;
 		case WM_LBUTTONUP:
-			PostMessage(hMainWnd, WM_COMMAND, MAKEWPARAM(IDC_EBBPP, 0), 0);
+			if (bProcessOnClick)
+			{
+				PostMessage(hMainWnd, WM_COMMAND, MAKEWPARAM(IDC_EBBPP, 0), 0);
+			}
 			return TRUE;
 		case WM_MBUTTONUP:
 			PostMessage(hMainWnd, WM_COMMAND, MAKEWPARAM(IDM_FULLSCREEN_FULLSCREENNORMAL, 0), 0);
 			return TRUE;
 		case WM_RBUTTONUP:
 		{
-			if (VWD.dwVWPosFlag == VWPF_NORMAL)
+			/*if (VWD.dwVWPosFlag == VWPF_NORMAL)
 			{
 				LONG lCurWndStyle = GetWindowLong(hWnd, GWL_STYLE);
 				if ((lCurWndStyle & WS_CAPTION) == WS_CAPTION)
@@ -116,7 +127,8 @@ INT_PTR CALLBACK VideoDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam
 			else
 			{
 				MessageBeep(-1);
-			}
+			}*/
+			//Вызов контекстного меню
 			return TRUE;
 		}
 		case VWM_UPDATEASPECTRATIO:
@@ -205,7 +217,7 @@ INT_PTR CALLBACK VideoDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam
 					int intSY = GetSystemMetrics(SM_CYSCREEN);
 					lOldWndStyle = lCurWndStyle;
 					lOldWndExStyle = lCurWndExStyle;
-					if ((lCurWndStyle & WS_CAPTION) == WS_CAPTION) lCurWndStyle ^= WS_CAPTION;
+					//if ((lCurWndStyle & WS_CAPTION) == WS_CAPTION) lCurWndStyle ^= WS_CAPTION;
 					if ((lCurWndStyle & WS_OVERLAPPED) == WS_OVERLAPPED) lCurWndStyle ^= WS_OVERLAPPED;
 					if ((lCurWndStyle & WS_THICKFRAME) == WS_THICKFRAME) lCurWndStyle ^= WS_THICKFRAME;
 					if ((lCurWndExStyle & WS_EX_WINDOWEDGE) == WS_EX_WINDOWEDGE) lCurWndExStyle ^= WS_EX_WINDOWEDGE;

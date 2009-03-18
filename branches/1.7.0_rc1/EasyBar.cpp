@@ -955,8 +955,8 @@ INT_PTR CALLBACK PlayerDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 					UpdateBorderStyle();
 					UpdateMainControlsState();
 					UpdateBorderStyle(hPlaylistWnd);
-					if (hVideoWnd/*pEngine->HasVideo()*/)
-						UpdateBorderStyle(hVideoWnd);
+					/*if (hVideoWnd)
+						UpdateBorderStyle(hVideoWnd);*/
 					break;
 				case IDM_WB_TOOLWINDOW:
 					dwWindowBorderIndex = 1;
@@ -965,8 +965,8 @@ INT_PTR CALLBACK PlayerDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 					UpdateBorderStyle();
 					UpdateMainControlsState();
 					UpdateBorderStyle(hPlaylistWnd);
-					if (hVideoWnd/*pEngine->HasVideo()*/)
-						UpdateBorderStyle(hVideoWnd);
+					/*if (hVideoWnd)
+						UpdateBorderStyle(hVideoWnd);*/
 					break;
 				case IDM_VIEW_MAINCONTROLS:
 					dwMainControls = !dwMainControls;
@@ -2396,15 +2396,17 @@ Seek_SetPosition:
 			}
 			if (pEngine->m_lpwFileName) CloseTrack();
 
+			if (dwTrayIcon) RemoveTrayIcon();
 			pToolTipsMain->Destroy();
 			if (!dwNoOwnerDrawMenu) pEBMenuMain->InitEBMenu(0);
 			DestroyWindow(hPlaylistWnd);
 			InitMainWnd(FALSE);
-			if (dwTrayIcon) RemoveTrayIcon();
 
-			PostQuitMessage(0);
 			return TRUE;
 		}
+		case WM_DESTROY:
+			PostQuitMessage(0);
+			return TRUE;
 	}
 	return FALSE;
 }
@@ -2442,8 +2444,8 @@ void ApplySettings()
 	}
 	UpdateBorderStyle();
 	UpdateBorderStyle(hPlaylistWnd);
-	if (hVideoWnd)
-		UpdateBorderStyle(hVideoWnd);
+	/*if (hVideoWnd)
+		UpdateBorderStyle(hVideoWnd);*/
 	CheckMenuItem(hMainMenu, IDM_VIEW_MAINCONTROLS, MF_BYCOMMAND |
 		(dwMainControls)?MF_CHECKED:MF_UNCHECKED);
 	UpdateMainControlsState();
@@ -2685,7 +2687,7 @@ LONG InitTrack(DWORD dwFCFlag, DWORD dwFCIndex)
 			hMainWnd, VideoDlgProc, 0);
 		pEngine->SetVideoStyles(WS_CHILDWINDOW | WS_CLIPSIBLINGS, 0);
 		pEngine->SetVideoOwner(hVideoWnd);
-		UpdateBorderStyle(hVideoWnd);
+		//UpdateBorderStyle(hVideoWnd);
 		//UpdateOpacityState(hVideoWnd);
 		AutoMoveVideoDlg(hVideoWnd);
 		ShowWindow(hVideoWnd, SW_SHOW);
