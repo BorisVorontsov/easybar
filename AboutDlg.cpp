@@ -8,6 +8,9 @@
 
 #pragma comment (lib, "winmm.lib")
 
+extern HINSTANCE hAppInstance;
+extern WCHAR lpwAppVersion[20];
+
 INT_PTR CALLBACK AboutDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
 	switch (uMsg)
@@ -17,7 +20,7 @@ INT_PTR CALLBACK AboutDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam
 			//Инициализация диалога
 			//--------------------------------------------------------------------
 			WCHAR lpwTitle[64] = { 0 };
-			WCHAR lpwAbout[128] = { 0 };
+			WCHAR lpwAbout[256] = { 0 };
 			HMENU hSysMenu = GetSystemMenu(hWnd, FALSE);
 			EnableMenuItem(hSysMenu, SC_CLOSE, MF_DISABLED | MF_GRAYED);
 			swprintf(lpwTitle, L"About %s", APP_NAME);
@@ -27,13 +30,15 @@ INT_PTR CALLBACK AboutDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam
 			SetDlgItemText(hWnd, IDC_STCNAME, lpwAbout);
 			SetDlgItemText(hWnd, IDC_STCCOP, APP_COPYRIGHT);
 			SendDlgItemMessage(hWnd, IDC_STCEM, LEM_SETNFONTCOLOR,
-				(WPARAM)GetSysColor(COLOR_HIGHLIGHT), 0);
+				(WPARAM)RGB(20, 60, 145), 0);
 			SendDlgItemMessage(hWnd, IDC_STCEM, LEM_SETHFONTCOLOR,
-				(WPARAM)GetSysColor(COLOR_WINDOW), 0);
+				(WPARAM)RGB(90, 138, 230), 0);
 			swprintf(lpwAbout, L"E-mail: %s", APP_EMAIL);
 			SetDlgItemText(hWnd, IDC_STCEM, lpwAbout);
 			swprintf(lpwAbout, APP_LICENSE, APP_LICENSE_FILE);
 			SetDlgItemText(hWnd, IDC_STCLIC, lpwAbout);
+			LoadString(hAppInstance, IDS_CREDITS, lpwAbout, sizeof(lpwAbout) / sizeof(WCHAR));
+			SetDlgItemText(hWnd, IDC_EDTCRED, lpwAbout);
 			return TRUE;
 		}
 		case WM_COMMAND:
@@ -60,6 +65,26 @@ INT_PTR CALLBACK AboutDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam
 				}
 				case IDC_BTNOK:
 					PostMessage(hWnd, WM_CLOSE, 0, 0);
+					break;
+				case IDC_BTNCRED:
+					if (IsWindowVisible(GetDlgItem(hWnd, IDC_EDTCRED)))
+					{
+						ShowWindow(GetDlgItem(hWnd, IDC_STCNAME), SW_SHOW);
+						ShowWindow(GetDlgItem(hWnd, IDC_STCCOP), SW_SHOW);
+						ShowWindow(GetDlgItem(hWnd, IDC_STCEM), SW_SHOW);
+						ShowWindow(GetDlgItem(hWnd, IDC_STCLIC), SW_SHOW);
+						ShowWindow(GetDlgItem(hWnd, IDC_EDTCRED), SW_HIDE);
+						SetDlgItemText(hWnd, IDC_BTNCRED, L"&Credits >");
+					}
+					else
+					{
+						ShowWindow(GetDlgItem(hWnd, IDC_STCNAME), SW_HIDE);
+						ShowWindow(GetDlgItem(hWnd, IDC_STCCOP), SW_HIDE);
+						ShowWindow(GetDlgItem(hWnd, IDC_STCEM), SW_HIDE);
+						ShowWindow(GetDlgItem(hWnd, IDC_STCLIC), SW_HIDE);
+						ShowWindow(GetDlgItem(hWnd, IDC_EDTCRED), SW_SHOW);
+						SetDlgItemText(hWnd, IDC_BTNCRED, L"< &About");
+					}
 					break;
 			}
 			return TRUE;

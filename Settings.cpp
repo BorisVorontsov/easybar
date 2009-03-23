@@ -8,6 +8,7 @@
 #include "settings.h"
 
 DWORD dwMultipleInstances;
+LPWSTR lpwRecentDir;
 LPWSTR lpwRecentURL;
 DWORD dwRememberPlaylist;
 DWORD dwRememberPosition;
@@ -16,6 +17,7 @@ DWORD dwSFPosition;
 DWORD dwSFState;
 DWORD dwWindowBorderIndex;
 DWORD dwMainControls;
+DWORD dwPlaylist;
 DWORD dwTitleBarIndex;
 DWORD dwTBDoNotChangeTitle;
 DWORD dwUseSystemColors;
@@ -26,9 +28,10 @@ DWORD dwBorderColor1;
 DWORD dwBorderColor2;
 DWORD dwTextColor;
 DWORD dwTextShadowColor;
+DWORD dwActiveItemTextColor;
 DWORD dwOnTopIndex;
-DWORD dwMainWindowLeft;
-DWORD dwMainWindowTop;
+POINT ptMainWindowPos;
+RECT rcPlaylistPos;
 DWORD dwPositionAtStartupIndex;
 DWORD dwOpacityLevel;
 DWORD dwOpaqueOnFocus;
@@ -77,6 +80,7 @@ void SetDefaultValues()
 {
 	ULONG i;
 	dwMultipleInstances = TRUE;
+	lpwRecentDir = 0;
 	lpwRecentURL = 0;
 	dwRememberPlaylist = TRUE;
 	dwSelectedFileIndex = 0;
@@ -84,6 +88,7 @@ void SetDefaultValues()
 	dwSFState = E_STATE_STOPPED;
 	dwWindowBorderIndex = 0;
 	dwMainControls = TRUE;
+	dwPlaylist = FALSE;
 	dwTitleBarIndex = 1;
 	dwTBDoNotChangeTitle = TRUE;
 	dwUseSystemColors = FALSE;
@@ -94,9 +99,11 @@ void SetDefaultValues()
 	dwBorderColor2 = EB_BORDER_COLOR_2;
 	dwTextColor = EB_TEXT_COLOR;
 	dwTextShadowColor = EB_TEXT_SHADOW_COLOR;
+	dwActiveItemTextColor = EB_ACTIVE_ITEM_TEXT_COLOR;
 	dwOnTopIndex = 0;
-	dwMainWindowLeft = 0;
-	dwMainWindowTop = 0;
+	ptMainWindowPos.x = 0;
+	ptMainWindowPos.y = 0;
+	SetRect(&rcPlaylistPos, 0, 0, 200, 560);
 	dwPositionAtStartupIndex = 0;
 	dwOpacityLevel = 100;
 	dwOpaqueOnFocus = FALSE;
@@ -111,8 +118,8 @@ void SetDefaultValues()
 	dwSeekValue3 = EB_SEEK_VALUE_3;
 	dwSeekByKeyFrames = TRUE;
 	dwMute = FALSE;
-	dwVolume = 9000;
-	dwBalance = 10000;
+	dwVolume = 90;
+	dwBalance = 100;
 	dwKeepAspectRatio = TRUE;
 	dwAspectRatioIndex = 0;
 	dwChangeFSVideoMode = FALSE;
@@ -150,11 +157,15 @@ void GetSettings()
 	ULONG i, j, lSubKeys, lValues;
 	WCHAR lpwKeyName[64] = { 0 };
 	WCHAR lpwData[MAX_PATH] = { 0 };
-	DWORD dwDWORDSIZE = 4; //sizeof(DWORD)
-	DWORD dwSZSIZE;
+	DWORD dwDWORDSIZE = 4/*sizeof(DWORD)*/, dwSZSIZE, dwBINSIZE;
 	if (RegOpenKeyEx(HKEY_CURRENT_USER, EB_REG_GENERAL_PATH, 0, KEY_ALL_ACCESS, &hGSKey) == ERROR_SUCCESS)
 	{
 		RegQueryValueEx(hGSKey, L"MultipleInstances", 0, 0, (LPBYTE)&dwMultipleInstances, &dwDWORDSIZE);
+		ZeroMemory(lpwData, sizeof(lpwData));
+		dwSZSIZE = sizeof(lpwData);
+		RegQueryValueEx(hGSKey, L"RecentDir", 0, 0, (LPBYTE)lpwData, &dwSZSIZE);
+		lpwRecentDir = new WCHAR[MAX_PATH];
+		wcscpy(lpwRecentDir, lpwData);
 		ZeroMemory(lpwData, sizeof(lpwData));
 		dwSZSIZE = sizeof(lpwData);
 		RegQueryValueEx(hGSKey, L"RecentURL", 0, 0, (LPBYTE)lpwData, &dwSZSIZE);
@@ -166,6 +177,7 @@ void GetSettings()
 		RegQueryValueEx(hGSKey, L"SFState", 0, 0, (LPBYTE)&dwSFState, &dwDWORDSIZE);
 		RegQueryValueEx(hGSKey, L"WindowBorderIndex", 0, 0, (LPBYTE)&dwWindowBorderIndex, &dwDWORDSIZE);
 		RegQueryValueEx(hGSKey, L"MainControls", 0, 0, (LPBYTE)&dwMainControls, &dwDWORDSIZE);
+		RegQueryValueEx(hGSKey, L"Playlist", 0, 0, (LPBYTE)&dwPlaylist, &dwDWORDSIZE);
 		RegQueryValueEx(hGSKey, L"TitleBar", 0, 0, (LPBYTE)&dwTitleBarIndex, &dwDWORDSIZE);
 		RegQueryValueEx(hGSKey, L"TBDoNotChangeTitle", 0, 0, (LPBYTE)&dwTBDoNotChangeTitle, &dwDWORDSIZE);
 		RegQueryValueEx(hGSKey, L"UseSystemColors", 0, 0, (LPBYTE)&dwUseSystemColors, &dwDWORDSIZE);
@@ -176,9 +188,12 @@ void GetSettings()
 		RegQueryValueEx(hGSKey, L"BorderColor2", 0, 0, (LPBYTE)&dwBorderColor2, &dwDWORDSIZE);
 		RegQueryValueEx(hGSKey, L"TextColor", 0, 0, (LPBYTE)&dwTextColor, &dwDWORDSIZE);
 		RegQueryValueEx(hGSKey, L"TextShadowColor", 0, 0, (LPBYTE)&dwTextShadowColor, &dwDWORDSIZE);
+		RegQueryValueEx(hGSKey, L"ActiveItemTextColor", 0, 0, (LPBYTE)&dwActiveItemTextColor, &dwDWORDSIZE);
 		RegQueryValueEx(hGSKey, L"OnTop", 0, 0, (LPBYTE)&dwOnTopIndex, &dwDWORDSIZE);
-		RegQueryValueEx(hGSKey, L"MainWindowLeft", 0, 0, (LPBYTE)&dwMainWindowLeft, &dwDWORDSIZE);
-		RegQueryValueEx(hGSKey, L"MainWindowTop", 0, 0, (LPBYTE)&dwMainWindowTop, &dwDWORDSIZE);
+		dwBINSIZE = sizeof(POINT);
+		RegQueryValueEx(hGSKey, L"MainWindowPos", 0, 0, (LPBYTE)&ptMainWindowPos, &dwBINSIZE);
+		dwBINSIZE = sizeof(RECT);
+		RegQueryValueEx(hGSKey, L"PlaylistPos", 0, 0, (LPBYTE)&rcPlaylistPos, &dwBINSIZE);
 		RegQueryValueEx(hGSKey, L"PositionAtStartup", 0, 0, (LPBYTE)&dwPositionAtStartupIndex, &dwDWORDSIZE);
 		RegQueryValueEx(hGSKey, L"Opacity", 0, 0, (LPBYTE)&dwOpacityLevel, &dwDWORDSIZE);
 		RegQueryValueEx(hGSKey, L"OpaqueOnFocus", 0, 0, (LPBYTE)&dwOpaqueOnFocus, &dwDWORDSIZE);
@@ -331,6 +346,11 @@ void SaveSettings()
 	RegCreateKeyEx(HKEY_CURRENT_USER, EB_REG_GENERAL_PATH, 0, L"REG_DWORD", REG_OPTION_NON_VOLATILE,
 		KEY_ALL_ACCESS, 0, &hSSKey, &dwDisposition);
 	RegSetValueEx(hSSKey, L"MultipleInstances", 0, REG_DWORD, (CONST LPBYTE)&dwMultipleInstances, 4);
+	if (lpwRecentDir)
+	{
+		RegSetValueEx(hSSKey, L"RecentDir", 0, REG_SZ, (CONST LPBYTE)lpwRecentDir, (wcslen(lpwRecentDir)
+			+ 1) * sizeof(WCHAR));
+	}
 	if (lpwRecentURL)
 	{
 		RegSetValueEx(hSSKey, L"RecentURL", 0, REG_SZ, (CONST LPBYTE)lpwRecentURL, (wcslen(lpwRecentURL)
@@ -342,6 +362,7 @@ void SaveSettings()
 	RegSetValueEx(hSSKey, L"SFState", 0, REG_DWORD, (CONST LPBYTE)&dwSFState, 4);
 	RegSetValueEx(hSSKey, L"WindowBorderIndex", 0, REG_DWORD, (CONST LPBYTE)&dwWindowBorderIndex, 4);
 	RegSetValueEx(hSSKey, L"MainControls", 0, REG_DWORD, (CONST LPBYTE)&dwMainControls, 4);
+	RegSetValueEx(hSSKey, L"Playlist", 0, REG_DWORD, (CONST LPBYTE)&dwPlaylist, 4);
 	RegSetValueEx(hSSKey, L"TitleBar", 0, REG_DWORD, (CONST LPBYTE)&dwTitleBarIndex, 4);
 	RegSetValueEx(hSSKey, L"TBDoNotChangeTitle", 0, REG_DWORD, (CONST LPBYTE)&dwTBDoNotChangeTitle, 4);
 	RegSetValueEx(hSSKey, L"UseSystemColors", 0, REG_DWORD, (CONST LPBYTE)&dwUseSystemColors, 4);
@@ -352,9 +373,10 @@ void SaveSettings()
 	RegSetValueEx(hSSKey, L"BorderColor2", 0, REG_DWORD, (CONST LPBYTE)&dwBorderColor2, 4);
 	RegSetValueEx(hSSKey, L"TextColor", 0, REG_DWORD, (CONST LPBYTE)&dwTextColor, 4);
 	RegSetValueEx(hSSKey, L"TextShadowColor", 0, REG_DWORD, (CONST LPBYTE)&dwTextShadowColor, 4);
+	RegSetValueEx(hSSKey, L"ActiveItemTextColor", 0, REG_DWORD, (CONST LPBYTE)&dwActiveItemTextColor, 4);
 	RegSetValueEx(hSSKey, L"OnTop", 0, REG_DWORD, (CONST LPBYTE)&dwOnTopIndex, 4);
-	RegSetValueEx(hSSKey, L"MainWindowLeft", 0, REG_DWORD, (CONST LPBYTE)&dwMainWindowLeft, 4);
-	RegSetValueEx(hSSKey, L"MainWindowTop", 0, REG_DWORD, (CONST LPBYTE)&dwMainWindowTop, 4);
+	RegSetValueEx(hSSKey, L"MainWindowPos", 0, REG_BINARY, (CONST LPBYTE)&ptMainWindowPos, sizeof(POINT));
+	RegSetValueEx(hSSKey, L"PlaylistPos", 0, REG_BINARY, (CONST LPBYTE)&rcPlaylistPos, sizeof(RECT));
 	RegSetValueEx(hSSKey, L"PositionAtStartup", 0, REG_DWORD, (CONST LPBYTE)&dwPositionAtStartupIndex, 4);
 	RegSetValueEx(hSSKey, L"Opacity", 0, REG_DWORD, (CONST LPBYTE)&dwOpacityLevel, 4);
 	RegSetValueEx(hSSKey, L"OpaqueOnFocus", 0, REG_DWORD, (CONST LPBYTE)&dwOpaqueOnFocus, 4);

@@ -7,7 +7,9 @@
 #include "easybar.h"
 #include "associationsdlg.h"
 
-CFileAssociations *pFileAssociations = new CFileAssociations;
+extern WCHAR lpwAppPath[MAX_PATH];
+
+static CFileAssociations *pFileAssociations = new CFileAssociations;
 
 INT_PTR CALLBACK AssociationsDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
@@ -19,7 +21,7 @@ INT_PTR CALLBACK AssociationsDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM
 			//--------------------------------------------------------------------
 			ULONG i;
 			WCHAR lpwText[64] = { 0 }, lpwCACmd[MAX_PATH] = { 0 };
-			DWORD dwItemsCnt;
+			int intItemsCnt;
 			wcscpy(pFileAssociations->m_lpwAppPath, lpwAppPath);
 			pFileAssociations->m_dwIconIndex = 1;
 			swprintf(pFileAssociations->m_lpwRegAppKey, L"%s.File", APP_NAME);
@@ -35,10 +37,10 @@ INT_PTR CALLBACK AssociationsDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM
 				{
 					swprintf(lpwText, L"*.%s", APP_SFT[i]);
 					SendDlgItemMessage(hWnd, IDC_LSTFT, LB_ADDSTRING, 0, (LPARAM)lpwText);
-					dwItemsCnt = SendDlgItemMessage(hWnd, IDC_LSTFT, LB_GETCOUNT, 0, 0);
+					intItemsCnt = SendDlgItemMessage(hWnd, IDC_LSTFT, LB_GETCOUNT, 0, 0);
 					if (pFileAssociations->IsAssociated(APP_SFT[i]))
 					{
-						SendDlgItemMessage(hWnd, IDC_LSTFT, LB_SETSEL, TRUE, dwItemsCnt - 1);
+						SendDlgItemMessage(hWnd, IDC_LSTFT, LB_SETSEL, TRUE, intItemsCnt - 1);
 					}
 				}
 			}
@@ -47,10 +49,41 @@ INT_PTR CALLBACK AssociationsDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM
 		case WM_COMMAND:
 			switch (LOWORD(wParam))
 			{
-				case IDC_BTNALL:
-					SendDlgItemMessage(hWnd, IDC_LSTFT, LB_SETSEL, TRUE, -1);
+				case IDC_BTNVIDEO:
+				case IDC_BTNAUDIO:
+				case IDC_BTNIMGS:
+				case IDC_BTNPLS:
+				{
+					ULONG i;
+					WCHAR lpwText[64] = { 0 };
+					int intItemsCnt = SendDlgItemMessage(hWnd, IDC_LSTFT, LB_GETCOUNT, 0, 0);
+					for (i = 0; i < (UINT)intItemsCnt; i++)
+					{
+						SendDlgItemMessage(hWnd, IDC_LSTFT, LB_GETTEXT, i, (LPARAM)lpwText);
+						SP_ExtractRightPart(lpwText, lpwText, '.');
+						switch (LOWORD(wParam))
+						{
+							case IDC_BTNVIDEO:
+								if(SFT_IsMemberOfCategory(lpwText, SFTC_VIDEO))
+									SendDlgItemMessage(hWnd, IDC_LSTFT, LB_SETSEL, TRUE, i);
+								break;
+							case IDC_BTNAUDIO:
+								if(SFT_IsMemberOfCategory(lpwText, SFTC_AUDIO) || SFT_IsMemberOfCategory(lpwText, SFTC_MIDI))
+									SendDlgItemMessage(hWnd, IDC_LSTFT, LB_SETSEL, TRUE, i);
+								break;
+							case IDC_BTNIMGS:
+								if(SFT_IsMemberOfCategory(lpwText, SFTC_IMAGE))
+									SendDlgItemMessage(hWnd, IDC_LSTFT, LB_SETSEL, TRUE, i);
+								break;
+							case IDC_BTNPLS:
+								if(SFT_IsMemberOfCategory(lpwText, SFTC_PLAYLIST))
+									SendDlgItemMessage(hWnd, IDC_LSTFT, LB_SETSEL, TRUE, i);
+								break;
+						}
+					}
 					break;
-				case IDC_BTNNONE:
+				}
+				case IDC_BTNRESET:
 					SendDlgItemMessage(hWnd, IDC_LSTFT, LB_SETSEL, FALSE, -1);
 					break;
 				case IDC_BTNOK:
@@ -58,8 +91,8 @@ INT_PTR CALLBACK AssociationsDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM
 					ULONG i;
 					WCHAR lpwText[64] = { 0 };
 					BOOL bChanges = FALSE;
-					DWORD dwItemsCnt = SendDlgItemMessage(hWnd, IDC_LSTFT, LB_GETCOUNT, 0, 0);
-					for (i = 0; i < dwItemsCnt; i++)
+					int intItemsCnt = SendDlgItemMessage(hWnd, IDC_LSTFT, LB_GETCOUNT, 0, 0);
+					for (i = 0; i < (UINT)intItemsCnt; i++)
 					{
 						SendDlgItemMessage(hWnd, IDC_LSTFT, LB_GETTEXT, i, (LPARAM)lpwText);
 						SP_ExtractRightPart(lpwText, lpwText, '.');

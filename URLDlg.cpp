@@ -1,4 +1,5 @@
 #include <windows.h>
+#include <shlwapi.h>
 
 #include "resource.h"
 #include "strparser.h"
@@ -10,6 +11,7 @@
 #include "urldlg.h"
 
 #pragma comment (lib, "urlmon.lib")
+#pragma comment (lib, "shlwapi.lib")
 
 INT_PTR CALLBACK URLDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
@@ -18,8 +20,10 @@ INT_PTR CALLBACK URLDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 		case WM_INITDIALOG:
 			//Инициализация диалога
 			//--------------------------------------------------------------------
+			CoInitialize(NULL);
 			SetDlgItemText(hWnd, IDC_EDTURL, lpwRecentURL);
 			PostMessage(hWnd, WM_COMMAND, MAKEWPARAM(IDC_EDTURL, EN_CHANGE), 0);
+			SHAutoComplete(GetDlgItem(hWnd, IDC_EDTURL), SHACF_URLALL);
 			return TRUE;
 		case WM_COMMAND:
 			switch (LOWORD(wParam))
@@ -45,7 +49,7 @@ INT_PTR CALLBACK URLDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 					{
 						WCHAR lpwPath[MAX_PATH] = { 0 };
 						ExpandEnvironmentStrings(L"%tmp%\\playlist.tmp", lpwPath, MAX_PATH);
-						if (SUCCEEDED(URLDownloadToFile(0, lpwText, lpwPath, 0, 0)))
+						if (SUCCEEDED(URLDownloadToFile(0, lpwText, lpwPath, 0, NULL)))
 						{
 							lFileCnt += LoadPlaylist(lpwPath);
 						}
@@ -82,6 +86,9 @@ INT_PTR CALLBACK URLDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 					EndDialog(hWnd, 0);
 					break;
 			}
+			return TRUE;
+		case WM_DESTROY:
+			CoUninitialize();
 			return TRUE;
 		case WM_CLOSE:
 			EndDialog(hWnd, 0);

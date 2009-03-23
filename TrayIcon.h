@@ -2,13 +2,14 @@
 #define TRAYICON_H
 
 #define IDM_TRAY_HIDESHOW		0x00001004
+#define IDM_TRAY_EXIT			0x00001005
 
 #define TRAY_ICON_ID			0x00000C94
 
 #define TRAY_CB_WND_CLASS		L"TRAYCB_"
 
 #define WM_TASKBARCREATED		RegisterWindowMessage(L"TaskbarCreated")
-#define WM_TRAY_NOTIFY			WM_USER + 0x226
+#define WM_TRAY_NOTIFY			WM_APP + 0x226
 
 typedef enum _BALLOONICON
 {
