@@ -1,7 +1,7 @@
 /////////////////////////////////////////////////////////////////////////////
 //		Проект: EasyBar - media player
 //		Автор(ы): Борис Воронцов и участники проекта
-//		Последнее обновление: 13.03.2009 (Пятница 13!)
+//		Последнее обновление: 26.03.2009
 /////////////////////////////////////////////////////////////////////////////
 
 #define _WIN32_WINNT	0x0501
@@ -69,6 +69,8 @@ WCHAR lpwStdWndTitle[64] = { 0 };
 WCHAR lpwCurFileTitle[128] = { 0 };
 
 WCHAR lpwPlPath[MAX_PATH] = { 0 };
+
+static BYTE bCurAlpha;
 
 static BOOL bSeekFlag = FALSE; //Временно отключает обновление полосы поиска
 
@@ -454,41 +456,28 @@ INT_PTR CALLBACK PlayerDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 		{
 			if (dwOpaqueOnFocus && (dwOpacityLevel < 100))
 			{
-				BYTE bAlpha1 = (BYTE)(2.55 * dwOpacityLevel), bAlpha2 = 255, i;
 				if (wParam)
 				{
 					if (!dwNoTransitionEffects)
 					{
-						for (i = bAlpha1; i < bAlpha2; i++)
-						{
-							SetLayeredWindowAttributes(hWnd, 0, i, LWA_ALPHA);
-							SetLayeredWindowAttributes(hPlaylistWnd, 0, i, LWA_ALPHA);
-							/*if (hVideoWnd)
-								SetLayeredWindowAttributes(hVideoWnd, 0, i, LWA_ALPHA);*/
-							ProcessMessages();
-						}
+						bCurAlpha = (BYTE)(2.55 * dwOpacityLevel);
+						SetTimer(hWnd, 2, 10, 0);
 					}
 					else
 					{
-						SetLayeredWindowAttributes(hWnd, 0, bAlpha2, LWA_ALPHA);
+						SetLayeredWindowAttributes(hWnd, 0, 255, LWA_ALPHA);
 					}
 				}
 				else
 				{
 					if (!dwNoTransitionEffects)
 					{
-						for (i = bAlpha2; i > bAlpha1; i--)
-						{
-							SetLayeredWindowAttributes(hWnd, 0, i, LWA_ALPHA);
-							SetLayeredWindowAttributes(hPlaylistWnd, 0, i, LWA_ALPHA);
-							/*if (hVideoWnd)
-								SetLayeredWindowAttributes(hVideoWnd, 0, i, LWA_ALPHA);*/
-							ProcessMessages();
-						}
+						bCurAlpha = 255;
+						SetTimer(hWnd, 3, 10, 0);
 					}
 					else
 					{
-						SetLayeredWindowAttributes(hWnd, 0, bAlpha1, LWA_ALPHA);
+						SetLayeredWindowAttributes(hWnd, 0, (BYTE)(2.55 * dwOpacityLevel), LWA_ALPHA);
 					}
 				}
 			}
@@ -2089,272 +2078,301 @@ Seek_SetPosition:
 			return TRUE;
 		case WM_TIMER:
 		{
-			if (wParam == 1)
+			switch (wParam)
 			{
-				int intPos = 0, intLen = 0;
-				int intMin = 0, intMax = 0, intCur = 0, intTmp = 0;
-				BOOL bCtlsFlag1 = (pEngine->m_lpwFileName != 0);
-				BOOL bCtlsFlag2 = (pEngine->IsSeekable() != 0);
-				BOOL bCtlsFlag3 = (pEngine->HasAudio() != 0);
-				BOOL bSSActive, bEndOfPlayback;
-				EnableWindow(GetDlgItem(hWnd, IDC_EBFMAIN), bCtlsFlag1);
-				EnableWindow(GetDlgItem(hWnd, IDC_EBDMAIN), bCtlsFlag1);
-				EnableWindow(GetDlgItem(hWnd, IDC_EBBPF), ((dwShuffle)?(pFileCollection->FileCount() > 1):
-					(pFileCollection->IsFileAvailable(FCF_BACKWARD))));
-				EnableWindow(GetDlgItem(hWnd, IDC_EBBSB), (bCtlsFlag1 && bCtlsFlag2));
-				EnableWindow(GetDlgItem(hWnd, IDC_EBBPP), bCtlsFlag1);
-				EnableWindow(GetDlgItem(hWnd, IDC_EBBSF),(bCtlsFlag1 && bCtlsFlag2));
-				EnableWindow(GetDlgItem(hWnd, IDC_EBBNF), ((dwShuffle)?(pFileCollection->FileCount() > 1):
-					(pFileCollection->IsFileAvailable(FCF_FORWARD))));
-				EnableWindow(GetDlgItem(hWnd, IDC_EBSLDSEEK), (bCtlsFlag1 && bCtlsFlag2));
-				EnableWindow(GetDlgItem(hWnd, IDC_EBBMUT), bCtlsFlag1 && bCtlsFlag3);
-				EnableWindow(GetDlgItem(hWnd, IDC_EBSLDVOL), bCtlsFlag1 && bCtlsFlag3);
-				EnableWindow(GetDlgItem(hWnd, IDC_EBBBN), bCtlsFlag1 && bCtlsFlag3);
-				EnableWindow(GetDlgItem(hWnd, IDC_EBSLDBAL), bCtlsFlag1 && bCtlsFlag3);
-				//----------------------------------------------------------------
-				if (pEngine->GetState() == E_STATE_PLAYING)
+				case 1:
 				{
-					if (_wcsicmp((LPWSTR)GetProp(GetDlgItem(hWnd, IDC_EBBPP), L"_icon_"), L"pause") != 0)
+					int intPos = 0, intLen = 0;
+					int intMin = 0, intMax = 0, intCur = 0, intTmp = 0;
+					BOOL bCtlsFlag1 = (pEngine->m_lpwFileName != 0);
+					BOOL bCtlsFlag2 = (pEngine->IsSeekable() != 0);
+					BOOL bCtlsFlag3 = (pEngine->HasAudio() != 0);
+					BOOL bSSActive, bEndOfPlayback;
+					EnableWindow(GetDlgItem(hWnd, IDC_EBFMAIN), bCtlsFlag1);
+					EnableWindow(GetDlgItem(hWnd, IDC_EBDMAIN), bCtlsFlag1);
+					EnableWindow(GetDlgItem(hWnd, IDC_EBBPF), ((dwShuffle)?(pFileCollection->FileCount() > 1):
+						(pFileCollection->IsFileAvailable(FCF_BACKWARD))));
+					EnableWindow(GetDlgItem(hWnd, IDC_EBBSB), (bCtlsFlag1 && bCtlsFlag2));
+					EnableWindow(GetDlgItem(hWnd, IDC_EBBPP), bCtlsFlag1);
+					EnableWindow(GetDlgItem(hWnd, IDC_EBBSF),(bCtlsFlag1 && bCtlsFlag2));
+					EnableWindow(GetDlgItem(hWnd, IDC_EBBNF), ((dwShuffle)?(pFileCollection->FileCount() > 1):
+						(pFileCollection->IsFileAvailable(FCF_FORWARD))));
+					EnableWindow(GetDlgItem(hWnd, IDC_EBSLDSEEK), (bCtlsFlag1 && bCtlsFlag2));
+					EnableWindow(GetDlgItem(hWnd, IDC_EBBMUT), bCtlsFlag1 && bCtlsFlag3);
+					EnableWindow(GetDlgItem(hWnd, IDC_EBSLDVOL), bCtlsFlag1 && bCtlsFlag3);
+					EnableWindow(GetDlgItem(hWnd, IDC_EBBBN), bCtlsFlag1 && bCtlsFlag3);
+					EnableWindow(GetDlgItem(hWnd, IDC_EBSLDBAL), bCtlsFlag1 && bCtlsFlag3);
+					//----------------------------------------------------------------
+					if (pEngine->GetState() == E_STATE_PLAYING)
 					{
-						SendDlgItemMessage(hWnd, IDC_EBBPP, EBBM_SETBITMAP, 0,
-							(LPARAM)LoadImage(hAppInstance, MAKEINTRESOURCE(IDB_PAUSE), IMAGE_BITMAP, 16, 15, 0));
-						SetProp(GetDlgItem(hWnd, IDC_EBBPP), L"_icon_", (HANDLE)L"pause");
-					}
-					SystemParametersInfo(SPI_GETSCREENSAVEACTIVE, 0, &bSSActive, 0);
-					if (bSSActive)
-					{
-						SystemParametersInfo(SPI_SETSCREENSAVEACTIVE, FALSE, 0, 0);
-					}
-				}
-				else
-				{
-					if (_wcsicmp((LPWSTR)GetProp(GetDlgItem(hWnd, IDC_EBBPP), L"_icon_"), L"play") != 0)
-					{
-						SendDlgItemMessage(hWnd, IDC_EBBPP, EBBM_SETBITMAP, 0,
-							(LPARAM)LoadImage(hAppInstance, MAKEINTRESOURCE(IDB_PLAY), IMAGE_BITMAP, 16, 15, 0));
-						SetProp(GetDlgItem(hWnd, IDC_EBBPP), L"_icon_", (HANDLE)L"play");
-					}
-					SystemParametersInfo(SPI_GETSCREENSAVEACTIVE, 0, &bSSActive, 0);
-					if (!bSSActive)
-					{
-						SystemParametersInfo(SPI_SETSCREENSAVEACTIVE, TRUE, 0, 0);
-					}
-				}
-				//Если задано 'On Top->While Playing' - обновляем
-				if (dwOnTopIndex == 2) UpdateOnTopState();
-				//----------------------------------------------------------------
-				if (bCtlsFlag1 && bCtlsFlag2)
-				{
-					intPos = (int)pEngine->GetPosition();
-					intLen = (int)pEngine->GetLength();
-					if (!bSeekFlag)
-					{
-						SendDlgItemMessage(hWnd, IDC_EBSLDSEEK, EBSM_SETPOS, 0, intPos);
-					}
-					//Если дошли до конца трека, то...
-					if (intPos == intLen)
-					{
-						if (pFileCollection->IsFileAvailable(FCF_FORWARD) && (dwRepeatIndex != 2) && !dwShuffle)
+						if (_wcsicmp((LPWSTR)GetProp(GetDlgItem(hWnd, IDC_EBBPP), L"_icon_"), L"pause") != 0)
 						{
-							InitTrack(FCF_FORWARD);
-							pEngine->Play();
-							bEndOfPlayback = FALSE;
+							SendDlgItemMessage(hWnd, IDC_EBBPP, EBBM_SETBITMAP, 0,
+								(LPARAM)LoadImage(hAppInstance, MAKEINTRESOURCE(IDB_PAUSE), IMAGE_BITMAP, 16, 15, 0));
+							SetProp(GetDlgItem(hWnd, IDC_EBBPP), L"_icon_", (HANDLE)L"pause");
 						}
-						else
+						SystemParametersInfo(SPI_GETSCREENSAVEACTIVE, 0, &bSSActive, 0);
+						if (bSSActive)
 						{
-							bEndOfPlayback = TRUE;
-							switch (dwRepeatIndex)
+							SystemParametersInfo(SPI_SETSCREENSAVEACTIVE, FALSE, 0, 0);
+						}
+					}
+					else
+					{
+						if (_wcsicmp((LPWSTR)GetProp(GetDlgItem(hWnd, IDC_EBBPP), L"_icon_"), L"play") != 0)
+						{
+							SendDlgItemMessage(hWnd, IDC_EBBPP, EBBM_SETBITMAP, 0,
+								(LPARAM)LoadImage(hAppInstance, MAKEINTRESOURCE(IDB_PLAY), IMAGE_BITMAP, 16, 15, 0));
+							SetProp(GetDlgItem(hWnd, IDC_EBBPP), L"_icon_", (HANDLE)L"play");
+						}
+						SystemParametersInfo(SPI_GETSCREENSAVEACTIVE, 0, &bSSActive, 0);
+						if (!bSSActive)
+						{
+							SystemParametersInfo(SPI_SETSCREENSAVEACTIVE, TRUE, 0, 0);
+						}
+					}
+					//Если задано 'On Top->While Playing' - обновляем
+					if (dwOnTopIndex == 2) UpdateOnTopState();
+					//----------------------------------------------------------------
+					if (bCtlsFlag1 && bCtlsFlag2)
+					{
+						intPos = (int)pEngine->GetPosition();
+						intLen = (int)pEngine->GetLength();
+						if (!bSeekFlag)
+						{
+							SendDlgItemMessage(hWnd, IDC_EBSLDSEEK, EBSM_SETPOS, 0, intPos);
+						}
+						//Если дошли до конца трека, то...
+						if (intPos == intLen)
+						{
+							if (pFileCollection->IsFileAvailable(FCF_FORWARD) && (dwRepeatIndex != 2) && !dwShuffle)
 							{
-								case 0:
-									if (dwShuffle && (pFileCollection->FileCount() > 1))
-									{
-										if (InitTrack(FCF_RANDOM) == 0)
+								InitTrack(FCF_FORWARD);
+								pEngine->Play();
+								bEndOfPlayback = FALSE;
+							}
+							else
+							{
+								bEndOfPlayback = TRUE;
+								switch (dwRepeatIndex)
+								{
+									case 0:
+										if (dwShuffle && (pFileCollection->FileCount() > 1))
 										{
-											pEngine->Play();
-											bEndOfPlayback = FALSE;
+											if (InitTrack(FCF_RANDOM) == 0)
+											{
+												pEngine->Play();
+												bEndOfPlayback = FALSE;
+											}
 										}
-									}
-									break;
-								case 1:
-									if (dwShuffle && (pFileCollection->FileCount() > 1))
-									{
-										if (InitTrack(FCF_RANDOM) == -1) InitTrack(FCF_RANDOM);
-										pEngine->Play();
-									}
-									else
-									{
-										if (pFileCollection->IsFileAvailable(FCF_BACKWARD))
+										break;
+									case 1:
+										if (dwShuffle && (pFileCollection->FileCount() > 1))
 										{
-											InitTrack(FCF_FIRST);
+											if (InitTrack(FCF_RANDOM) == -1) InitTrack(FCF_RANDOM);
 											pEngine->Play();
 										}
 										else
 										{
-											pEngine->SetPosition(0);
+											if (pFileCollection->IsFileAvailable(FCF_BACKWARD))
+											{
+												InitTrack(FCF_FIRST);
+												pEngine->Play();
+											}
+											else
+											{
+												pEngine->SetPosition(0);
+											}
 										}
-									}
-									bEndOfPlayback = FALSE;
-									break;
-								case 2:
-									pEngine->SetPosition(0);
-									bEndOfPlayback = FALSE;
-									break;
-							}
-							if (bEndOfPlayback)
-							{
-								pEngine->SetPosition(0);
-								if (pEngine->GetState() == E_STATE_PLAYING)
-								{
-									SendMessage(hWnd, WM_COMMAND, MAKEWPARAM(IDM_PLAYBACK_STOP, 0), 0);
-								}
-								switch (dwAfterPlaybackIndex)
-								{
-									case 0:
-										PostMessage(hWnd, WM_CLOSE, 0, 0);
-										break;
-									case 1:
-										PostMessage(hWnd, WM_COMMAND, MAKEWPARAM(IDM_FILE_CLOSEWINDOW, 0), 0);
+										bEndOfPlayback = FALSE;
 										break;
 									case 2:
-										ShowWindow(hWnd, SW_MINIMIZE);
-										SetSystemPowerState(TRUE, FALSE);
+										pEngine->SetPosition(0);
+										bEndOfPlayback = FALSE;
 										break;
-									case 3:
-										ShowWindow(hWnd, SW_MINIMIZE);
-										SetSystemPowerState(FALSE, FALSE);
-										break;
-									case 4:
-										ExitWindowsEx(EWX_SHUTDOWN, 0);
-										break;
-									case 5:
-										ExitWindowsEx(EWX_LOGOFF, 0);
-										break;
-									case 6:
-										//Ничего не делать
-										break;
+								}
+								if (bEndOfPlayback)
+								{
+									pEngine->SetPosition(0);
+									if (pEngine->GetState() == E_STATE_PLAYING)
+									{
+										SendMessage(hWnd, WM_COMMAND, MAKEWPARAM(IDM_PLAYBACK_STOP, 0), 0);
+									}
+									switch (dwAfterPlaybackIndex)
+									{
+										case 0:
+											PostMessage(hWnd, WM_CLOSE, 0, 0);
+											break;
+										case 1:
+											PostMessage(hWnd, WM_COMMAND, MAKEWPARAM(IDM_FILE_CLOSEWINDOW, 0), 0);
+											break;
+										case 2:
+											ShowWindow(hWnd, SW_MINIMIZE);
+											SetSystemPowerState(TRUE, FALSE);
+											break;
+										case 3:
+											ShowWindow(hWnd, SW_MINIMIZE);
+											SetSystemPowerState(FALSE, FALSE);
+											break;
+										case 4:
+											ExitWindowsEx(EWX_SHUTDOWN, 0);
+											break;
+										case 5:
+											ExitWindowsEx(EWX_LOGOFF, 0);
+											break;
+										case 6:
+											//Ничего не делать
+											break;
+									}
 								}
 							}
 						}
 					}
-				}
-				else
-				{
-					SendDlgItemMessage(hWnd, IDC_EBSLDSEEK, EBSM_SETPOS, TRUE, 0);
-				}
-				//----------------------------------------------------------------
-				switch (CI.dwInfoIndex)
-				{
-					case II_TIME:
-						if (bCtlsFlag1 && bCtlsFlag2)
-						{
-							if (((intLen / 1000) / 3600))
-							{
-								swprintf(CI.lpwBuffer, L"Position: %02i:%02i:%02i, Length: %02i:%02i:%02i, Rate: %.1f",
-									(intPos / 1000) / 3600, ((intPos / 1000) / 60) % 60, ((intPos / 1000) % 60),
-									(intLen / 1000) / 3600, ((intLen / 1000) / 60) % 60, ((intLen / 1000) % 60),
-									pEngine->GetRate());
-							}
-							else
-							{
-								swprintf(CI.lpwBuffer, L"Position: %02i:%02i, Length: %02i:%02i, Rate: %.1f", ((intPos / 1000)
-									/ 60) % 60, ((intPos / 1000) % 60), ((intLen / 1000) / 60) % 60, ((intLen / 1000) % 60),
-									pEngine->GetRate());
-							}
-						}
-						else
-						{
-							wcscpy(CI.lpwBuffer, L"Position: 00:00, Length: 00:00, Rate: 0.0");
-						}
-						break;
-					case II_STATE:
-						switch (pEngine->GetState())
-						{
-							case E_STATE_PLAYING:
-								wcscpy(CI.lpwBuffer, L"State: Playing");
-								break;
-							case E_STATE_PAUSED:
-								wcscpy(CI.lpwBuffer, L"State: Paused");
-								break;
-							case E_STATE_STOPPED:
-								wcscpy(CI.lpwBuffer, L"State: Stopped");
-								break;
-						}
-						break;
-					case II_TITLE:
-						wcscpy(CI.lpwBuffer, lpwCurFileTitle);
-						break;
-					case II_POSITION:
-						if (bCtlsFlag1 && bCtlsFlag2)
-						{
-							SendDlgItemMessage(hWnd, IDC_EBSLDSEEK, EBSM_GETRANGE, (WPARAM)&intMin,
-								(LPARAM)&intMax);
-							intCur = SendDlgItemMessage(hWnd, IDC_EBSLDSEEK, EBSM_GETPOS, 0, 0);
-							intTmp = (int)(((double)intCur / (double)intMax) * 100);
-							swprintf(CI.lpwBuffer, L"Position: %i%c", intTmp, '%');
-						}
-						else
-						{
-							wcscpy(CI.lpwBuffer, L"Position: None");
-						}
-						break;
-					case II_MUTE:
-						if (bCtlsFlag1)
-						{
-							swprintf(CI.lpwBuffer, L"Mute: %s", (dwMute)?L"On":L"Off");
-						}
-						else
-						{
-							wcscpy(CI.lpwBuffer, L"Mute: None");
-						}
-						break;
-					case II_VOLUME:
-						if (bCtlsFlag1)
-						{
-							SendDlgItemMessage(hWnd, IDC_EBSLDVOL, EBSM_GETRANGE, (WPARAM)&intMin,
-								(LPARAM)&intMax);
-							intCur = SendDlgItemMessage(hWnd, IDC_EBSLDVOL, EBSM_GETPOS, 0, 0);
-							intTmp = (int)(((double)intCur / (double)intMax) * 100);
-							swprintf(CI.lpwBuffer, L"Volume: %i%c", intTmp, '%');
-						}
-						else
-						{
-							wcscpy(CI.lpwBuffer, L"Volume: None");
-						}
-						break;
-					case II_BALANCE:
-						if (bCtlsFlag1)
-						{
-							SendDlgItemMessage(hWnd, IDC_EBSLDBAL, EBSM_GETRANGE, (WPARAM)&intMin,
-								(LPARAM)&intMax);
-							intCur = SendDlgItemMessage(hWnd, IDC_EBSLDBAL, EBSM_GETPOS, 0, 0);
-							intTmp = (int)(((double)intCur / (double)intMax) * 100);
-							swprintf(CI.lpwBuffer, L"Balance: %i%c", intTmp, '%');
-						}
-						else
-						{
-							wcscpy(CI.lpwBuffer, L"Balance: None");
-						}
-						break;
-				}
-				SetDlgItemText(hWnd, IDC_EBDMAIN, CI.lpwBuffer);
-				if ((GetTickCount() - CI.dwTimer) >= CI.dwTimeout)
-				{
+					else
+					{
+						SendDlgItemMessage(hWnd, IDC_EBSLDSEEK, EBSM_SETPOS, TRUE, 0);
+					}
+					//----------------------------------------------------------------
 					switch (CI.dwInfoIndex)
 					{
 						case II_TIME:
-							CI.dwInfoIndex = II_STATE;
+							if (bCtlsFlag1 && bCtlsFlag2)
+							{
+								if (((intLen / 1000) / 3600))
+								{
+									swprintf(CI.lpwBuffer, L"Position: %02i:%02i:%02i, Length: %02i:%02i:%02i, Rate: %.1f",
+										(intPos / 1000) / 3600, ((intPos / 1000) / 60) % 60, ((intPos / 1000) % 60),
+										(intLen / 1000) / 3600, ((intLen / 1000) / 60) % 60, ((intLen / 1000) % 60),
+										pEngine->GetRate());
+								}
+								else
+								{
+									swprintf(CI.lpwBuffer, L"Position: %02i:%02i, Length: %02i:%02i, Rate: %.1f", ((intPos / 1000)
+										/ 60) % 60, ((intPos / 1000) % 60), ((intLen / 1000) / 60) % 60, ((intLen / 1000) % 60),
+										pEngine->GetRate());
+								}
+							}
+							else
+							{
+								wcscpy(CI.lpwBuffer, L"Position: 00:00, Length: 00:00, Rate: 0.0");
+							}
 							break;
 						case II_STATE:
-							CI.dwInfoIndex = II_TITLE;
+							switch (pEngine->GetState())
+							{
+								case E_STATE_PLAYING:
+									wcscpy(CI.lpwBuffer, L"State: Playing");
+									break;
+								case E_STATE_PAUSED:
+									wcscpy(CI.lpwBuffer, L"State: Paused");
+									break;
+								case E_STATE_STOPPED:
+									wcscpy(CI.lpwBuffer, L"State: Stopped");
+									break;
+							}
 							break;
 						case II_TITLE:
-						default:
-							CI.dwInfoIndex = II_TIME;
+							wcscpy(CI.lpwBuffer, lpwCurFileTitle);
+							break;
+						case II_POSITION:
+							if (bCtlsFlag1 && bCtlsFlag2)
+							{
+								SendDlgItemMessage(hWnd, IDC_EBSLDSEEK, EBSM_GETRANGE, (WPARAM)&intMin,
+									(LPARAM)&intMax);
+								intCur = SendDlgItemMessage(hWnd, IDC_EBSLDSEEK, EBSM_GETPOS, 0, 0);
+								intTmp = (int)(((double)intCur / (double)intMax) * 100);
+								swprintf(CI.lpwBuffer, L"Position: %i%c", intTmp, '%');
+							}
+							else
+							{
+								wcscpy(CI.lpwBuffer, L"Position: None");
+							}
+							break;
+						case II_MUTE:
+							if (bCtlsFlag1)
+							{
+								swprintf(CI.lpwBuffer, L"Mute: %s", (dwMute)?L"On":L"Off");
+							}
+							else
+							{
+								wcscpy(CI.lpwBuffer, L"Mute: None");
+							}
+							break;
+						case II_VOLUME:
+							if (bCtlsFlag1)
+							{
+								SendDlgItemMessage(hWnd, IDC_EBSLDVOL, EBSM_GETRANGE, (WPARAM)&intMin,
+									(LPARAM)&intMax);
+								intCur = SendDlgItemMessage(hWnd, IDC_EBSLDVOL, EBSM_GETPOS, 0, 0);
+								intTmp = (int)(((double)intCur / (double)intMax) * 100);
+								swprintf(CI.lpwBuffer, L"Volume: %i%c", intTmp, '%');
+							}
+							else
+							{
+								wcscpy(CI.lpwBuffer, L"Volume: None");
+							}
+							break;
+						case II_BALANCE:
+							if (bCtlsFlag1)
+							{
+								SendDlgItemMessage(hWnd, IDC_EBSLDBAL, EBSM_GETRANGE, (WPARAM)&intMin,
+									(LPARAM)&intMax);
+								intCur = SendDlgItemMessage(hWnd, IDC_EBSLDBAL, EBSM_GETPOS, 0, 0);
+								intTmp = (int)(((double)intCur / (double)intMax) * 100);
+								swprintf(CI.lpwBuffer, L"Balance: %i%c", intTmp, '%');
+							}
+							else
+							{
+								wcscpy(CI.lpwBuffer, L"Balance: None");
+							}
 							break;
 					}
-					CI.dwTimer = GetTickCount();
-					CI.dwTimeout = 10000;
+					SetDlgItemText(hWnd, IDC_EBDMAIN, CI.lpwBuffer);
+					if ((GetTickCount() - CI.dwTimer) >= CI.dwTimeout)
+					{
+						switch (CI.dwInfoIndex)
+						{
+							case II_TIME:
+								CI.dwInfoIndex = II_STATE;
+								break;
+							case II_STATE:
+								CI.dwInfoIndex = II_TITLE;
+								break;
+							case II_TITLE:
+							default:
+								CI.dwInfoIndex = II_TIME;
+								break;
+						}
+						CI.dwTimer = GetTickCount();
+						CI.dwTimeout = 10000;
+					}
 				}
+				case 2:
+					if (bCurAlpha < 255)
+						bCurAlpha++;
+					else
+					{
+						KillTimer(hWnd, 2);
+						break;
+					}
+					SetLayeredWindowAttributes(hWnd, 0, bCurAlpha, LWA_ALPHA);
+					SetLayeredWindowAttributes(hPlaylistWnd, 0, bCurAlpha, LWA_ALPHA);
+					/*if (hVideoWnd)
+						SetLayeredWindowAttributes(hVideoWnd, 0, bCurAlpha, LWA_ALPHA);*/
+					break;
+				case 3:
+					if (bCurAlpha > (BYTE)(2.55 * dwOpacityLevel))
+						bCurAlpha--;
+					else
+					{
+						KillTimer(hWnd, 3);
+						break;
+					}
+					SetLayeredWindowAttributes(hWnd, 0, bCurAlpha, LWA_ALPHA);
+					SetLayeredWindowAttributes(hPlaylistWnd, 0, bCurAlpha, LWA_ALPHA);
+					/*if (hVideoWnd)
+						SetLayeredWindowAttributes(hVideoWnd, 0, bCurAlpha, LWA_ALPHA);*/
+					break;
 			}
 			return TRUE;
 		}
