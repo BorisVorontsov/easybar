@@ -284,6 +284,7 @@ void CDirectShow::Close()
 
 double CDirectShow::GetRate()
 {
+	if (!IsSeekable()) return 0;
 	if (m_pMediaSeeking)
 	{
 		double dblTmp;
@@ -294,6 +295,7 @@ double CDirectShow::GetRate()
 
 void CDirectShow::SetRate(double dblRate)
 {
+	if (!IsSeekable()) return;
 	if (m_pMediaSeeking)
 	{
 		if (dblRate > 0 && dblRate <= 2)
@@ -319,6 +321,7 @@ int CDirectShow::IsSeekable()
 
 __int64 CDirectShow::GetPosition(BOOL bInMS)
 {
+	if (!IsSeekable()) return 0;
 	if (m_pMediaSeeking)
 	{
 		__int64 intRes;
@@ -329,6 +332,7 @@ __int64 CDirectShow::GetPosition(BOOL bInMS)
 
 void CDirectShow::SetPosition(__int64 intNewPos, BOOL bInMS, BOOL bSeekToKeyFrame)
 {
+	if (!IsSeekable()) return;
 	if (m_pMediaSeeking)
 	{
 		__int64 intPos = intNewPos;
@@ -345,6 +349,7 @@ void CDirectShow::SetPosition(__int64 intNewPos, BOOL bInMS, BOOL bSeekToKeyFram
 
 __int64 CDirectShow::GetLength(BOOL bInMS)
 {
+	if (!IsSeekable()) return 0;
 	if (m_pMediaSeeking)
 	{
 		__int64 intRes;
@@ -355,6 +360,7 @@ __int64 CDirectShow::GetLength(BOOL bInMS)
 
 void CDirectShow::SetLength(__int64 intNewLen, BOOL bInMS)
 {
+	if (!IsSeekable()) return;
 	if (m_pMediaSeeking)
 	{
 		__int64 intLen = intNewLen;
@@ -366,6 +372,7 @@ void CDirectShow::SetLength(__int64 intNewLen, BOOL bInMS)
 
 int CDirectShow::GetMute()
 {
+	if (!HasAudio()) return 0;
 	if (m_pBasicAudio[m_intCurrentBA])
 	{
 		return (m_intPrevVol == 1)?0:1;
@@ -374,6 +381,7 @@ int CDirectShow::GetMute()
 
 void CDirectShow::SetMute(int intValue)
 {
+	if (!HasAudio()) return;
 	if (m_pBasicAudio[m_intCurrentBA])
 	{
 		if (intValue)
@@ -397,6 +405,7 @@ void CDirectShow::SetMute(int intValue)
 
 int CDirectShow::GetVolume()
 {
+	if (!HasAudio()) return 0;
 	if (m_pBasicAudio[m_intCurrentBA])
 	{
 		if (m_intPrevVol == 1)
@@ -415,6 +424,7 @@ int CDirectShow::GetVolume()
 //От -10000 (-100 dB) до 0 (0 dB)
 void CDirectShow::SetVolume(int intValue)
 {
+	if (!HasAudio()) return;
 	if (m_pBasicAudio[m_intCurrentBA])
 	{
 		if (m_intPrevVol == 1)
@@ -426,6 +436,7 @@ void CDirectShow::SetVolume(int intValue)
 
 int CDirectShow::GetBalance()
 {
+	if (!HasAudio()) return 0;
 	if (m_pBasicAudio[m_intCurrentBA])
 	{
 		long lTmp;
@@ -437,6 +448,7 @@ int CDirectShow::GetBalance()
 //От -10000 (L) до 10000 (R)
 void CDirectShow::SetBalance(int intValue)
 {
+	if (!HasAudio()) return;
 	if (m_pBasicAudio[m_intCurrentBA])
 		m_pBasicAudio[m_intCurrentBA]->put_Balance((long)intValue);
 }
@@ -492,6 +504,7 @@ int CDirectShow::CanStep(DWORD dwFrames)
 
 void CDirectShow::FrameStep(DWORD dwFrames)
 {
+	if (!CanStep(dwFrames)) return;
 	if (m_pVideoFrameStep)
 	{
 		if (m_pMediaControl)
@@ -507,6 +520,7 @@ void CDirectShow::FrameStep(DWORD dwFrames)
 
 int CDirectShow::GetOriginalVideoSize(LPSIZE pSZ)
 {
+	if (!HasVideo()) return 0;
 	if (m_pBasicVideo2)
 	{
 		m_pBasicVideo2->GetVideoSize(&pSZ->cx, &pSZ->cy);
@@ -516,6 +530,7 @@ int CDirectShow::GetOriginalVideoSize(LPSIZE pSZ)
 
 int CDirectShow::GetVideoSize(LPRECT pRC)
 {
+	if (!HasVideo()) return 0;
 	if (m_pVideoWindow)
 	{
 		m_pVideoWindow->GetWindowPosition(&pRC->left, &pRC->top, &pRC->right, &pRC->bottom);
@@ -525,28 +540,32 @@ int CDirectShow::GetVideoSize(LPRECT pRC)
 
 void CDirectShow::SetVideoSize(RECT RC)
 {
+	if (!HasVideo()) return;
 	if (m_pVideoWindow)
 		m_pVideoWindow->SetWindowPosition(RC.left, RC.top, RC.right, RC.bottom);
 }
 
 HWND CDirectShow::GetVideoOwner()
 {
+	if (!HasVideo()) return NULL;
 	if (m_pVideoWindow)
 	{
 		OAHWND hOwner;
 		m_pVideoWindow->get_Owner(&hOwner);
 		return (HWND)hOwner;
-	} else return 0;
+	} else return NULL;
 }
 
 void CDirectShow::SetVideoOwner(HWND hOwner)
 {
+	if (!HasVideo()) return;
 	if (m_pVideoWindow)
 		m_pVideoWindow->put_Owner((OAHWND)hOwner);
 }
 
 int CDirectShow::GetVideoStyles(LPLONG pStyle, LPLONG pExStyle)
 {
+	if (!HasVideo()) return 0;
 	if (m_pVideoWindow)
 	{
 		if (pStyle) m_pVideoWindow->get_WindowStyle(pStyle);
@@ -557,6 +576,7 @@ int CDirectShow::GetVideoStyles(LPLONG pStyle, LPLONG pExStyle)
 
 void CDirectShow::SetVideoStyles(LONG lStyle, LONG lExStyle)
 {
+	if (!HasVideo()) return;
 	if (m_pVideoWindow)
 	{
 		if (lStyle) m_pVideoWindow->put_WindowStyle(lStyle);
@@ -566,6 +586,7 @@ void CDirectShow::SetVideoStyles(LONG lStyle, LONG lExStyle)
 
 int CDirectShow::GetVideoVisible()
 {
+	if (!HasVideo()) return 0;
 	if (m_pVideoWindow)
 	{
 		long lVisible;
@@ -576,12 +597,14 @@ int CDirectShow::GetVideoVisible()
 
 void CDirectShow::SetVideoVisible(BOOL bVisible)
 {
+	if (!HasVideo()) return;
 	if (m_pVideoWindow)
 		m_pVideoWindow->put_Visible((bVisible)?OATRUE:OAFALSE);
 }
 
 int CDirectShow::GetFullscreen()
 {
+	if (!HasVideo()) return 0;
 	if (m_pVideoWindow)
 	{
 		long bFS;
@@ -592,6 +615,7 @@ int CDirectShow::GetFullscreen()
 
 void CDirectShow::SetFullscreen(int intMode)
 {
+	if (!HasVideo()) return;
 	if (m_pVideoWindow)
 		m_pVideoWindow->put_FullScreenMode((intMode)?OATRUE:OAFALSE);
 }
@@ -600,6 +624,7 @@ void CDirectShow::SetFullscreen(int intMode)
 //В случае ошибки функция вернет значение меньше нуля
 int CDirectShow::CopyCurrentFrame() //*доработанная версия функции от Jenya
 {
+	if (!HasVideo()) return 0;
 	if (m_pBasicVideo2)
 	{
 		HGLOBAL hGbCopy;
@@ -636,6 +661,7 @@ int CDirectShow::CopyCurrentFrame() //*доработанная версия функции от Jenya
 //В случае ошибки функция вернет значение меньше нуля
 int CDirectShow::SaveCurrentFrame(LPCWSTR lpwFileName) //*доработанная версия функции от Jenya
 {
+	if (!HasVideo()) return 0;
 	if (m_pBasicVideo2)
 	{
 		HANDLE hFile;
@@ -1420,4 +1446,5 @@ void CDirectShow::FreeMediaType(AM_MEDIA_TYPE *pMT)
         pMT->pbFormat = NULL;
     }
     SR(pMT->pUnk);
+	CoTaskMemFree((LPVOID)pMT);
 }
