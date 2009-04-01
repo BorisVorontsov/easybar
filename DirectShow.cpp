@@ -29,23 +29,28 @@ CDirectShow::CDirectShow()
 	m_bNoFGError = FALSE;
 	m_lCounter = 0;
 	m_dwROTRegister = 0;
+	m_lBACount = 0;
+	m_intCurrentBA = -1;
 	m_lDSFilCount = 0;
 	m_lFGFilCount = 0;
 	m_lDMOCount = 0;
+	m_pAMStreamSelect = NULL;
 	m_pGraphBuilder = NULL;
 	m_pMediaControl = NULL;
 	m_pMediaSeeking = NULL;
 	m_pMediaEventEx = NULL;
-	m_pBasicAudio = NULL;
 	m_pBasicVideo2 = NULL;
 	m_pVideoWindow = NULL;
 	m_pVideoFrameStep = NULL;
 	//Инициализация массивов
 	//------------------------------------------------
+	for (m_lCounter = 0; m_lCounter < E_MAX_BA; m_lCounter++)
+		m_pBasicAudio[m_lCounter] = NULL;
+	for (m_lCounter = 0; m_lCounter < E_MAX_BF; m_lCounter++)
+		m_pFGBaseFilter[m_lCounter] = NULL;
 	for (m_lCounter = 0; m_lCounter < E_MAX_ARR_SIZE; m_lCounter++)
 	{
 		m_pDSFMoniker[m_lCounter] = NULL;
-		m_pFGBaseFilter[m_lCounter] = NULL;
 		m_lpwDMONames[m_lCounter] = NULL;
 		ZeroMemory(&m_cDMOCLSIDs[m_lCounter], sizeof(m_cDMOCLSIDs[m_lCounter]));
 	}
@@ -83,7 +88,7 @@ void CDirectShow::InitDSCBWnd(BOOL bCreate)
 		WCEX.lpszClassName = DS_CB_WND_CLASS;
 		RegisterClassEx(&WCEX);
 		m_hDSCBWnd = CreateWindow(WCEX.lpszClassName, NULL, WS_POPUP,
-			16, 16, 32, 32, NULL, NULL, hInstance, (LPVOID)this);
+			16, 16, 32, 32, HWND_MESSAGE, NULL, hInstance, (LPVOID)this);
 	}
 	else DestroyWindow(m_hDSCBWnd);
 }
@@ -118,26 +123,28 @@ LRESULT CALLBACK CDirectShow::DSCBWndProc(HWND hWnd,
 		case DS_MEDIAEVENTEX:
 			if (!pThis->m_pMediaEventEx) break;
 			long lEvent, lParam1, lParam2;
-			pThis->m_pMediaEventEx->GetEvent(&lEvent, &lParam1, &lParam2, 0);
-			switch (lEvent)
+			if (SUCCEEDED(pThis->m_pMediaEventEx->GetEvent(&lEvent, &lParam1, &lParam2, 0)))
 			{
-				case EC_DISPLAY_CHANGED:
-					//
-					break;
-				case EC_VIDEO_SIZE_CHANGED:
-					//
-					break;
-				case EC_USERABORT:
-					//
-					break;
-				case EC_WINDOW_DESTROYED:
-					//
-					break;
-				case EC_COMPLETE:
-					//
-					break;
+				switch (lEvent)
+				{
+					case EC_DISPLAY_CHANGED:
+						//
+						break;
+					case EC_VIDEO_SIZE_CHANGED:
+						//
+						break;
+					case EC_USERABORT:
+						//
+						break;
+					case EC_WINDOW_DESTROYED:
+						//
+						break;
+					case EC_COMPLETE:
+						//
+						break;
+				}
+				pThis->m_pMediaEventEx->FreeEventParams(lEvent, lParam1, lParam2);
 			}
-			pThis->m_pMediaEventEx->FreeEventParams(lEvent, lParam1, lParam2);
 			break;
 		case WM_DESTROY:
 			RemoveProp(hWnd, L"_this_");
@@ -195,12 +202,13 @@ int CDirectShow::Open()
     m_pGraphBuilder->QueryInterface(IID_IMediaControl, (LPVOID *)&m_pMediaControl);
 	m_pGraphBuilder->QueryInterface(IID_IMediaSeeking, (LPVOID *)&m_pMediaSeeking);
     m_pGraphBuilder->QueryInterface(IID_IMediaEventEx, (LPVOID *)&m_pMediaEventEx);
-	m_pGraphBuilder->QueryInterface(IID_IBasicAudio, (LPVOID *)&m_pBasicAudio);
 	m_intPrevVol = 1;
 	m_pGraphBuilder->QueryInterface(IID_IBasicVideo, (LPVOID *)&m_pBasicVideo2);
 	m_pGraphBuilder->QueryInterface(IID_IVideoWindow, (LPVOID *)&m_pVideoWindow);
 	m_pGraphBuilder->QueryInterface(IID_IVideoFrameStep, (LPVOID *)&m_pVideoFrameStep);
 	UpdateFGFiltersArray();
+	if (m_lBACount)
+		SelectAudioStream_E(0);
 	if (m_pMediaSeeking)
 		m_pMediaSeeking->SetTimeFormat(&TIME_FORMAT_MEDIA_TIME);
 	if (m_pVideoWindow)
@@ -228,24 +236,46 @@ void CDirectShow::Pause()
 void CDirectShow::Stop()
 {
 	if (m_pMediaControl)
-		m_pMediaControl->Stop();
+	{
+		if (!HasVideo())
+			m_pMediaControl->Stop();
+		if (m_pMediaSeeking)
+		{
+			OAFilterState fState;
+			__int64 intPos = 0;
+			m_pMediaControl->GetState(INFINITE, &fState);
+			m_pMediaSeeking->SetPositions(&intPos, AM_SEEKING_AbsolutePositioning, NULL,
+				AM_SEEKING_NoPositioning);
+		}
+		if (HasVideo())
+			m_pMediaControl->StopWhenReady();
+	}
 }
 
 //Здесь происходит сброс всех параметров и освобождение интерфейсов
 void CDirectShow::Close()
 {
 	if (m_pMediaEventEx)
-		m_pMediaEventEx->SetNotifyWindow(NULL, DS_MEDIAEVENTEX, 0);
+		m_pMediaEventEx->SetNotifyWindow(NULL, 0, 0);
 	if (m_pVideoWindow)
-		m_pVideoWindow->put_Visible(OAFALSE);
-	for (m_lCounter = 0; m_lCounter < E_MAX_ARR_SIZE; m_lCounter++)
+	{
+		//m_pVideoWindow->put_Visible(OAFALSE);
+		m_pVideoWindow->put_MessageDrain(NULL);
+	}
+	SR(m_pAMStreamSelect);
+	for (m_lCounter = 0; m_lCounter < m_lBACount; m_lCounter++)
+		SR(m_pBasicAudio[m_lCounter]);
+	m_lBACount = 0;
+	m_intCurrentBA = -1;
+	for (m_lCounter = 0; m_lCounter < m_lFGFilCount; m_lCounter++)
 		SR(m_pFGBaseFilter[m_lCounter]);
+	m_lFGFilCount = 0;
+	m_lDMOCount = 0;
 	if (m_dwROTRegister)
 		RemoveFGFromROT();
     SR(m_pMediaControl);
 	SR(m_pMediaSeeking);
     SR(m_pMediaEventEx);
-	SR(m_pBasicAudio);
 	SR(m_pBasicVideo2);
 	SR(m_pVideoWindow);
 	SR(m_pVideoFrameStep);
@@ -254,6 +284,7 @@ void CDirectShow::Close()
 
 double CDirectShow::GetRate()
 {
+	if (!IsSeekable()) return 0;
 	if (m_pMediaSeeking)
 	{
 		double dblTmp;
@@ -264,6 +295,7 @@ double CDirectShow::GetRate()
 
 void CDirectShow::SetRate(double dblRate)
 {
+	if (!IsSeekable()) return;
 	if (m_pMediaSeeking)
 	{
 		if (dblRate > 0 && dblRate <= 2)
@@ -289,6 +321,7 @@ int CDirectShow::IsSeekable()
 
 __int64 CDirectShow::GetPosition(BOOL bInMS)
 {
+	if (!IsSeekable()) return 0;
 	if (m_pMediaSeeking)
 	{
 		__int64 intRes;
@@ -299,6 +332,7 @@ __int64 CDirectShow::GetPosition(BOOL bInMS)
 
 void CDirectShow::SetPosition(__int64 intNewPos, BOOL bInMS, BOOL bSeekToKeyFrame)
 {
+	if (!IsSeekable()) return;
 	if (m_pMediaSeeking)
 	{
 		__int64 intPos = intNewPos;
@@ -315,6 +349,7 @@ void CDirectShow::SetPosition(__int64 intNewPos, BOOL bInMS, BOOL bSeekToKeyFram
 
 __int64 CDirectShow::GetLength(BOOL bInMS)
 {
+	if (!IsSeekable()) return 0;
 	if (m_pMediaSeeking)
 	{
 		__int64 intRes;
@@ -325,6 +360,7 @@ __int64 CDirectShow::GetLength(BOOL bInMS)
 
 void CDirectShow::SetLength(__int64 intNewLen, BOOL bInMS)
 {
+	if (!IsSeekable()) return;
 	if (m_pMediaSeeking)
 	{
 		__int64 intLen = intNewLen;
@@ -336,7 +372,8 @@ void CDirectShow::SetLength(__int64 intNewLen, BOOL bInMS)
 
 int CDirectShow::GetMute()
 {
-	if (m_pBasicAudio)
+	if (!HasAudio()) return 0;
+	if (m_pBasicAudio[m_intCurrentBA])
 	{
 		return (m_intPrevVol == 1)?0:1;
 	} else return 0;
@@ -344,21 +381,22 @@ int CDirectShow::GetMute()
 
 void CDirectShow::SetMute(int intValue)
 {
-	if (m_pBasicAudio)
+	if (!HasAudio()) return;
+	if (m_pBasicAudio[m_intCurrentBA])
 	{
 		if (intValue)
 		{
 			if (m_intPrevVol == 1)
 			{
-				m_pBasicAudio->get_Volume((long *)&m_intPrevVol);
-				m_pBasicAudio->put_Volume(-10000);
+				m_pBasicAudio[m_intCurrentBA]->get_Volume((long *)&m_intPrevVol);
+				m_pBasicAudio[m_intCurrentBA]->put_Volume(-10000);
 			}
 		}
 		else
 		{
 			if (m_intPrevVol < 1)
 			{
-				m_pBasicAudio->put_Volume((long)m_intPrevVol);
+				m_pBasicAudio[m_intCurrentBA]->put_Volume((long)m_intPrevVol);
 				m_intPrevVol = 1;
 			}
 		}
@@ -367,12 +405,13 @@ void CDirectShow::SetMute(int intValue)
 
 int CDirectShow::GetVolume()
 {
-	if (m_pBasicAudio)
+	if (!HasAudio()) return 0;
+	if (m_pBasicAudio[m_intCurrentBA])
 	{
 		if (m_intPrevVol == 1)
 		{
 			long lTmp;
-			m_pBasicAudio->get_Volume(&lTmp);
+			m_pBasicAudio[m_intCurrentBA]->get_Volume(&lTmp);
 			return (int)lTmp;
 		}
 		else
@@ -385,21 +424,23 @@ int CDirectShow::GetVolume()
 //От -10000 (-100 dB) до 0 (0 dB)
 void CDirectShow::SetVolume(int intValue)
 {
-	if (m_pBasicAudio)
+	if (!HasAudio()) return;
+	if (m_pBasicAudio[m_intCurrentBA])
 	{
 		if (m_intPrevVol == 1)
 		{
-			m_pBasicAudio->put_Volume((long)intValue);
+			m_pBasicAudio[m_intCurrentBA]->put_Volume((long)intValue);
 		} else m_intPrevVol = intValue;
 	}
 }
 
 int CDirectShow::GetBalance()
 {
-	if (m_pBasicAudio)
+	if (!HasAudio()) return 0;
+	if (m_pBasicAudio[m_intCurrentBA])
 	{
 		long lTmp;
-		m_pBasicAudio->get_Balance(&lTmp);
+		m_pBasicAudio[m_intCurrentBA]->get_Balance(&lTmp);
 		return (int)lTmp;
 	} else return 0;
 }
@@ -407,8 +448,9 @@ int CDirectShow::GetBalance()
 //От -10000 (L) до 10000 (R)
 void CDirectShow::SetBalance(int intValue)
 {
-	if (m_pBasicAudio)
-		m_pBasicAudio->put_Balance((long)intValue);
+	if (!HasAudio()) return;
+	if (m_pBasicAudio[m_intCurrentBA])
+		m_pBasicAudio[m_intCurrentBA]->put_Balance((long)intValue);
 }
 
 //Возвращает состояние воспроизведения
@@ -431,7 +473,17 @@ ENGINESTATE CDirectShow::GetState()
 	} else return E_STATE_STOPPED;
 }
 
-int CDirectShow::IsVideo()
+int CDirectShow::HasAudio()
+{
+	if (m_lBACount && m_pBasicAudio[m_intCurrentBA])
+	{
+		long lTmp = 0;
+		if (SUCCEEDED(m_pBasicAudio[m_intCurrentBA]->get_Volume(&lTmp))) return 1; else return 0;
+	}
+	else return 0;
+}
+
+int CDirectShow::HasVideo()
 {
 	if (m_pVideoWindow)
 	{
@@ -452,6 +504,7 @@ int CDirectShow::CanStep(DWORD dwFrames)
 
 void CDirectShow::FrameStep(DWORD dwFrames)
 {
+	if (!CanStep(dwFrames)) return;
 	if (m_pVideoFrameStep)
 	{
 		if (m_pMediaControl)
@@ -467,6 +520,7 @@ void CDirectShow::FrameStep(DWORD dwFrames)
 
 int CDirectShow::GetOriginalVideoSize(LPSIZE pSZ)
 {
+	if (!HasVideo()) return 0;
 	if (m_pBasicVideo2)
 	{
 		m_pBasicVideo2->GetVideoSize(&pSZ->cx, &pSZ->cy);
@@ -476,6 +530,7 @@ int CDirectShow::GetOriginalVideoSize(LPSIZE pSZ)
 
 int CDirectShow::GetVideoSize(LPRECT pRC)
 {
+	if (!HasVideo()) return 0;
 	if (m_pVideoWindow)
 	{
 		m_pVideoWindow->GetWindowPosition(&pRC->left, &pRC->top, &pRC->right, &pRC->bottom);
@@ -485,28 +540,32 @@ int CDirectShow::GetVideoSize(LPRECT pRC)
 
 void CDirectShow::SetVideoSize(RECT RC)
 {
+	if (!HasVideo()) return;
 	if (m_pVideoWindow)
 		m_pVideoWindow->SetWindowPosition(RC.left, RC.top, RC.right, RC.bottom);
 }
 
 HWND CDirectShow::GetVideoOwner()
 {
+	if (!HasVideo()) return NULL;
 	if (m_pVideoWindow)
 	{
 		OAHWND hOwner;
 		m_pVideoWindow->get_Owner(&hOwner);
 		return (HWND)hOwner;
-	} else return 0;
+	} else return NULL;
 }
 
 void CDirectShow::SetVideoOwner(HWND hOwner)
 {
+	if (!HasVideo()) return;
 	if (m_pVideoWindow)
 		m_pVideoWindow->put_Owner((OAHWND)hOwner);
 }
 
 int CDirectShow::GetVideoStyles(LPLONG pStyle, LPLONG pExStyle)
 {
+	if (!HasVideo()) return 0;
 	if (m_pVideoWindow)
 	{
 		if (pStyle) m_pVideoWindow->get_WindowStyle(pStyle);
@@ -517,6 +576,7 @@ int CDirectShow::GetVideoStyles(LPLONG pStyle, LPLONG pExStyle)
 
 void CDirectShow::SetVideoStyles(LONG lStyle, LONG lExStyle)
 {
+	if (!HasVideo()) return;
 	if (m_pVideoWindow)
 	{
 		if (lStyle) m_pVideoWindow->put_WindowStyle(lStyle);
@@ -526,6 +586,7 @@ void CDirectShow::SetVideoStyles(LONG lStyle, LONG lExStyle)
 
 int CDirectShow::GetVideoVisible()
 {
+	if (!HasVideo()) return 0;
 	if (m_pVideoWindow)
 	{
 		long lVisible;
@@ -536,12 +597,14 @@ int CDirectShow::GetVideoVisible()
 
 void CDirectShow::SetVideoVisible(BOOL bVisible)
 {
+	if (!HasVideo()) return;
 	if (m_pVideoWindow)
 		m_pVideoWindow->put_Visible((bVisible)?OATRUE:OAFALSE);
 }
 
 int CDirectShow::GetFullscreen()
 {
+	if (!HasVideo()) return 0;
 	if (m_pVideoWindow)
 	{
 		long bFS;
@@ -552,19 +615,23 @@ int CDirectShow::GetFullscreen()
 
 void CDirectShow::SetFullscreen(int intMode)
 {
+	if (!HasVideo()) return;
 	if (m_pVideoWindow)
 		m_pVideoWindow->put_FullScreenMode((intMode)?OATRUE:OAFALSE);
 }
 
 //Копирует текущий кадр в буфер обмена
 //В случае ошибки функция вернет значение меньше нуля
-int CDirectShow::CopyCurrentFrame()
+int CDirectShow::CopyCurrentFrame() //*доработанная версия функции от Jenya
 {
+	if (!HasVideo()) return 0;
 	if (m_pBasicVideo2)
 	{
+		HGLOBAL hGbCopy;
 		LPBYTE pImage;
 		long lArrSize;
 		OAFilterState fTmp;
+
 		if (m_pMediaControl)
 		{
 			m_pMediaControl->GetState(10, &fTmp);
@@ -572,12 +639,18 @@ int CDirectShow::CopyCurrentFrame()
 				m_pMediaControl->Pause();
 		}
 		if (FAILED(m_pBasicVideo2->GetCurrentImage(&lArrSize, NULL))) return -1;
-		pImage = new BYTE[lArrSize];
+
+		if (!OpenClipboard(NULL)) return -1;
+		EmptyClipboard();
+
+		hGbCopy = GlobalAlloc(GMEM_MOVEABLE, lArrSize);
+		pImage = (LPBYTE)GlobalLock(hGbCopy);
 		m_pBasicVideo2->GetCurrentImage(&lArrSize, (long *)pImage);
-		OpenClipboard(NULL);
-		SetClipboardData(CF_DIB, pImage);
+		GlobalUnlock(hGbCopy);
+
+		SetClipboardData(CF_DIB, hGbCopy);
 		CloseClipboard();
-		delete[] pImage;
+
 		if (m_pMediaControl)
 			if (fTmp == 2) m_pMediaControl->Run();
 		return 0;
@@ -586,16 +659,21 @@ int CDirectShow::CopyCurrentFrame()
 
 //Сохраняет текущий кадр в файл (Windows Bitmap)
 //В случае ошибки функция вернет значение меньше нуля
-int CDirectShow::SaveCurrentFrame(LPCWSTR lpwFileName)
+int CDirectShow::SaveCurrentFrame(LPCWSTR lpwFileName) //*доработанная версия функции от Jenya
 {
+	if (!HasVideo()) return 0;
 	if (m_pBasicVideo2)
 	{
 		HANDLE hFile;
 		BITMAPFILEHEADER BFH = { 0 };
-		LPBYTE pImage, pFileData;
+		LPBITMAPINFOHEADER pBI;
+		LPBITMAPCOREHEADER pBC;
+		LPBYTE pImage;
 		DWORD dwWritten;
 		long lArrSize;
+		DWORD dwColors, dwPaletteSize;
 		OAFilterState fTmp;
+
 		if (m_pMediaControl)
 		{
 			m_pMediaControl->GetState(10, &fTmp);
@@ -603,26 +681,192 @@ int CDirectShow::SaveCurrentFrame(LPCWSTR lpwFileName)
 				m_pMediaControl->Pause();
 		}
 		if (FAILED(m_pBasicVideo2->GetCurrentImage(&lArrSize, NULL))) return -1;
+
 		pImage = new BYTE[lArrSize];
 		m_pBasicVideo2->GetCurrentImage(&lArrSize, (long *)pImage);
 		hFile = CreateFile(lpwFileName, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+		
 		if (hFile != INVALID_HANDLE_VALUE)
 		{
+            pBI = (LPBITMAPINFOHEADER)pImage;
+            pBC = (LPBITMAPCOREHEADER)pImage;
+
+            if (pBI->biSize == sizeof(BITMAPCOREHEADER))
+            {
+                if (pBC->bcBitCount > 8)
+                    dwColors = 0;
+                else
+                    dwColors =  (DWORD)pow((double)2, pBC->bcBitCount);
+                dwPaletteSize = (dwColors * sizeof(RGBTRIPLE));
+            }
+            else
+            {
+                 if (pBI->biClrUsed != 0)
+                     dwColors = pBI->biClrUsed;
+                 else if (pBI->biBitCount > 8)
+                     dwColors = 0;
+                 else
+                     dwColors =  (DWORD)pow((double)2, (int)pBI->biBitCount);
+                 dwPaletteSize = (dwColors * sizeof(RGBQUAD));
+            }
+
 			BFH.bfType = 0x4D42; //0x42 -- 'B', 0x4D -- 'M'
-			BFH.bfOffBits = sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFO);
-			BFH.bfSize = sizeof(BITMAPFILEHEADER) + lArrSize;
-			pFileData = new BYTE[BFH.bfSize];
-			CopyMemory(pFileData, &BFH, sizeof(BITMAPFILEHEADER));
-			CopyMemory(pFileData + sizeof(BITMAPFILEHEADER), pImage, lArrSize);
-			WriteFile(hFile, pFileData, BFH.bfSize, &dwWritten, NULL);
+			BFH.bfOffBits = (sizeof(BITMAPFILEHEADER) + pBI->biSize + dwPaletteSize);
+			BFH.bfSize = (sizeof(BITMAPFILEHEADER) + lArrSize);
+			if (WriteFile(hFile, &BFH, sizeof(BITMAPFILEHEADER), &dwWritten, NULL))
+				WriteFile(hFile, pImage, lArrSize, &dwWritten, NULL);
+			SetEndOfFile(hFile);
 			CloseHandle(hFile);
-			delete[] pFileData;
 		}
+
 		delete[] pImage;
 		if (m_pMediaControl)
 			if (fTmp == 2) m_pMediaControl->Run();
 		return 0;
 	} else return -1;
+}
+
+//Возвращает массив имен (имена опциональны) доступных потоков заданного типа
+//Что бы узнать требуемую размерность массива , достаточно вызвать функцию
+//с lpwASArr равным NULL - значение вернется в pArrSize.
+//В случае ошибки функция вернет значение меньше нуля
+int CDirectShow::GetAvailableStreams(DSSTREAMTYPE dStreamType, LPWSTR *lpwStmArr, LPDWORD pArrSize, DWORD dwBuffSize)
+{
+	if (!m_pAMStreamSelect) return -1;
+	DWORD dwStmCnt = 0, dwStmCnt2 = 0;
+	AM_MEDIA_TYPE *pMT = NULL;
+	LPWSTR lpwName = NULL;
+	m_pAMStreamSelect->Count(&dwStmCnt);
+	for (m_lCounter = 0; m_lCounter < dwStmCnt; m_lCounter++)
+	{
+		if (SUCCEEDED(m_pAMStreamSelect->Info(m_lCounter, &pMT, NULL, NULL, NULL, &lpwName, NULL, NULL)))
+		{
+			if ((pMT->majortype == MEDIATYPE_Audio) && (dStreamType == DSST_AUDIO))
+			{
+				if (lpwStmArr)
+					wcsncpy(lpwStmArr[dwStmCnt2++], lpwName, dwBuffSize);
+				else (*pArrSize)++;
+			}
+			else if ((pMT->majortype == MEDIATYPE_Video) && (dStreamType == DSST_VIDEO))
+			{
+				if (lpwStmArr)
+					wcsncpy(lpwStmArr[dwStmCnt2++], lpwName, dwBuffSize);
+				else (*pArrSize)++;
+			}
+			FreeMediaType(pMT);
+			CoTaskMemFree(lpwName);
+		}
+	}
+	return 0;
+}
+
+//Выбирает поток
+//В случае ошибки функция вернет значение меньше нуля
+int CDirectShow::SelectStream(DSSTREAMTYPE dStreamType, LPCWSTR lpwStmName)
+{
+	if (!m_pAMStreamSelect) return -1;
+	DWORD dwStmCnt = 0;
+	AM_MEDIA_TYPE *pMT = NULL;
+	LPWSTR lpwName = NULL;
+	m_pAMStreamSelect->Count(&dwStmCnt);
+	for (m_lCounter = 0; m_lCounter < dwStmCnt; m_lCounter++)
+	{
+		if (SUCCEEDED(m_pAMStreamSelect->Info(m_lCounter, &pMT, NULL, NULL, NULL, &lpwName, NULL, NULL)))
+		{
+			if ((pMT->majortype == MEDIATYPE_Audio) && (dStreamType == DSST_AUDIO))
+			{
+				if (_wcsicmp(lpwName, lpwStmName) == 0)
+				{
+					m_pAMStreamSelect->Enable(m_lCounter, AMSTREAMSELECTENABLE_ENABLE);
+					break;
+				}
+			}
+			else if ((pMT->majortype == MEDIATYPE_Video) && (dStreamType == DSST_VIDEO))
+			{
+				if (_wcsicmp(lpwName, lpwStmName) == 0)
+				{
+					m_pAMStreamSelect->Enable(m_lCounter, AMSTREAMSELECTENABLE_ENABLE);
+					break;
+				}
+			}
+			FreeMediaType(pMT);
+			CoTaskMemFree(lpwName);
+		}
+	}
+	return 0;
+}
+
+//Позволяет узнать, выбран ли поток
+BOOL CDirectShow::IsStreamSelected(DSSTREAMTYPE dStreamType, LPCWSTR lpwStmName)
+{
+	if (!m_pAMStreamSelect) return FALSE;
+	DWORD dwStmCnt = 0;
+	AM_MEDIA_TYPE *pMT = NULL;
+	LPWSTR lpwName = NULL;
+	DWORD dwFlags;
+	BOOL bResult = FALSE;
+	m_pAMStreamSelect->Count(&dwStmCnt);
+	for (m_lCounter = 0; m_lCounter < dwStmCnt; m_lCounter++)
+	{
+		if (SUCCEEDED(m_pAMStreamSelect->Info(m_lCounter, &pMT, &dwFlags, NULL, NULL, &lpwName, NULL, NULL)))
+		{
+			if ((pMT->majortype == MEDIATYPE_Audio) && (dStreamType == DSST_AUDIO))
+			{
+				if (_wcsicmp(lpwName, lpwStmName) == 0)
+				{
+					bResult = (dwFlags != 0);
+					break;
+				}
+			}
+			else if ((pMT->majortype == MEDIATYPE_Video) && (dStreamType == DSST_VIDEO))
+			{
+				if (_wcsicmp(lpwName, lpwStmName) == 0)
+				{
+					bResult = (dwFlags != 0);
+					break;
+				}
+			}
+			FreeMediaType(pMT);
+			CoTaskMemFree(lpwName);
+		}
+	}
+	return bResult;
+}
+
+//Возвращает количество аудио потоков (внутренний механизм)
+int CDirectShow::GetAudioStreamsCount_E()
+{
+	return m_lBACount;
+}
+
+//Вибирает аудио поток (внутренний механизм)
+//В случае ошибки функция вернет значение меньше нуля
+int CDirectShow::SelectAudioStream_E(int intStmIndex)
+{
+	if (!m_lBACount) return -1;
+	if ((intStmIndex < 0) || (intStmIndex > (int)m_lBACount)) return -1;
+	long lCurBal, lCurVol;
+	m_pBasicAudio[m_intCurrentBA]->get_Balance(&lCurBal);
+	if (m_intPrevVol == 1)
+		m_pBasicAudio[m_intCurrentBA]->get_Volume(&lCurVol);
+	for (m_lCounter = 0; m_lCounter < m_lBACount; m_lCounter++)
+	{
+		if (m_lCounter != intStmIndex)
+			m_pBasicAudio[m_lCounter]->put_Volume(-10000);
+	}
+	m_pBasicAudio[intStmIndex]->put_Balance(lCurBal);
+	if (m_intPrevVol == 1)
+		m_pBasicAudio[intStmIndex]->put_Volume(lCurVol);
+	m_intCurrentBA = intStmIndex;
+	return 0;
+}
+
+//Позволяет узнать, выбран ли аудио поток (внутренний механизм)
+BOOL CDirectShow::IsAudioStreamSelected_E(int intStmIndex)
+{
+	if (!m_lBACount) return FALSE;
+	if ((intStmIndex < 0) || (intStmIndex > (int)m_lBACount)) return -1;
+	return (m_intCurrentBA == intStmIndex);
 }
 
 //Добавляет текущий Filter Graph в ROT (Running Object Table)
@@ -666,7 +910,7 @@ int CDirectShow::GetDSFiltersNames(LPWSTR *lpwDSFilArr, LPDWORD pArrSize, DWORD 
 			m_pDSFMoniker[m_lCounter]->BindToStorage(NULL, NULL, IID_IPropertyBag, (LPVOID *)&pPropBag);
 			if (SUCCEEDED(pPropBag->Read(L"FriendlyName", &varDSFName, NULL)))
 			{
-				wcscpy(lpwDSFilArr[m_lCounter], varDSFName.bstrVal);
+				wcsncpy(lpwDSFilArr[m_lCounter], varDSFName.bstrVal, dwBuffSize);
 				SysFreeString(varDSFName.bstrVal);
 			}
 			else
@@ -950,21 +1194,66 @@ int CDirectShow::FGFiltersPropertyPages(LPCWSTR lpwFGFilName, BOOL bCheck)
 }
 
 //Обновляет массив m_pFGBaseFilter[], хранящий список фильтров DirectShow в текущем Filter Graph
+//А так же инициализирует массив m_pBasicAudio и интерфейс m_pAMStreamSelect
 //Функция Open() вызывает эту функцию автоматически
 //Однако, крайне желательно вызывать её повторно перед вызовом функций,
 //работающих с m_pFGBaseFilter[] массивом
 void CDirectShow::UpdateFGFiltersArray()
 {
 	IEnumFilters *pEnumFilters = NULL;
+	IBasicAudio *pBasicAudio = NULL;
+	//CLSID cBF;
+	IAMStreamSelect *pStreamSelect = NULL;
+	int intOldCurBA = -1;
 	if (FAILED(m_pGraphBuilder->EnumFilters(&pEnumFilters))) return;
-	for (m_lCounter = 0; m_lCounter < E_MAX_ARR_SIZE; m_lCounter++)
+	for (m_lCounter = 0; m_lCounter < E_MAX_BF; m_lCounter++)
 	{
-		SR(m_pFGBaseFilter[m_lCounter]);
-		m_pFGBaseFilter[m_lCounter] = NULL;
+		if (m_pFGBaseFilter[m_lCounter])
+		{
+			SR(m_pFGBaseFilter[m_lCounter]);
+			m_pFGBaseFilter[m_lCounter] = NULL;
+		}
 	}
 	pEnumFilters->Reset();
-	pEnumFilters->Next(E_MAX_ARR_SIZE, &m_pFGBaseFilter[0], &m_lFGFilCount);
+	pEnumFilters->Next(E_MAX_BF, &m_pFGBaseFilter[0], &m_lFGFilCount);
 	pEnumFilters->Release();
+	if (m_lBACount)
+		intOldCurBA = m_intCurrentBA;
+	m_lBACount = 0;
+	m_intCurrentBA = -1;
+	for (m_lCounter = 0; m_lCounter < m_lFGFilCount; m_lCounter++)
+	{
+		//m_pFGBaseFilter[m_lCounter]->GetClassID(&cBF);
+		//if (IsEqualCLSID(cBF, CLSID_AudioRender) || IsEqualCLSID(cBF, CLSID_DSoundRender))
+		//{
+			if (SUCCEEDED(m_pFGBaseFilter[m_lCounter]->QueryInterface(IID_IBasicAudio, (LPVOID *)&pBasicAudio)))
+			{
+				m_pBasicAudio[++m_intCurrentBA] = pBasicAudio;
+				m_lBACount++;
+			}
+		//}
+		if (!m_pAMStreamSelect)
+		{
+			if (SUCCEEDED(m_pFGBaseFilter[m_lCounter]->QueryInterface(IID_IAMStreamSelect, (LPVOID *)&pStreamSelect)))
+				m_pAMStreamSelect = pStreamSelect;
+		}
+	}
+	//Дополнительная попытка получить IBasicAudio от GraphBuilder (от Jenya)
+	if (m_lBACount == 0)
+	{
+		if (SUCCEEDED(m_pGraphBuilder->QueryInterface(IID_IBasicAudio, (LPVOID *)&pBasicAudio)))
+		{
+			m_pBasicAudio[++m_intCurrentBA] = pBasicAudio;
+			m_lBACount++;
+		}
+	}
+    if ((intOldCurBA >= 0) && m_lBACount)
+    {
+        if (intOldCurBA <= (int)m_lBACount)
+            SelectAudioStream_E(intOldCurBA);
+        else
+            SelectAudioStream_E(0);
+    }
 }
 
 //Возвращает массив имен DMO (DirectX Media Objects)
@@ -1155,4 +1444,17 @@ void CDirectShow::DSErrorMsg(HRESULT hr, LPCWSTR lpwEM)
 		lpwEM, hr, wcslen(lpwErrDesc)?lpwErrDesc:L"None");
 	MessageBox(m_hAppWnd, lpwMsg, (m_lpwAppName)?m_lpwAppName:L"Error",
 		MB_ICONEXCLAMATION);
+}
+
+//Приватная функция. Освобождает структуру AM_MEDIA_TYPE
+void CDirectShow::FreeMediaType(AM_MEDIA_TYPE *pMT)
+{
+    if (pMT->cbFormat != 0)
+    {
+        CoTaskMemFree((LPVOID)pMT->pbFormat);
+        pMT->cbFormat = 0;
+        pMT->pbFormat = NULL;
+    }
+    SR(pMT->pUnk);
+	CoTaskMemFree((LPVOID)pMT);
 }

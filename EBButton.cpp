@@ -143,12 +143,19 @@ LRESULT CALLBACK EBButtonProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam
 			PostMessage(hWnd, EBBM_DRAWCONTROL, 0, 0);
 			break;
 		case WM_LBUTTONUP:
+		{
+			if (pEBBP->EBBMF.dwFlag != EBBMF_DOWN) break;
+			POINT PTMU = { LOWORD(lParam), HIWORD(lParam) };
 			ReleaseCapture();
 			pEBBP->EBBMF.dwFlag = 0;
-			PostMessage(GetParent(hWnd), WM_COMMAND, MAKEWPARAM(GetDlgCtrlID(hWnd), EBBN_CLICKED),
-				(LPARAM)hWnd);
+			if (PtInRect(&pEBBP->CRC, PTMU))
+			{
+				PostMessage(GetParent(hWnd), WM_COMMAND, MAKEWPARAM(GetDlgCtrlID(hWnd), EBBN_CLICKED),
+					(LPARAM)hWnd);
+			}
 			PostMessage(hWnd, EBBM_DRAWCONTROL, 0, 0);
 			break;
+		}
 		case WM_ENABLE:
 			PostMessage(hWnd, EBBM_DRAWCONTROL, 0, 0);
 			break;

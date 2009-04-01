@@ -115,14 +115,14 @@ LRESULT CALLBACK LabelExProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 				DrawText(pLEP->hDBDC, pLEP->lpCurrentText, -1, &RCT, DT_LEFT | DT_SINGLELINE |
 					DT_CALCRECT);
 				SelectObject(pLEP->hDBDC, hOldFont);
-				SetWindowPos(hWnd, HWND_TOP, 0, 0, RCT.right, RCT.bottom, SWP_NOMOVE);
+				SetWindowPos(hWnd, 0, 0, 0, RCT.right, RCT.bottom, SWP_NOMOVE | SWP_NOZORDER);
 			}
 			else
 			{
 				GetClientRect(hWnd, &RCT);
 				if ((RCT.right != pLEP->CRC.right) || (RCT.bottom != pLEP->CRC.bottom))
 				{
-					SetWindowPos(hWnd, HWND_TOP, 0, 0, pLEP->CRC.right, pLEP->CRC.bottom, SWP_NOMOVE);
+					SetWindowPos(hWnd, 0, 0, 0, pLEP->CRC.right, pLEP->CRC.bottom, SWP_NOMOVE | SWP_NOZORDER);
 				}
 				else PostMessage(hWnd, LEM_DRAWCONTROL, 0, 0);
 			}
