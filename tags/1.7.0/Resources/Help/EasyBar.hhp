@@ -1,0 +1,19 @@
+[OPTIONS]
+Compatibility=1.1 or later
+Compiled file=EasyBar.chm
+Contents file=EasyBar.hhc
+Default Window=EBHelp
+Default topic=Index.htm
+Display compile progress=Yes
+Full-text search=Yes
+Language=0x409 English (United States)
+
+[WINDOWS]
+EBHelp="EasyBar","EasyBar.hhc",,"Index.htm","Index.htm",,,,,0x3420,220,0x304e,[308,11,1013,472],0xb0000,0x4,,,,,0
+
+
+[FILES]
+Index.htm
+
+[INFOTYPES]
+
