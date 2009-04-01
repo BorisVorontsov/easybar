@@ -2358,6 +2358,7 @@ Seek_SetPosition:
 						CI.dwTimer = GetTickCount();
 						CI.dwTimeout = 10000;
 					}
+					break;
 				}
 				case 2:
 					if (bCurAlpha < 255)
