@@ -1239,14 +1239,14 @@ void CDirectShow::UpdateFGFiltersArray()
 		}
 	}
 	//ƒополнительна€ попытка получить IBasicAudio от GraphBuilder (от Jenya)
-	if (m_lBACount == 0)
+	/*if (m_lBACount == 0)
 	{
 		if (SUCCEEDED(m_pGraphBuilder->QueryInterface(IID_IBasicAudio, (LPVOID *)&pBasicAudio)))
 		{
 			m_pBasicAudio[++m_intCurrentBA] = pBasicAudio;
 			m_lBACount++;
 		}
-	}
+	}*/
     if ((intOldCurBA >= 0) && m_lBACount)
     {
         if (intOldCurBA <= (int)m_lBACount)

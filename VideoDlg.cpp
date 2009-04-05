@@ -38,6 +38,7 @@ INT_PTR CALLBACK VideoDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam
 			VWD.dwVWPosFlag = VWPF_NORMAL;
 			VWD.dwSMPTimeout = 0;
 			SetTimer(hWnd, 1, 200, 0);
+			SetTimer(hWnd, 2, 100, 0); //Обход проблемы с прорисовкой Logo
 			/*
 			//-------------------------------------------------------------------------------
 			VWD.hPlayerVW = CreateDialogParam(hAppInstance, MAKEINTRESOURCE(IDD_PLAYER_VW),
@@ -286,38 +287,44 @@ INT_PTR CALLBACK VideoDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam
 			PostMessage(hMainWnd, uMsg, wParam, lParam);
 			return TRUE;
 		case WM_TIMER:
-			if (wParam == 1)
+			switch (wParam)
 			{
-				if (pEngine->GetState() == E_STATE_STOPPED)
-				{
-					if (pEngine->GetVideoVisible())
+				case 1:
+					if (pEngine->GetState() == E_STATE_STOPPED)
 					{
-						pEngine->SetVideoVisible(FALSE);
+						if (pEngine->GetVideoVisible())
+						{
+							pEngine->SetVideoVisible(FALSE);
+						}
+						if (!IsWindowVisible(GetDlgItem(hWnd, IDC_STCLOGO)))
+						{
+							ShowWindow(GetDlgItem(hWnd, IDC_STCLOGO), SW_SHOW);
+						}
 					}
-					if (!IsWindowVisible(GetDlgItem(hWnd, IDC_STCLOGO)))
+					else
 					{
-						ShowWindow(GetDlgItem(hWnd, IDC_STCLOGO), SW_SHOW);
+						if (IsWindowVisible(GetDlgItem(hWnd, IDC_STCLOGO)))
+						{
+							ShowWindow(GetDlgItem(hWnd, IDC_STCLOGO), SW_HIDE);
+						}
+						if (!pEngine->GetVideoVisible())
+						{
+							pEngine->SetVideoVisible(TRUE);
+						}
 					}
-				}
-				else
-				{
-					if (IsWindowVisible(GetDlgItem(hWnd, IDC_STCLOGO)))
+					if (VWD.dwSMPTimeout && (VWD.dwVWPosFlag == VWPF_FULLSCREEN) && !bNoCursorAutoHide)
 					{
-						ShowWindow(GetDlgItem(hWnd, IDC_STCLOGO), SW_HIDE);
+						if ((GetTickCount() - VWD.dwSMPTimeout) >= 2000)
+						{
+							ShowMousePointer(FALSE);
+							VWD.dwSMPTimeout = 0;
+						}
 					}
-					if (!pEngine->GetVideoVisible())
-					{
-						pEngine->SetVideoVisible(TRUE);
-					}
-				}
-				if (VWD.dwSMPTimeout && (VWD.dwVWPosFlag == VWPF_FULLSCREEN) && !bNoCursorAutoHide)
-				{
-					if ((GetTickCount() - VWD.dwSMPTimeout) >= 2000)
-					{
-						ShowMousePointer(FALSE);
-						VWD.dwSMPTimeout = 0;
-					}
-				}
+					break;
+				case 2:
+					InvalidateRect(GetDlgItem(hWnd, IDC_STCLOGO), NULL, FALSE);
+					KillTimer(hWnd, 2);
+					break;
 			}
 			return TRUE;
 		case WM_DESTROY:
