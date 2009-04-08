@@ -21,12 +21,15 @@ public:
 };
 //--------------------------------------------------------------------------
 
-#define DS_CB_WND_CLASS		L"DSCB_"
+#define DS_CB_WND_CLASS			L"DSCB_"
 
-#define DS_MEDIAEVENTEX		WM_APP + 0x800
-#define E_MAX_ARR_SIZE		1024
-#define E_MAX_BA			64
-#define E_MAX_BF			128
+#define DS_MEDIAEVENTEX			WM_APP + 0x800
+
+#define SASF_APPLYINITPARAMS	0x00000001
+
+#define E_MAX_ARR_SIZE			1024
+#define E_MAX_BA				64
+#define E_MAX_BF				128
 
 //Состояния "движка"
 typedef enum _ENGINESTATE
@@ -151,7 +154,10 @@ public:
 		                  LPCWSTR lpwStmName);
 
 	int GetAudioStreamsCount_E();
-	int SelectAudioStream_E(int intStmIndex);
+	int SelectAudioStream_E(int intStmIndex,
+		                    int intStmInitVol,
+							int intStmInitBal,
+							DWORD dwFlags);
 	BOOL IsAudioStreamSelected_E(int intStmIndex);
 
 	int AddFGToROT();
