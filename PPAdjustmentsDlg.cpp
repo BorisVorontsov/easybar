@@ -35,7 +35,7 @@ INT_PTR CALLBACK PPAdjustmentsDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARA
 				case IDC_BTNSAS:
 				{
 					int intSelItem = SendDlgItemMessage(hWnd, IDC_CBOAS, CB_GETCURSEL, 0, 0);
-					pEngine->SelectAudioStream_E(intSelItem);
+					pEngine->SelectAudioStream_E(intSelItem, 0, 0, 0);
 				}
 			}
 			return TRUE;

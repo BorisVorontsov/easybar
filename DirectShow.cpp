@@ -208,7 +208,7 @@ int CDirectShow::Open()
 	m_pGraphBuilder->QueryInterface(IID_IVideoFrameStep, (LPVOID *)&m_pVideoFrameStep);
 	UpdateFGFiltersArray();
 	if (m_lBACount)
-		SelectAudioStream_E(0);
+		SelectAudioStream_E(0, 0, 0, SASF_APPLYINITPARAMS);
 	if (m_pMediaSeeking)
 		m_pMediaSeeking->SetTimeFormat(&TIME_FORMAT_MEDIA_TIME);
 	if (m_pVideoWindow)
@@ -841,22 +841,37 @@ int CDirectShow::GetAudioStreamsCount_E()
 
 //Вибирает аудио поток (внутренний механизм)
 //В случае ошибки функция вернет значение меньше нуля
-int CDirectShow::SelectAudioStream_E(int intStmIndex)
+int CDirectShow::SelectAudioStream_E(int intStmIndex, int intStmInitVol, int intStmInitBal, DWORD dwFlags)
 {
 	if (!m_lBACount) return -1;
+	if (intStmIndex == m_intCurrentBA) return -1;
 	if ((intStmIndex < 0) || (intStmIndex > (int)m_lBACount)) return -1;
-	long lCurBal, lCurVol;
-	m_pBasicAudio[m_intCurrentBA]->get_Balance(&lCurBal);
-	if (m_intPrevVol == 1)
-		m_pBasicAudio[m_intCurrentBA]->get_Volume(&lCurVol);
+	long lCurVol, lCurBal;
+	if ((dwFlags & SASF_APPLYINITPARAMS) != SASF_APPLYINITPARAMS)
+	{
+		if (m_intPrevVol == 1)
+			m_pBasicAudio[m_intCurrentBA]->get_Volume(&lCurVol);
+		m_pBasicAudio[m_intCurrentBA]->get_Balance(&lCurBal);
+	}
 	for (m_lCounter = 0; m_lCounter < m_lBACount; m_lCounter++)
 	{
 		if (m_lCounter != intStmIndex)
 			m_pBasicAudio[m_lCounter]->put_Volume(-10000);
 	}
-	m_pBasicAudio[intStmIndex]->put_Balance(lCurBal);
-	if (m_intPrevVol == 1)
-		m_pBasicAudio[intStmIndex]->put_Volume(lCurVol);
+	if ((dwFlags & SASF_APPLYINITPARAMS) == SASF_APPLYINITPARAMS)
+	{
+		if (m_intPrevVol == 1)
+			m_pBasicAudio[intStmIndex]->put_Volume(intStmInitVol);
+		else
+			m_intPrevVol = intStmInitVol;
+		m_pBasicAudio[intStmIndex]->put_Balance(intStmInitBal);
+	}
+	else
+	{
+		if (m_intPrevVol == 1)
+			m_pBasicAudio[intStmIndex]->put_Volume(lCurVol);
+		m_pBasicAudio[intStmIndex]->put_Balance(lCurBal);
+	}
 	m_intCurrentBA = intStmIndex;
 	return 0;
 }
@@ -1205,6 +1220,7 @@ void CDirectShow::UpdateFGFiltersArray()
 	//CLSID cBF;
 	IAMStreamSelect *pStreamSelect = NULL;
 	int intOldCurBA = -1;
+	long lOldVol, lOldBal;
 	if (FAILED(m_pGraphBuilder->EnumFilters(&pEnumFilters))) return;
 	for (m_lCounter = 0; m_lCounter < E_MAX_BF; m_lCounter++)
 	{
@@ -1218,7 +1234,12 @@ void CDirectShow::UpdateFGFiltersArray()
 	pEnumFilters->Next(E_MAX_BF, &m_pFGBaseFilter[0], &m_lFGFilCount);
 	pEnumFilters->Release();
 	if (m_lBACount)
+	{
 		intOldCurBA = m_intCurrentBA;
+		if (m_intPrevVol == 1)
+			m_pBasicAudio[m_intCurrentBA]->get_Volume(&lOldVol);
+		m_pBasicAudio[m_intCurrentBA]->get_Balance(&lOldBal);
+	}
 	m_lBACount = 0;
 	m_intCurrentBA = -1;
 	for (m_lCounter = 0; m_lCounter < m_lFGFilCount; m_lCounter++)
@@ -1247,12 +1268,13 @@ void CDirectShow::UpdateFGFiltersArray()
 			m_lBACount++;
 		}
 	}*/
+	m_intCurrentBA = -1;
     if ((intOldCurBA >= 0) && m_lBACount)
     {
         if (intOldCurBA <= (int)m_lBACount)
-            SelectAudioStream_E(intOldCurBA);
+			SelectAudioStream_E(intOldCurBA, (m_intPrevVol == 1)?lOldVol:-10000, lOldBal, SASF_APPLYINITPARAMS);
         else
-            SelectAudioStream_E(0);
+            SelectAudioStream_E(0, (m_intPrevVol == 1)?lOldVol:-10000, lOldBal, SASF_APPLYINITPARAMS);
     }
 }
 
