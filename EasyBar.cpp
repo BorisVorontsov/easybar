@@ -1,7 +1,7 @@
 /////////////////////////////////////////////////////////////////////////////
 //		Проект: EasyBar - media player
 //		Автор(ы): Борис Воронцов и участники проекта
-//		Последнее обновление: 09.04.2009
+//		Последнее обновление: 05.05.2009
 /////////////////////////////////////////////////////////////////////////////
 
 #define _WIN32_WINNT	0x0501
@@ -1888,6 +1888,16 @@ INT_PTR CALLBACK PlayerDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 			DragFinish(hDrop);
 			return TRUE;
 		}
+		case WM_SYSCOMMAND:
+		{
+			WPARAM wP = (wParam & 0xFFF0);
+			if ((wP == SC_MONITORPOWER) || (wP == SC_SCREENSAVE))
+			{
+				if (pEngine->HasVideo())
+					return 0;
+			}
+			break;
+		}
 		case WM_MEASUREITEM:
 		{
 			LPMEASUREITEMSTRUCT pMIS = (LPMEASUREITEMSTRUCT)lParam;
@@ -2099,7 +2109,7 @@ Seek_SetPosition:
 					BOOL bCtlsFlag1 = (pEngine->m_lpwFileName != 0);
 					BOOL bCtlsFlag2 = (pEngine->IsSeekable() != 0);
 					BOOL bCtlsFlag3 = (pEngine->HasAudio() != 0);
-					BOOL bSSActive, bEndOfPlayback;
+					BOOL bEndOfPlayback;
 					EnableWindow(GetDlgItem(hWnd, IDC_EBFMAIN), bCtlsFlag1);
 					EnableWindow(GetDlgItem(hWnd, IDC_EBDMAIN), bCtlsFlag1);
 					EnableWindow(GetDlgItem(hWnd, IDC_EBBPF), ((dwShuffle)?(pFileCollection->FileCount() > 1):
@@ -2123,11 +2133,6 @@ Seek_SetPosition:
 								(LPARAM)LoadImage(hAppInstance, MAKEINTRESOURCE(IDB_PAUSE), IMAGE_BITMAP, 16, 15, 0));
 							SetProp(GetDlgItem(hWnd, IDC_EBBPP), L"_icon_", (HANDLE)L"pause");
 						}
-						SystemParametersInfo(SPI_GETSCREENSAVEACTIVE, 0, &bSSActive, 0);
-						if (bSSActive)
-						{
-							SystemParametersInfo(SPI_SETSCREENSAVEACTIVE, FALSE, 0, 0);
-						}
 					}
 					else
 					{
@@ -2136,11 +2141,6 @@ Seek_SetPosition:
 							SendDlgItemMessage(hWnd, IDC_EBBPP, EBBM_SETBITMAP, 0,
 								(LPARAM)LoadImage(hAppInstance, MAKEINTRESOURCE(IDB_PLAY), IMAGE_BITMAP, 16, 15, 0));
 							SetProp(GetDlgItem(hWnd, IDC_EBBPP), L"_icon_", (HANDLE)L"play");
-						}
-						SystemParametersInfo(SPI_GETSCREENSAVEACTIVE, 0, &bSSActive, 0);
-						if (!bSSActive)
-						{
-							SystemParametersInfo(SPI_SETSCREENSAVEACTIVE, TRUE, 0, 0);
 						}
 					}
 					//Если задано 'On Top->While Playing' - обновляем
@@ -2731,7 +2731,6 @@ LONG InitTrack(DWORD dwFCFlag, DWORD dwFCIndex)
 		//UpdateOpacityState(hVideoWnd);
 		AutoMoveVideoDlg(hVideoWnd);
 		ShowWindow(hVideoWnd, SW_SHOW);
-		SystemParametersInfo(SPI_SETSCREENSAVEACTIVE, FALSE, 0, 0);
 	}
 	SendDlgItemMessage(hMainWnd, IDC_EBSLDSEEK, EBSM_SETRANGE, 0, (LPARAM)pEngine->GetLength());
 	if (pEngine->HasAudio())
@@ -2772,7 +2771,6 @@ void CloseTrack()
 		pEngine->SetVideoOwner(0);
 		DestroyWindow(hVideoWnd);
 		hVideoWnd = 0;
-		SystemParametersInfo(SPI_SETSCREENSAVEACTIVE, TRUE, 0, 0);
 	}
 	if (pEngine->GetState() != E_STATE_STOPPED) pEngine->Stop();
 	pEngine->Close();
