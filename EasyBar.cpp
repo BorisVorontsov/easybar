@@ -1,7 +1,7 @@
 /////////////////////////////////////////////////////////////////////////////
 //		Проект: EasyBar - media player
 //		Автор(ы): Борис Воронцов и участники проекта
-//		Последнее обновление: 05.05.2009
+//		Последнее обновление: 28.05.2009
 /////////////////////////////////////////////////////////////////////////////
 
 #define _WIN32_WINNT	0x0501
@@ -111,9 +111,9 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, LPWSTR lpwCmdLine, int nShow
 			wcscat(lpwMutexName, CreateUniqueName());
 		}
 		delete[] lpwUN;
+		hMutex = CreateMutex(0, TRUE, lpwMutexName);
 		if (!dwMultipleInstances)
 		{
-			hMutex = CreateMutex(0, TRUE, lpwMutexName);
 			if (GetLastError() == ERROR_ALREADY_EXISTS)
 			{
 				HWND hAppWnd = FindWindow(APP_MAIN_WND_CLASS, 0);

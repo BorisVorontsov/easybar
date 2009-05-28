@@ -122,11 +122,10 @@ static LRESULT CALLBACK TrayCBWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARA
 				case IDM_TRAY_EXIT:
 					if (dwMultipleInstances)
 					{
-						if (hMutex)
-						{
-							CloseHandle(hMutex);
-							hMutex = 0;
-						}
+						//Предварительно закрываем основной мьютекс
+						CloseHandle(hMutex);
+						hMutex = 0;
+						
 						HANDLE hMutex2 = CreateMutex(0, TRUE, lpwMutexName);
 						if (GetLastError() == ERROR_ALREADY_EXISTS)
 						{
