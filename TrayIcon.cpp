@@ -259,7 +259,7 @@ BOOL ShowBalloon(LPCWSTR lpwTitle, LPCWSTR lpwText, BALLOONICON bIcon, DWORD dwT
 	}
 	NID.uTimeout = (dwTimeout < 10000)?10000:dwTimeout;
 	NID.uFlags = NIF_INFO;
-	return Shell_NotifyIcon(NIM_MODIFY, &NID);;
+	return Shell_NotifyIcon(NIM_MODIFY, &NID);
 }
 
 BOOL RemoveTrayIcon()
