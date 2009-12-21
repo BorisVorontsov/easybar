@@ -38,8 +38,8 @@ INT_PTR CALLBACK PPGeneralDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lP
 			}
 			else
 			{
-				intSizeB = MAKEINT64(FAD.nFileSizeLow, FAD.nFileSizeHigh);
-				if (intSizeB < (2 ^ 32))
+				intSizeB = ((__int64)FAD.nFileSizeHigh << 32) + FAD.nFileSizeLow;
+				if ((intSizeB > 0) && (intSizeB < (__int64)pow(2.0, 32.0)))
 				{
 					dblSizeMB_GB = (((double)intSizeB / 1024) / 1024);
 					swprintf(lpwOut, L"%.1f MB (%i bytes)", dblSizeMB_GB, intSizeB);

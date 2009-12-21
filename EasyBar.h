@@ -272,10 +272,6 @@ typedef struct _CURRENTINFO //Меняет информацию на дисплее
 #define II_VOLUME					0x00000016
 #define II_BALANCE					0x00000017
 
-#define MAKEINT64(v1, v2)			((__int64)(((__int32)(v1)) | ((__int64)((__int32)(v2))) << 32))
-#define LOINT64(v)					((__int32)(v))
-#define HIINT64(v)					((__int32)(((__int64)(v) >> 32) & 0xFFFFFFFF))
-
 LONG ExceptionFilter(EXCEPTION_POINTERS *pEP);
 DWORD ReadCommandLine(LPCWSTR lpwCmdLine, LPBOOL pAdd);
 INT_PTR CALLBACK PlayerDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
