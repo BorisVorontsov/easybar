@@ -270,7 +270,6 @@ void CDirectShow::Close()
 	for (m_lCounter = 0; m_lCounter < m_lFGFilCount; m_lCounter++)
 		SR(m_pFGBaseFilter[m_lCounter]);
 	m_lFGFilCount = 0;
-	m_lDMOCount = 0;
 	if (m_dwROTRegister)
 		RemoveFGFromROT();
     SR(m_pMediaControl);

@@ -21,7 +21,7 @@ INT_PTR CALLBACK PPGeneralDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lP
 			SYSTEMTIME ST = { 0 };
 			WCHAR lpwOut[MAX_PATH] = { 0 };
 			__int64 intSizeB = 0;
-			double dblSizeMB = 0;
+			double dblSizeMB_GB = 0;
 			int intLen = 0;
 			SIZE SZ = { 0 };
 			PPSetDefFileInfo(hWnd, pEngine->m_lpwFileName);
@@ -39,8 +39,16 @@ INT_PTR CALLBACK PPGeneralDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lP
 			else
 			{
 				intSizeB = MAKEINT64(FAD.nFileSizeLow, FAD.nFileSizeHigh);
-				dblSizeMB = (((double)intSizeB / 1024) / 1024);
-				swprintf(lpwOut, L"%.1f MB (%i bytes)", dblSizeMB, (int)intSizeB);
+				if (intSizeB < (2 ^ 32))
+				{
+					dblSizeMB_GB = (((double)intSizeB / 1024) / 1024);
+					swprintf(lpwOut, L"%.1f MB (%i bytes)", dblSizeMB_GB, intSizeB);
+				}
+				else
+				{
+					dblSizeMB_GB = ((((double)intSizeB / 1024) / 1024) / 1024); 
+					swprintf(lpwOut, L"%.1f GB", dblSizeMB_GB);
+				}
 			}
 			SendDlgItemMessage(hWnd, IDC_EDTFS, WM_SETTEXT, 0, (LPARAM)lpwOut);
 			if (pEngine->HasVideo())
