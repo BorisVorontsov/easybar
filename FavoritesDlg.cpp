@@ -12,6 +12,8 @@
 #include "easybar.h"
 #include "favoritesdlg.h"
 
+extern HINSTANCE hAppInstance;
+
 INT_PTR CALLBACK FavoritesDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
 	switch (uMsg)
@@ -135,7 +137,7 @@ INT_PTR CALLBACK FavoritesDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lP
 						}
 					}
 					if (GetOpenDialog(hAppInstance, hWnd, L"Add File(s)", lpwODFile, APP_OD_MS_MAX_FILE - 1,
-						lpwODFilter, 1, TRUE))
+						lpwODFilter, 1, TRUE, lpwRecentDir))
 					{
 						for (i = 0; i < (APP_OD_MS_MAX_FILE - 1); i++)
 						{
@@ -150,6 +152,7 @@ INT_PTR CALLBACK FavoritesDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lP
 							WCHAR lpwDir[MAX_PATH] = { 0 }, lpwFile[MAX_PATH] = { 0 };
 							wcscpy(lpwDir, pFiles[0]);
 							SP_AddDirSep(lpwDir, lpwDir);
+							wcscpy(lpwRecentDir, lpwDir);
 							for (i = 1; i < lODFileCnt; i++)
 							{
 								wcscpy(lpwFile, lpwDir);
@@ -172,6 +175,8 @@ INT_PTR CALLBACK FavoritesDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lP
 						}
 						else
 						{
+							SP_ExtractDirectory(pFiles[0], lpwRecentDir);
+							SP_AddDirSep(lpwRecentDir, lpwRecentDir);
 							lIndex = ListView_GetItemCount(GetDlgItem(hWnd, IDC_LVFILES));
 							SP_ExtractName(pFiles[0], lpwName);
 							SHGetSettings(&SFS, SSF_SHOWEXTENSIONS);
@@ -348,6 +353,7 @@ Removing_NextItem:
 				ListView_InsertItem(GetDlgItem(hWnd, IDC_LVFILES), &LVI);
 				ListView_SetItemText(GetDlgItem(hWnd, IDC_LVFILES), lIndex, 1, lpwDFile);
 			}
+			DragFinish(hDrop);
 			return TRUE;
 		}
 		case WM_NOTIFY:

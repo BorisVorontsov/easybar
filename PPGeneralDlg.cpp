@@ -21,7 +21,7 @@ INT_PTR CALLBACK PPGeneralDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lP
 			SYSTEMTIME ST = { 0 };
 			WCHAR lpwOut[MAX_PATH] = { 0 };
 			__int64 intSizeB = 0;
-			double dblSizeMB = 0;
+			double dblSizeMB_GB = 0;
 			int intLen = 0;
 			SIZE SZ = { 0 };
 			PPSetDefFileInfo(hWnd, pEngine->m_lpwFileName);
@@ -38,18 +38,47 @@ INT_PTR CALLBACK PPGeneralDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lP
 			}
 			else
 			{
-				intSizeB = MAKEINT64(FAD.nFileSizeLow, FAD.nFileSizeHigh);
-				dblSizeMB = (((double)intSizeB / 1024) / 1024);
-				swprintf(lpwOut, L"%.1f MB (%i bytes)", dblSizeMB, (int)intSizeB);
+				intSizeB = ((__int64)FAD.nFileSizeHigh << 32) + FAD.nFileSizeLow;
+				if ((intSizeB > 0) && (intSizeB < (__int64)pow(2.0, 32.0)))
+				{
+					dblSizeMB_GB = (((double)intSizeB / 1024) / 1024);
+					swprintf(lpwOut, L"%.1f MB (%i bytes)", dblSizeMB_GB, intSizeB);
+				}
+				else
+				{
+					dblSizeMB_GB = ((((double)intSizeB / 1024) / 1024) / 1024); 
+					swprintf(lpwOut, L"%.1f GB", dblSizeMB_GB);
+				}
 			}
 			SendDlgItemMessage(hWnd, IDC_EDTFS, WM_SETTEXT, 0, (LPARAM)lpwOut);
-			SendDlgItemMessage(hWnd, IDC_EDTMT, WM_SETTEXT, 0, 
-				(pEngine->IsVideo())?(LPARAM)L"Video":(LPARAM)L"Audio");
+			if (pEngine->HasVideo())
+			{
+				wcscpy(lpwOut, L"Video");
+				if (pEngine->HasAudio())
+					wcscat(lpwOut, L" (with audio)");
+			}
+			else if (pEngine->HasAudio())
+			{
+				wcscpy(lpwOut, L"Audio");
+			}
+			else
+			{
+				wcscpy(lpwOut, L"Unknown");
+			}
+			SendDlgItemMessage(hWnd, IDC_EDTMT, WM_SETTEXT, 0, (LPARAM)lpwOut);
 			intLen = (int)pEngine->GetLength();
-			swprintf(lpwOut, L"%02i:%02i:%02i", (intLen / 1000) / 3600,
-				((intLen / 1000) / 60) % 60, ((intLen / 1000) % 60));
+			if (((intLen / 1000) / 3600))
+			{
+				swprintf(lpwOut, L"%02i:%02i:%02i", (intLen / 1000) / 3600,
+					((intLen / 1000) / 60) % 60, ((intLen / 1000) % 60));
+			}
+			else
+			{
+				swprintf(lpwOut, L"%02i:%02i", ((intLen / 1000) / 60) % 60,
+					((intLen / 1000) % 60));
+			}
 			SendDlgItemMessage(hWnd, IDC_EDTML, WM_SETTEXT, 0, (LPARAM)lpwOut);
-			if (pEngine->IsVideo())
+			if (pEngine->HasVideo())
 			{
 				pEngine->GetOriginalVideoSize(&SZ);
 				swprintf(lpwOut, L"%i x %i", SZ.cx, SZ.cy);
