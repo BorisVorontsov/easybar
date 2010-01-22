@@ -49,6 +49,7 @@
 				Name="VCCLCompilerTool"
 				AdditionalOptions="/D &quot;_CRT_NON_CONFORMING_SWPRINTFS&quot; /D &quot;_CRT_SECURE_NO_WARNINGS&quot; /wd4995"
 				Optimization="0"
+				AdditionalIncludeDirectories=""
 				PreprocessorDefinitions="_DEBUG;WIN32;_WINDOWS;UNICODE"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -150,6 +151,7 @@
 				Optimization="2"
 				InlineFunctionExpansion="1"
 				FavorSizeOrSpeed="1"
+				AdditionalIncludeDirectories=""
 				PreprocessorDefinitions="NDEBUG;WIN32;_WINDOWS;UNICODE"
 				StringPooling="true"
 				RuntimeLibrary="0"
@@ -402,6 +404,14 @@
 				</FileConfiguration>
 			</File>
 			<File
+				RelativePath=".\EBGraphBuilder.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\EBListBox.cpp"
+				>
+			</File>
+			<File
 				RelativePath="EBMenu.cpp"
 				>
 				<FileConfiguration
@@ -620,6 +630,14 @@
 						PreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
+			</File>
+			<File
+				RelativePath=".\PlaylistDlg.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\PPAdjustmentsDlg.cpp"
+				>
 			</File>
 			<File
 				RelativePath="PPContentDlg.cpp"
@@ -879,6 +897,14 @@
 				>
 			</File>
 			<File
+				RelativePath=".\EBGraphBuilder.h"
+				>
+			</File>
+			<File
+				RelativePath=".\EBListBox.h"
+				>
+			</File>
+			<File
 				RelativePath="EBMenu.h"
 				>
 			</File>
@@ -924,6 +950,14 @@
 			</File>
 			<File
 				RelativePath="Playlist.h"
+				>
+			</File>
+			<File
+				RelativePath=".\PlaylistDlg.h"
+				>
+			</File>
+			<File
+				RelativePath=".\PPAdjustmentsDlg.h"
 				>
 			</File>
 			<File
@@ -976,7 +1010,27 @@
 			Filter="ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe"
 			>
 			<File
+				RelativePath=".\ActiveItem.bmp"
+				>
+			</File>
+			<File
+				RelativePath=".\AIS_Pause.bmp"
+				>
+			</File>
+			<File
+				RelativePath=".\AIS_Play.bmp"
+				>
+			</File>
+			<File
+				RelativePath=".\AIS_Stop.bmp"
+				>
+			</File>
+			<File
 				RelativePath="BalanceNormal.bmp"
+				>
+			</File>
+			<File
+				RelativePath=".\bitmap1.bmp"
 				>
 			</File>
 			<File
@@ -1009,6 +1063,10 @@
 			</File>
 			<File
 				RelativePath="Play.bmp"
+				>
+			</File>
+			<File
+				RelativePath=".\PLIS_Play.bmp"
 				>
 			</File>
 			<File

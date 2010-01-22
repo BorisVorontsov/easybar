@@ -32,16 +32,23 @@
 #define IDD_ASSOCIATIONS                150
 #define IDD_TIMEINTERVALS               151
 #define IDD_URL                         152
-#define IDD_PLAYERVW                    153
 #define IDD_PLAYER_VW                   153
 #define IDB_CHECKMARK                   155
 #define IDB_RADIOCHECKMARK              156
+#define IDD_PLAYLIST                    159
+#define IDD_PP_ADJUSTMENTS              160
+#define IDR_PLMENU                      161
+#define IDR_PLACCEL                     162
+#define IDS_CREDITS                     165
+#define IDB_AISPAUSE                    167
+#define IDB_AISPLAY                     168
+#define IDB_AISSTOP                     169
 #define IDC_STCICON                     1012
 #define IDC_STCNAME                     1013
 #define IDC_STCCOP                      1014
 #define IDC_BTNOK                       1016
-#define IDC_BTNALL                      1017
-#define IDC_BTNNONE                     1018
+#define IDC_BTNVIDEO                    1017
+#define IDC_BTNAUDIO                    1018
 #define IDC_TABPROP                     1022
 #define IDC_BTNCLOSE                    1023
 #define IDC_BTNPROP                     1026
@@ -148,6 +155,18 @@
 #define IDC_STCFM                       1140
 #define IDC_EDTFCLSID                   1141
 #define IDC_EDTFM                       1142
+#define IDC_LSTPL                       1144
+#define IDC_CHKP                        1145
+#define IDC_BTNIMGS                     1146
+#define IDC_BTNPLS                      1147
+#define IDC_BTNCRED                     1147
+#define IDC_EDTCRED                     1148
+#define IDC_BTNRESET                    1149
+#define IDC_STCAS                       1150
+#define IDC_BTNSAS                      1151
+#define IDC_CBOAS                       1152
+#define IDC_BTNSVS                      1153
+#define IDC_CBOVS                       1154
 #define IDM_FILE_EXIT                   40003
 #define IDM_HELP_ABOUT                  40009
 #define IDM_FILE_CLOSE                  40011
@@ -230,7 +249,6 @@
 #define IDM_PLAYBACK_NEXTFILE           40150
 #define IDM_PLAYBACK_PLAYPAUSE          40151
 #define IDM_PLAYBACK_STOP               40152
-#define IDM_PLAYBACK_COPYFRAME          40153
 #define IDM_FULLSCREEN_FULLSCREENNORMAL 40154
 #define IDM_BALANCE_NORMAL              40155
 #define IDM_RATE_NORMAL                 40156
@@ -248,6 +266,34 @@
 #define IDM_AS_RESUMEPLAYBACK           40173
 #define IDM_FILE_REOPENCURRENT          40174
 #define IDM_PLAYBACK_SAVECURRENTFRAME   40175
+#define IDM_VIEW_PLAYLIST               40177
+#define IDM_SELECTION_DELETE            40184
+#define IDM_MISC_FIND                   40185
+#define IDM_MISC_CLEARPLAYLIST          40186
+#define ID_OPENDIRECTORY_OPENDIRECTORY  40191
+#define IDM_OPENDIRECTORY_OPENDIRECTORY 40192
+#define IDM_OD_OPENDIRECTORY            40193
+#define ID_OPENDIRECTORY_OPENDIRECTORY40194 40194
+#define ID_OD_OPENDIRECTORY_II          40195
+#define ID_ADDDIRECTORY_ADDDIRECTORY    40196
+#define IDM_AD_ADDDIRECTORY             40197
+#define ID_ADDDIRECTORY_ADDDIRECTORY40198 40198
+#define IDM_AD_ADDDIRECTORY_II          40199
+#define IDM_OD_OPENDIRECTORY_II         40200
+#define ID_SELECTION_MOVEUP             40201
+#define ID_SELECTION_MOVEDOWN           40202
+#define IDM_SELECTION_MOVEUP            40203
+#define IDM_SELECTION_MOVEDOWN          40204
+#define ID_MANAGE_OPENFILE              40210
+#define ID_MANAGE_HIDE                  40211
+#define IDM_MANAGE_HIDE                 40212
+#define ID_SORT_SORTBYTITLE             40213
+#define ID_SORT_REVERSESORTBYTITLE      40214
+#define IDM_SORT_SORTBYTITLE            40215
+#define IDM_SORT_REVERSESORTBYTITLE     40216
+#define ID_SELECTION_CROP               40217
+#define ID_Menu                         40218
+#define IDM_SELECTION_CROP              40219
 
 // Next default values for new objects
 // 
@@ -255,9 +301,9 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NO_MFC                     1
 #define _APS_3D_CONTROLS                     1
-#define _APS_NEXT_RESOURCE_VALUE        159
-#define _APS_NEXT_COMMAND_VALUE         40176
-#define _APS_NEXT_CONTROL_VALUE         1143
+#define _APS_NEXT_RESOURCE_VALUE        170
+#define _APS_NEXT_COMMAND_VALUE         40222
+#define _APS_NEXT_CONTROL_VALUE         1153
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif
