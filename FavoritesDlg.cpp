@@ -307,6 +307,8 @@ Removing_NextItem:
 					if (lFileCnt)
 					{
 						InitTrack((dwShuffle)?FCF_RANDOM:FCF_FIRST);
+						if (!(GetAsyncKeyState(VK_SHIFT) >> 15))
+							pEngine->Play(); //Auto-play
 					}
 					else
 					{

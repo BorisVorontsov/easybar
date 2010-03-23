@@ -897,21 +897,21 @@ int CDirectShow::AddFGToROT()
 			return -1;
 		}
 
-		if (m_pEBGraphBuilder)
+		/*if (m_pEBGraphBuilder)
 			delete m_pEBGraphBuilder;
 		m_pEBGraphBuilder = new CEBGraphBuilder();
 		m_pEBGraphBuilder->AttachGraph(m_pGraphBuilder);
-		m_pEBGraphBuilder->CreateMarshal();
+		m_pEBGraphBuilder->CreateMarshal();*/
 		
 		WCHAR lpwItem[256] = { 0 };
-		swprintf(lpwItem, L"FilterGraph %08x pid %08x", (LPDWORD)m_pEBGraphBuilder, GetCurrentProcessId());
+		swprintf(lpwItem, L"FilterGraph %08x pid %08x", (LPDWORD)/*m_pEBGraphBuilder*/m_pGraphBuilder, GetCurrentProcessId());
 		if (FAILED(CreateItemMoniker(L"!", lpwItem, &pMoniker)))
 		{
 			pRunningObjectTable->Release();
 			return -1;
 		}
 
-		pRunningObjectTable->Register(ROTFLAGS_REGISTRATIONKEEPSALIVE, m_pEBGraphBuilder, pMoniker, &m_dwROTRegister);
+		pRunningObjectTable->Register(ROTFLAGS_REGISTRATIONKEEPSALIVE, /*m_pEBGraphBuilder*/m_pGraphBuilder, pMoniker, &m_dwROTRegister);
 		pMoniker->Release();
 		pRunningObjectTable->Release();
 		return 0;
@@ -1400,6 +1400,17 @@ void CDirectShow::UpdateDMOArray(DMOCATEGORY dCategory)
 	pEnumDMO->Release();
 }
 
+//*bug workaround: в некоторых случаях информация приходит не в юникоде
+//inline-функция для GetMediaContent
+__inline void CheckAMMCString(BSTR bstrStr, LPWSTR lpwOut, int intOutCharCnt) {
+	int numbytes = (int)*((LPBYTE)bstrStr - 4);
+	int flags = IS_TEXT_UNICODE_UNICODE_MASK | IS_TEXT_UNICODE_REVERSE_MASK;
+	if (!IsTextUnicode(bstrStr, numbytes, &flags))
+		MultiByteToWideChar(CP_ACP, 0, (LPCSTR)bstrStr, numbytes, lpwOut, intOutCharCnt);
+	else
+		wcscpy(lpwOut, bstrStr);
+}
+
 //Возвращает информацию о медиа файле (если таковая доступна)
 //Как правило, подобную информацию предоставляют т.н. 'parser filters'
 //Перед вызовом этой функции желательно вызвать UpdateFGFiltersArray()
@@ -1409,6 +1420,7 @@ int CDirectShow::GetMediaContent(LPMEDIACONTENT pMC)
 	if (!m_lFGFilCount) return -1;
 	IAMMediaContent *pAMMediaContent = NULL;
 	BSTR bstrTmp;
+	WCHAR lpwTmp[128];
 	for (m_lCounter = 0; m_lCounter < m_lFGFilCount; m_lCounter++)
 	{
 		if (!m_pFGBaseFilter[m_lCounter]) return -1;
@@ -1423,32 +1435,38 @@ int CDirectShow::GetMediaContent(LPMEDIACONTENT pMC)
 	//Это на случай, если строка окажется больше и null-char просто не скопируется
 	if (SUCCEEDED(pAMMediaContent->get_AuthorName(&bstrTmp)))
 	{
-		wcsncpy(pMC->Author, bstrTmp, 63);
+		CheckAMMCString(bstrTmp, lpwTmp, AS(lpwTmp));
+		wcsncpy(pMC->Author, lpwTmp, AS(pMC->Author) - 1);
 		SysFreeString(bstrTmp);
 	}
 	if (SUCCEEDED(pAMMediaContent->get_Title(&bstrTmp)))
 	{
-		wcsncpy(pMC->Title, bstrTmp, 63);
+		CheckAMMCString(bstrTmp, lpwTmp, AS(lpwTmp));
+		wcsncpy(pMC->Title, lpwTmp, AS(pMC->Title) - 1);
 		SysFreeString(bstrTmp);
 	}
 	if (SUCCEEDED(pAMMediaContent->get_Rating(&bstrTmp)))
 	{
-		wcsncpy(pMC->Rating, bstrTmp, 63);
+		CheckAMMCString(bstrTmp, lpwTmp, AS(lpwTmp));
+		wcsncpy(pMC->Rating, lpwTmp, AS(pMC->Rating) - 1);
 		SysFreeString(bstrTmp);
 	}
 	if (SUCCEEDED(pAMMediaContent->get_Copyright(&bstrTmp)))
 	{
-		wcsncpy(pMC->Copyright, bstrTmp, 127);
+		CheckAMMCString(bstrTmp, lpwTmp, AS(lpwTmp));
+		wcsncpy(pMC->Copyright, lpwTmp, AS(pMC->Copyright) - 1);
 		SysFreeString(bstrTmp);
 	}
 	if (SUCCEEDED(pAMMediaContent->get_Description(&bstrTmp)))
 	{
-		wcsncpy(pMC->Description, bstrTmp, 254);
+		CheckAMMCString(bstrTmp, lpwTmp, AS(lpwTmp));
+		wcsncpy(pMC->Description, lpwTmp, AS(pMC->Description) - 1);
 		SysFreeString(bstrTmp);
 	}
 	if (SUCCEEDED(pAMMediaContent->get_MoreInfoText(&bstrTmp)))
 	{
-		wcsncpy(pMC->MoreInfo, bstrTmp, 254);
+		CheckAMMCString(bstrTmp, lpwTmp, AS(lpwTmp));
+		wcsncpy(pMC->MoreInfo, lpwTmp, AS(pMC->MoreInfo) - 1);
 		SysFreeString(bstrTmp);
 	}
 	pAMMediaContent->Release();
@@ -1466,8 +1484,8 @@ void CDirectShow::RemoveFGFromROT()
 		m_dwROTRegister = 0;
     }
 
-	delete m_pEBGraphBuilder;
-	m_pEBGraphBuilder = NULL;
+	/*delete m_pEBGraphBuilder;
+	m_pEBGraphBuilder = NULL;*/
 }
 
 //Приватная функция. Выводит сообщение об ошибке DirectShow (hex-код и описание)
