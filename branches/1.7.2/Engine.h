@@ -97,6 +97,9 @@ typedef struct _MEDIACONTENT
 	WCHAR MoreInfo[255];
 } MEDIACONTENT, *LPMEDIACONTENT;
 
+//Array Size
+#define AS(x) (sizeof(x) / sizeof(x[0]))
+
 //Safe Release
 #define SR(x) if(x) {(x)->Release(); x = NULL;}
 

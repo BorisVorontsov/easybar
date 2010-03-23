@@ -3,7 +3,11 @@
 #include <windows.h>
 
 #ifdef UNICODE
+
+#ifndef _UNICODE
 #define _UNICODE
+#endif
+
 #endif
 
 #include <tchar.h>
@@ -173,7 +177,7 @@ SIZE_T SP_Find(LPCTSTR lpString, LPCTSTR lpFind, SIZE_T szStartPos, BOOL bMatchC
 	SIZE_T szStrSize = _tcslen(lpString), szFindSize = _tcslen(lpFind),
 		szResult = -1;
 	if ((szStrSize <= 1) || (szFindSize < 1)) return -1;
-	TCHAR lpOldLoc[64] = { 0 };
+	TCHAR lpOldLoc[64] = {0};
 	if (lpLocale)
 	{
 		_tcsncpy(lpOldLoc, _tsetlocale(LC_CTYPE, NULL), 63);
@@ -218,7 +222,7 @@ SIZE_T SP_Replace(LPCTSTR lpString, LPTSTR lpResult, LPCTSTR lpFind, LPCTSTR lpR
 	SIZE_T szStrSize = _tcslen(lpString), szResultSize = _tcslen(lpResult),
 		szFindSize = _tcslen(lpFind), szReplaceSize = _tcslen(lpReplace);
 	if ((szStrSize <= 1) || (szFindSize < 1) || (szReplaceSize < 1)) return 0;
-	TCHAR lpOldLoc[64] = { 0 };
+	TCHAR lpOldLoc[64] = {0};
 	if (lpLocale)
 	{
 		_tcsncpy(lpOldLoc, _tsetlocale(LC_CTYPE, NULL), 63);
