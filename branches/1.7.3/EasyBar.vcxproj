@@ -1,0 +1,259 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{E4394FD1-A910-4014-A656-DC6368BDCD8D}</ProjectGuid>
+    <Keyword>Win32Proj</Keyword>
+    <RootNamespace>EasyBar</RootNamespace>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <LinkIncremental>true</LinkIncremental>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <LinkIncremental>true</LinkIncremental>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <LinkIncremental>false</LinkIncremental>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <LinkIncremental>false</LinkIncremental>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalOptions>/D "_CRT_NON_CONFORMING_SWPRINTFS" /D "_CRT_SECURE_NO_WARNINGS" /wd4995 %(AdditionalOptions)</AdditionalOptions>
+      <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>delayimp.lib;comctl32.lib;version.lib;htmlhelp.lib;uxtheme.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <DelayLoadDLLs>uxtheme.dll</DelayLoadDLLs>
+      <AdditionalManifestDependencies>type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*';%(AdditionalManifestDependencies)</AdditionalManifestDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <PreprocessorDefinitions>_WIN64;_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalOptions>/D "_CRT_NON_CONFORMING_SWPRINTFS" /D "_CRT_SECURE_NO_WARNINGS" /wd4995 %(AdditionalOptions)</AdditionalOptions>
+      <EnableEnhancedInstructionSet>NotSet</EnableEnhancedInstructionSet>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>delayimp.lib;comctl32.lib;version.lib;htmlhelp.lib;uxtheme.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <DelayLoadDLLs>uxtheme.dll</DelayLoadDLLs>
+      <AdditionalManifestDependencies>type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*';%(AdditionalManifestDependencies)</AdditionalManifestDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalOptions>/D "_CRT_NON_CONFORMING_SWPRINTFS" /D "_CRT_SECURE_NO_WARNINGS" /wd4995 %(AdditionalOptions)</AdditionalOptions>
+      <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <AdditionalDependencies>delayimp.lib;comctl32.lib;version.lib;htmlhelp.lib;uxtheme.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <DelayLoadDLLs>uxtheme.dll</DelayLoadDLLs>
+      <AdditionalManifestDependencies>type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*';%(AdditionalManifestDependencies)</AdditionalManifestDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <PreprocessorDefinitions>_WIN64;NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalOptions>/D "_CRT_NON_CONFORMING_SWPRINTFS" /D "_CRT_SECURE_NO_WARNINGS" /wd4995 %(AdditionalOptions)</AdditionalOptions>
+      <EnableEnhancedInstructionSet>NotSet</EnableEnhancedInstructionSet>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <AdditionalDependencies>delayimp.lib;comctl32.lib;version.lib;htmlhelp.lib;uxtheme.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <DelayLoadDLLs>uxtheme.dll</DelayLoadDLLs>
+      <AdditionalManifestDependencies>type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*';%(AdditionalManifestDependencies)</AdditionalManifestDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="AboutDlg.cpp" />
+    <ClCompile Include="AssociationsDlg.cpp" />
+    <ClCompile Include="ColorsDlg.cpp" />
+    <ClCompile Include="Common.cpp" />
+    <ClCompile Include="DirectShow.cpp" />
+    <ClCompile Include="EasyBar.cpp" />
+    <ClCompile Include="EBButton.cpp" />
+    <ClCompile Include="EBDisplay.cpp" />
+    <ClCompile Include="EBFrame.cpp" />
+    <ClCompile Include="EBListBox.cpp" />
+    <ClCompile Include="EBMenu.cpp" />
+    <ClCompile Include="EBSlider.cpp" />
+    <ClCompile Include="ExtFltDlg.cpp" />
+    <ClCompile Include="FavoritesDlg.cpp" />
+    <ClCompile Include="FileAssociations.cpp" />
+    <ClCompile Include="FileCollection.cpp" />
+    <ClCompile Include="FilePropDlg.cpp" />
+    <ClCompile Include="FSVideoModeDlg.cpp" />
+    <ClCompile Include="LabelEx.cpp" />
+    <ClCompile Include="OpacityDlg.cpp" />
+    <ClCompile Include="PlayerVWDlg.cpp" />
+    <ClCompile Include="Playlist.cpp" />
+    <ClCompile Include="PlaylistDlg.cpp" />
+    <ClCompile Include="PPAdjustmentsDlg.cpp" />
+    <ClCompile Include="PPContentDlg.cpp" />
+    <ClCompile Include="PPFiltersDlg.cpp" />
+    <ClCompile Include="PPGeneralDlg.cpp" />
+    <ClCompile Include="Settings.cpp" />
+    <ClCompile Include="StrParser.cpp" />
+    <ClCompile Include="TimeIntervalsDlg.cpp" />
+    <ClCompile Include="ToolTips.cpp" />
+    <ClCompile Include="TrayIcon.cpp" />
+    <ClCompile Include="URLDlg.cpp" />
+    <ClCompile Include="VideoDlg.cpp" />
+    <ClCompile Include="VideoMode.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="AboutDlg.h" />
+    <ClInclude Include="AssociationsDlg.h" />
+    <ClInclude Include="ColorsDlg.h" />
+    <ClInclude Include="Common.h" />
+    <ClInclude Include="EasyBar.h" />
+    <ClInclude Include="EBButton.h" />
+    <ClInclude Include="EBDisplay.h" />
+    <ClInclude Include="EBFrame.h" />
+    <ClInclude Include="EBListBox.h" />
+    <ClInclude Include="EBMenu.h" />
+    <ClInclude Include="EBSlider.h" />
+    <ClInclude Include="Engine.h" />
+    <ClInclude Include="ExtFltDlg.h" />
+    <ClInclude Include="FavoritesDlg.h" />
+    <ClInclude Include="FileAssociations.h" />
+    <ClInclude Include="FileCollection.h" />
+    <ClInclude Include="FilePropDlg.h" />
+    <ClInclude Include="FSVideoModeDlg.h" />
+    <ClInclude Include="LabelEx.h" />
+    <ClInclude Include="OpacityDlg.h" />
+    <ClInclude Include="PlayerVWDlg.h" />
+    <ClInclude Include="Playlist.h" />
+    <ClInclude Include="PlaylistDlg.h" />
+    <ClInclude Include="PPAdjustmentsDlg.h" />
+    <ClInclude Include="PPContentDlg.h" />
+    <ClInclude Include="PPFiltersDlg.h" />
+    <ClInclude Include="PPGeneralDlg.h" />
+    <ClInclude Include="resource.h" />
+    <ClInclude Include="Settings.h" />
+    <ClInclude Include="StrParser.h" />
+    <ClInclude Include="TimeIntervalsDlg.h" />
+    <ClInclude Include="ToolTips.h" />
+    <ClInclude Include="TrayIcon.h" />
+    <ClInclude Include="URLDlg.h" />
+    <ClInclude Include="VideoDlg.h" />
+    <ClInclude Include="VideoMode.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="EasyBar.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="AIS_Pause.bmp" />
+    <None Include="AIS_Play.bmp" />
+    <None Include="AIS_Stop.bmp" />
+    <None Include="BalanceNormal.bmp" />
+    <None Include="CheckMark.bmp" />
+    <None Include="EB_ICON.ico" />
+    <None Include="FILE_ICON.ico" />
+    <None Include="Logo.bmp" />
+    <None Include="NextFile.bmp" />
+    <None Include="Pause.bmp" />
+    <None Include="Play.bmp" />
+    <None Include="PreviousFile.bmp" />
+    <None Include="RadioCheckMark.bmp" />
+    <None Include="SoundOff.bmp" />
+    <None Include="SoundOn.bmp" />
+    <None Include="StepBackward.bmp" />
+    <None Include="StepForward.bmp" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>
