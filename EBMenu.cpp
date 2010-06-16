@@ -5,7 +5,11 @@
 #include <windows.h>
 
 #ifdef UNICODE
+
+#ifndef _UNICODE
 #define _UNICODE
+#endif
+
 #endif
 
 #include <tchar.h>
@@ -36,7 +40,7 @@ CEBMenu::CEBMenu()
 		CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH | FF_SWISS, TEXT("Tahoma"));
 	hBmpCheck = 0;
 	hBmpRadioCheck = 0;
-	m_MenuOwner = 0;
+	m_hMenuOwner = 0;
 	ReleaseDC(0, hDC);
 }
 
@@ -53,11 +57,12 @@ BOOL CEBMenu::InitEBMenu(HWND hMenuOwner, BOOL bPopupMenu)
 	if (hMenuOwner)
 	{
 		if (!CreateODMenu(GetMenu(hMenuOwner), !bPopupMenu)) return FALSE;
-		m_MenuOwner = hMenuOwner;
+		m_hMenuOwner = hMenuOwner;
+		m_bPopupMenu = bPopupMenu;
 	}
 	else
 	{
-		m_MenuOwner = 0;
+		m_hMenuOwner = 0;
 	}
 	return TRUE;
 }
@@ -65,10 +70,13 @@ BOOL CEBMenu::InitEBMenu(HWND hMenuOwner, BOOL bPopupMenu)
 DWORD CEBMenu::MeasureItem(WPARAM wParam, LPARAM lParam)
 {
 	LPMEASUREITEMSTRUCT pMIS = (LPMEASUREITEMSTRUCT)lParam;
-	MENUITEMINFO MII = { 0 };
+	MENUITEMINFO MII = {};
 	MII.cbSize = sizeof(MII);
 	MII.fMask = MIIM_TYPE;
-	GetMenuItemInfo(GetMenu(m_MenuOwner), pMIS->itemID, FALSE, &MII);
+	HMENU hMenu = GetMenu(m_hMenuOwner);
+
+	GetMenuItemInfo(hMenu, pMIS->itemID, FALSE, &MII);
+
 	if ((MII.fType & MFT_SEPARATOR) == MFT_SEPARATOR)
 	{
 		pMIS->itemWidth = 1;
@@ -76,14 +84,14 @@ DWORD CEBMenu::MeasureItem(WPARAM wParam, LPARAM lParam)
 	}
 	else if ((MII.fType & MFT_STRING) == MFT_STRING)
 	{
-		TCHAR lpText[MAX_PATH] = { 0 };
-		TCHAR lpItem[MAX_PATH] = { 0 }, lpAccel[64] = { 0 };
+		TCHAR lpText[MAX_PATH] = {};
+		TCHAR lpItem[MAX_PATH] = {}, lpAccel[64] = {};
 		LONG lItemWidth, lAccelWidth;
 		MII.fMask = MIIM_STRING;
 		MII.dwTypeData = lpText;
 		MII.cch = MAX_PATH;
-		GetMenuItemInfo(GetMenu(m_MenuOwner), pMIS->itemID, FALSE, &MII);
-		RECT RCI = { 0 }, RCA = { 0 };
+		GetMenuItemInfo(hMenu, pMIS->itemID, FALSE, &MII);
+		RECT RCI = {}, RCA = {};
 		LPVOID pTabPos = _tcschr(lpText, '\t');
 		if (pTabPos)
 		{
@@ -98,7 +106,7 @@ DWORD CEBMenu::MeasureItem(WPARAM wParam, LPARAM lParam)
 		HBITMAP hTBitmap = CreateCompatibleBitmap(hTDC, 512, 32);
 		SelectObject(hTDC, hTBitmap);
 		MII.fMask = MIIM_STATE;
-		GetMenuItemInfo(GetMenu(m_MenuOwner), pMIS->itemID, FALSE, &MII);
+		GetMenuItemInfo(hMenu, pMIS->itemID, FALSE, &MII);
 		if ((MII.fState & MFS_DEFAULT) == MFS_DEFAULT)
 		{
 			SelectObject(hTDC, hFntDefaultItem);
@@ -107,12 +115,12 @@ DWORD CEBMenu::MeasureItem(WPARAM wParam, LPARAM lParam)
 		{
 			SelectObject(hTDC, hFntStandardItem);
 		}
-		DrawText(hTDC, lpItem, (_tcschr(lpItem, '&'))?_tcslen(lpItem) - 1:-1, &RCI, DT_SINGLELINE | DT_CALCRECT);
+		DrawText(hTDC, lpItem, (_tcschr(lpItem, '&'))?(int)_tcslen(lpItem) - 1:-1, &RCI, DT_SINGLELINE | DT_CALCRECT);
 		DrawText(hTDC, lpAccel, -1, &RCA, DT_SINGLELINE | DT_CALCRECT);
 		lItemWidth = RCI.right;
 		lAccelWidth = RCA.right;
 		MII.fMask = MIIM_DATA;
-		GetMenuItemInfo(GetMenu(m_MenuOwner), pMIS->itemID, FALSE, &MII);
+		GetMenuItemInfo(hMenu, pMIS->itemID, FALSE, &MII);
 		if ((MII.dwItemData & EBM_ITEM_DATA_TLMENU) == EBM_ITEM_DATA_TLMENU)
 		{
 			pMIS->itemWidth = EBM_METRICS_TLMENU_LEFT_TEXT_INDENT + lItemWidth +
@@ -137,15 +145,17 @@ DWORD CEBMenu::MeasureItem(WPARAM wParam, LPARAM lParam)
 DWORD CEBMenu::DrawItem(WPARAM wParam, LPARAM lParam)
 {
 	LPDRAWITEMSTRUCT pDIS = (LPDRAWITEMSTRUCT)lParam;
-	TRIVERTEX TV[2] = { 0 };
-	GRADIENT_RECT GR = { 0 };
-	RECT RCB = { 0 }, RCP = { 0 };
-	MENUITEMINFO MII = { 0 };
+	TRIVERTEX TV[2] = {};
+	GRADIENT_RECT GR = {};
+	RECT RCB = {}, RCP = {};
+	MENUITEMINFO MII = {};
 	BOOL bSeparator = FALSE;
-	TCHAR lpText[MAX_PATH] = { 0 };
+	TCHAR lpText[MAX_PATH] = {};
 	MII.cbSize = sizeof(MII);
 	MII.fMask = MIIM_TYPE;
-	GetMenuItemInfo(GetMenu(m_MenuOwner), pDIS->itemID, FALSE, &MII);
+	HMENU hMenu = GetMenu(m_hMenuOwner);
+
+	GetMenuItemInfo(hMenu, pDIS->itemID, FALSE, &MII);
 	if ((MII.fType & MFT_SEPARATOR) == MFT_SEPARATOR)
 	{
 		bSeparator = TRUE;
@@ -155,10 +165,11 @@ DWORD CEBMenu::DrawItem(WPARAM wParam, LPARAM lParam)
 		MII.fMask = MIIM_STRING;
 		MII.dwTypeData = lpText;
 		MII.cch = MAX_PATH;
-		GetMenuItemInfo(GetMenu(m_MenuOwner), pDIS->itemID, FALSE, &MII);
+		GetMenuItemInfo(hMenu, pDIS->itemID, FALSE, &MII);
 	}
 	MII.fMask = MIIM_DATA;
-	GetMenuItemInfo(GetMenu(m_MenuOwner), pDIS->itemID, FALSE, &MII);
+	GetMenuItemInfo(hMenu, pDIS->itemID, FALSE, &MII);
+
 	if ((MII.dwItemData & EBM_ITEM_DATA_TLMENU) == EBM_ITEM_DATA_TLMENU)
 	{
 		HBRUSH hBk3Brush;
@@ -168,7 +179,8 @@ DWORD CEBMenu::DrawItem(WPARAM wParam, LPARAM lParam)
 		RCP.left += EBM_METRICS_STD_INDENT;
 		RCP.right -= EBM_METRICS_STD_INDENT;
 		DrawMenuString(pDIS->hDC, lpText, RCP, ((pDIS->itemState & ODS_GRAYED) ==
-			ODS_GRAYED), FALSE, ((pDIS->itemState & ODS_DEFAULT) == ODS_DEFAULT), TRUE);
+			ODS_GRAYED), FALSE, ((pDIS->itemState & ODS_DEFAULT) == ODS_DEFAULT), 
+			((pDIS->itemState & ODS_INACTIVE) == ODS_INACTIVE), TRUE);
 		DeleteObject(hBk3Brush);
 	}
 	else
@@ -196,7 +208,7 @@ DWORD CEBMenu::DrawItem(WPARAM wParam, LPARAM lParam)
 			if ((pDIS->itemState & ODS_CHECKED) == ODS_CHECKED)
 			{
 				MII.fMask = MIIM_TYPE;
-				GetMenuItemInfo(GetMenu(m_MenuOwner), pDIS->itemID, FALSE, &MII);
+				GetMenuItemInfo(hMenu, pDIS->itemID, FALSE, &MII);
 				CopyRect(&RCP, &pDIS->rcItem);
 				DrawCheckMark(pDIS->hDC, RCP.left + EBM_METRICS_STD_INDENT, RCP.top +
 					EBM_METRICS_STD_INDENT, ((pDIS->itemState & ODS_GRAYED) == ODS_GRAYED),
@@ -207,7 +219,8 @@ DWORD CEBMenu::DrawItem(WPARAM wParam, LPARAM lParam)
 				EBM_METRICS_STD_INDENT + EBM_METRICS_LEFT_TEXT_INDENT;
 			RCP.right -= EBM_METRICS_RIGHT_TEXT_INDENT;
 			DrawMenuString(pDIS->hDC, lpText, RCP, ((pDIS->itemState & ODS_GRAYED) ==
-				ODS_GRAYED), FALSE, ((pDIS->itemState & ODS_DEFAULT) == ODS_DEFAULT), FALSE);
+				ODS_GRAYED), FALSE, ((pDIS->itemState & ODS_DEFAULT) == ODS_DEFAULT),
+				((pDIS->itemState & ODS_INACTIVE) == ODS_INACTIVE), FALSE);
 		}
 		else
 		{
@@ -225,8 +238,10 @@ DWORD CEBMenu::DrawItem(WPARAM wParam, LPARAM lParam)
 		DeleteObject(hBk1Brush);
 		DeleteObject(hBk2Brush);
 	}
-	if (((pDIS->itemState & ODS_SELECTED) == ODS_SELECTED) || ((pDIS->itemState & ODS_HOTLIGHT) ==
-		ODS_HOTLIGHT) || ((pDIS->itemState & ODS_FOCUS) == ODS_FOCUS))
+
+	if ((((pDIS->itemAction & ODA_DRAWENTIRE) == ODA_DRAWENTIRE) || ((pDIS->itemAction & ODA_SELECT) == ODA_SELECT)) &&
+		(((pDIS->itemState & ODS_SELECTED) == ODS_SELECTED) || (((pDIS->itemState & ODS_HOTLIGHT) == ODS_HOTLIGHT) &&
+		((pDIS->itemState & ODS_INACTIVE) != ODS_INACTIVE))))
 	{
 		if (!bSeparator)
 		{
@@ -304,20 +319,21 @@ DWORD CEBMenu::DrawItem(WPARAM wParam, LPARAM lParam)
 			GR.LowerRight = 1;
 			GradientFill(pDIS->hDC, &TV[0], 2, (PVOID)&GR, 1, GRADIENT_FILL_RECT_V);
 			MII.fMask = MIIM_DATA;
-			GetMenuItemInfo(GetMenu(m_MenuOwner), pDIS->itemID, FALSE, &MII);
+			GetMenuItemInfo(hMenu, pDIS->itemID, FALSE, &MII);
 			if ((MII.dwItemData & EBM_ITEM_DATA_TLMENU) == EBM_ITEM_DATA_TLMENU)
 			{
 				RCP.left += EBM_METRICS_STD_INDENT;
 				RCP.right -= EBM_METRICS_STD_INDENT;
 				DrawMenuString(pDIS->hDC, lpText, RCP, ((pDIS->itemState & ODS_GRAYED) ==
-					ODS_GRAYED), TRUE, ((pDIS->itemState & ODS_DEFAULT) == ODS_DEFAULT), TRUE);
+					ODS_GRAYED), TRUE, ((pDIS->itemState & ODS_DEFAULT) == ODS_DEFAULT),
+					((pDIS->itemState & ODS_INACTIVE) == ODS_INACTIVE), TRUE);
 			}
 			else
 			{
 				if ((pDIS->itemState & ODS_CHECKED) == ODS_CHECKED)
 				{
 					MII.fMask = MIIM_TYPE;
-					GetMenuItemInfo(GetMenu(m_MenuOwner), pDIS->itemID, FALSE, &MII);
+					GetMenuItemInfo(hMenu, pDIS->itemID, FALSE, &MII);
 					CopyRect(&RCP, &pDIS->rcItem);
 					DrawCheckMark(pDIS->hDC, RCP.left + EBM_METRICS_STD_INDENT, RCP.top +
 						EBM_METRICS_STD_INDENT, ((pDIS->itemState & ODS_GRAYED) == ODS_GRAYED),
@@ -328,7 +344,8 @@ DWORD CEBMenu::DrawItem(WPARAM wParam, LPARAM lParam)
 					EBM_METRICS_STD_INDENT + EBM_METRICS_LEFT_TEXT_INDENT;
 				RCP.right -= EBM_METRICS_RIGHT_TEXT_INDENT;
 				DrawMenuString(pDIS->hDC, lpText, RCP, ((pDIS->itemState & ODS_GRAYED) ==
-					ODS_GRAYED), TRUE, ((pDIS->itemState & ODS_DEFAULT) == ODS_DEFAULT), FALSE);
+					ODS_GRAYED), TRUE, ((pDIS->itemState & ODS_DEFAULT) == ODS_DEFAULT),
+					((pDIS->itemState & ODS_INACTIVE) == ODS_INACTIVE), FALSE);
 			}
 			CopyRect(&RCP, &pDIS->rcItem);
 			if ((MII.dwItemData & EBM_ITEM_DATA_TLMENU) == EBM_ITEM_DATA_TLMENU)
@@ -366,8 +383,8 @@ DWORD CEBMenu::DrawItem(WPARAM wParam, LPARAM lParam)
 				HDC hLDC;
 				HBRUSH hGlBrush;
 				HBITMAP hTmpBitmap, hOldBitmap;
-				RECT RCGE = { 0 };
-				BLENDFUNCTION BF = { 0 };
+				RECT RCGE = {};
+				BLENDFUNCTION BF = {};
 				CopyRect(&RCGE, &pDIS->rcItem);
 				RCGE.right -= RCGE.left;
 				RCGE.bottom -= RCGE.top;
@@ -395,16 +412,29 @@ DWORD CEBMenu::DrawItem(WPARAM wParam, LPARAM lParam)
 
 HMENU CEBMenu::GetCurrentMenu()
 {
-	return GetMenu(m_MenuOwner);
+	return GetMenu(m_hMenuOwner);
+}
+
+BOOL CEBMenu::UpdateMenuBar()
+{
+	if (m_bPopupMenu) return FALSE;
+
+	MENUINFO MI = {};
+	MI.cbSize = sizeof(MI);
+	MI.fMask = MIM_BACKGROUND;
+	MI.hbrBack = CreateSolidBrush(crBkColorThree);
+	return SetMenuInfo(GetMenu(m_hMenuOwner), &MI);
 }
 
 DWORD CEBMenu::CreateODMenu(HMENU hMenu, BOOL bTLMenu)
 {
-	MENUITEMINFO MII = { 0 };
+	MENUITEMINFO MII = {};
 	ULONG i, lODItemCnt = 0;
+
 	MII.cbSize = sizeof(MII);
 	int intItemCnt = GetMenuItemCount(hMenu);
 	if (intItemCnt == -1) return lODItemCnt;
+
 	for (i = 0; i < (ULONG)intItemCnt; i++)
 	{
 		MII.fMask = MIIM_TYPE;
@@ -425,6 +455,7 @@ DWORD CEBMenu::CreateODMenu(HMENU hMenu, BOOL bTLMenu)
 			lODItemCnt += CreateODMenu(MII.hSubMenu);
 		}
 	}
+
 	return lODItemCnt;
 }
 
@@ -433,7 +464,7 @@ BOOL CEBMenu::DrawCheckMark(HDC hDC, LONG lX, LONG lY, BOOL bDisabled, BOOL bSel
 	if (hBmpCheck)
 	{
 		HBITMAP hCheckMark;
-		BITMAPINFO BMI = { 0 }, EBMI = { 0 };
+		BITMAPINFO BMI = {}, EBMI = {};
 		HDC hTDC = CreateCompatibleDC(hDC);
 		if (bRadioCheck)
 		{
@@ -511,12 +542,12 @@ BOOL CEBMenu::DrawCheckMark(HDC hDC, LONG lX, LONG lY, BOOL bDisabled, BOOL bSel
 	else return FALSE;
 }
 
-BOOL CEBMenu::DrawMenuString(HDC hDC, LPCTSTR lpString, RECT RCT, BOOL bDisabled, BOOL bSelected, BOOL bDefault, BOOL bTLMenu)
+BOOL CEBMenu::DrawMenuString(HDC hDC, LPCTSTR lpString, RECT RCT, BOOL bDisabled, BOOL bSelected, BOOL bDefault, BOOL bInactive, BOOL bTLMenu)
 {
 	if (_tcslen(lpString))
 	{
 		HFONT hOldFont;
-		TCHAR lpItem[MAX_PATH] = { 0 }, lpAccel[64] = { 0 };
+		TCHAR lpItem[MAX_PATH] = {}, lpAccel[64] = {};
 		LPVOID pTabPos = (LPTSTR)_tcschr(lpString, '\t');
 		if (pTabPos && !bTLMenu)
 		{
@@ -538,54 +569,70 @@ BOOL CEBMenu::DrawMenuString(HDC hDC, LPCTSTR lpString, RECT RCT, BOOL bDisabled
 		}
 		if (bSelected)
 		{
-			if (bDisabled)
+			if (!bInactive)
 			{
-				SetTextColor(hDC, GetSysColor(COLOR_3DHIGHLIGHT));
+				if (bDisabled)
+				{
+					SetTextColor(hDC, GetSysColor(COLOR_3DHIGHLIGHT));
+				}
+				else
+				{
+					SetTextColor(hDC, crFontColorTwo);
+				}
+				OffsetRect(&RCT, 1, 1);
+				DrawText(hDC, lpItem, -1, &RCT, DT_VCENTER | ((bTLMenu)?DT_CENTER:DT_LEFT) | DT_SINGLELINE);
+				if (_tcslen(lpAccel))
+				{
+					DrawText(hDC, lpAccel, -1, &RCT, DT_VCENTER | DT_RIGHT | DT_SINGLELINE);
+				}
+				if (bDisabled)
+				{
+					SetTextColor(hDC, GetSysColor(COLOR_3DSHADOW));
+				}
+				else
+				{
+					SetTextColor(hDC, crFontColorOne);
+				}
+				OffsetRect(&RCT, -1, -1);
+				DrawText(hDC, lpItem, -1, &RCT, DT_VCENTER | ((bTLMenu)?DT_CENTER:DT_LEFT) | DT_SINGLELINE);
+				if (_tcslen(lpAccel))
+				{
+					DrawText(hDC, lpAccel, -1, &RCT, DT_VCENTER | DT_RIGHT | DT_SINGLELINE);
+				}
 			}
 			else
 			{
-				SetTextColor(hDC, crFontColorTwo);
-			}
-			OffsetRect(&RCT, 1, 1);
-			DrawText(hDC, lpItem, -1, &RCT, DT_VCENTER | ((bTLMenu)?DT_CENTER:DT_LEFT) | DT_SINGLELINE);
-			if (_tcslen(lpAccel))
-			{
-				DrawText(hDC, lpAccel, -1, &RCT, DT_VCENTER | DT_RIGHT | DT_SINGLELINE);
-			}
-			if (bDisabled)
-			{
-				SetTextColor(hDC, GetSysColor(COLOR_3DSHADOW));
-			}
-			else
-			{
-				SetTextColor(hDC, crFontColorOne);
-			}
-			OffsetRect(&RCT, -1, -1);
-			DrawText(hDC, lpItem, -1, &RCT, DT_VCENTER | ((bTLMenu)?DT_CENTER:DT_LEFT) | DT_SINGLELINE);
-			if (_tcslen(lpAccel))
-			{
-				DrawText(hDC, lpAccel, -1, &RCT, DT_VCENTER | DT_RIGHT | DT_SINGLELINE);
+				SetTextColor(hDC, GetSysColor(COLOR_GRAYTEXT));
+				DrawText(hDC, lpItem, -1, &RCT, DT_VCENTER | DT_CENTER | DT_SINGLELINE);
 			}
 		}
 		else
 		{
-			if (bDisabled)
+			if (!bInactive)
 			{
-				SetTextColor(hDC, GetSysColor(COLOR_GRAYTEXT));
-				DrawText(hDC, lpItem, -1, &RCT, DT_VCENTER | ((bTLMenu)?DT_CENTER:DT_LEFT) | DT_SINGLELINE);
-				if (_tcslen(lpAccel))
+				if (bDisabled)
 				{
-					DrawText(hDC, lpAccel, -1, &RCT, DT_VCENTER | DT_RIGHT | DT_SINGLELINE);
+					SetTextColor(hDC, GetSysColor(COLOR_GRAYTEXT));
+					DrawText(hDC, lpItem, -1, &RCT, DT_VCENTER | ((bTLMenu)?DT_CENTER:DT_LEFT) | DT_SINGLELINE);
+					if (_tcslen(lpAccel))
+					{
+						DrawText(hDC, lpAccel, -1, &RCT, DT_VCENTER | DT_RIGHT | DT_SINGLELINE);
+					}
+				}
+				else
+				{
+					SetTextColor(hDC, crFontColorThree);
+					DrawText(hDC, lpItem, -1, &RCT, DT_VCENTER | ((bTLMenu)?DT_CENTER:DT_LEFT) | DT_SINGLELINE);
+					if (_tcslen(lpAccel))
+					{
+						DrawText(hDC, lpAccel, -1, &RCT, DT_VCENTER | DT_RIGHT | DT_SINGLELINE);
+					}
 				}
 			}
 			else
 			{
-				SetTextColor(hDC, crFontColorThree);
-				DrawText(hDC, lpItem, -1, &RCT, DT_VCENTER | ((bTLMenu)?DT_CENTER:DT_LEFT) | DT_SINGLELINE);
-				if (_tcslen(lpAccel))
-				{
-					DrawText(hDC, lpAccel, -1, &RCT, DT_VCENTER | DT_RIGHT | DT_SINGLELINE);
-				}
+				SetTextColor(hDC, GetSysColor(COLOR_GRAYTEXT));
+				DrawText(hDC, lpItem, -1, &RCT, DT_VCENTER | DT_CENTER | DT_SINGLELINE);
 			}
 		}
 		SelectObject(hDC, hOldFont);

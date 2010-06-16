@@ -8,6 +8,9 @@
 
 #pragma comment (lib, "winmm.lib")
 
+extern HINSTANCE hAppInstance;
+extern WCHAR lpAppVersion[20];
+
 INT_PTR CALLBACK AboutDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
 	switch (uMsg)
@@ -16,24 +19,28 @@ INT_PTR CALLBACK AboutDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam
 		{
 			//Инициализация диалога
 			//--------------------------------------------------------------------
-			WCHAR lpwTitle[64] = { 0 };
-			WCHAR lpwAbout[128] = { 0 };
+			WCHAR lpTitle[64] = {};
+			WCHAR lpAbout[256] = {};
 			HMENU hSysMenu = GetSystemMenu(hWnd, FALSE);
 			EnableMenuItem(hSysMenu, SC_CLOSE, MF_DISABLED | MF_GRAYED);
-			swprintf(lpwTitle, L"About %s", APP_NAME);
-			SetWindowText(hWnd, lpwTitle);
-			swprintf(lpwAbout, L"%s v. %s", APP_NAME,
-				lpwAppVersion);
-			SetDlgItemText(hWnd, IDC_STCNAME, lpwAbout);
+			swprintf(lpTitle, L"About %s", APP_NAME);
+			SetWindowText(hWnd, lpTitle);
+			swprintf(lpAbout, L"%s v. %s", APP_NAME, lpAppVersion);
+#ifdef _WIN64
+			wcscat(lpAbout, L" (x64)");
+#endif
+			SetDlgItemText(hWnd, IDC_STCNAME, lpAbout);
 			SetDlgItemText(hWnd, IDC_STCCOP, APP_COPYRIGHT);
 			SendDlgItemMessage(hWnd, IDC_STCEM, LEM_SETNFONTCOLOR,
-				(WPARAM)GetSysColor(COLOR_HIGHLIGHT), 0);
+				(WPARAM)RGB(20, 60, 145), 0);
 			SendDlgItemMessage(hWnd, IDC_STCEM, LEM_SETHFONTCOLOR,
-				(WPARAM)GetSysColor(COLOR_WINDOW), 0);
-			swprintf(lpwAbout, L"E-mail: %s", APP_EMAIL);
-			SetDlgItemText(hWnd, IDC_STCEM, lpwAbout);
-			swprintf(lpwAbout, APP_LICENSE, APP_LICENSE_FILE);
-			SetDlgItemText(hWnd, IDC_STCLIC, lpwAbout);
+				(WPARAM)RGB(90, 138, 230), 0);
+			swprintf(lpAbout, L"E-mail: %s", APP_EMAIL);
+			SetDlgItemText(hWnd, IDC_STCEM, lpAbout);
+			swprintf(lpAbout, APP_LICENSE, APP_LICENSE_FILE);
+			SetDlgItemText(hWnd, IDC_STCLIC, lpAbout);
+			LoadString(hAppInstance, IDS_CREDITS, lpAbout, sizeof(lpAbout) / sizeof(WCHAR));
+			SetDlgItemText(hWnd, IDC_EDTCRED, lpAbout);
 			return TRUE;
 		}
 		case WM_COMMAND:
@@ -61,6 +68,26 @@ INT_PTR CALLBACK AboutDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam
 				case IDC_BTNOK:
 					PostMessage(hWnd, WM_CLOSE, 0, 0);
 					break;
+				case IDC_BTNCRED:
+					if (IsWindowVisible(GetDlgItem(hWnd, IDC_EDTCRED)))
+					{
+						ShowWindow(GetDlgItem(hWnd, IDC_STCNAME), SW_SHOW);
+						ShowWindow(GetDlgItem(hWnd, IDC_STCCOP), SW_SHOW);
+						ShowWindow(GetDlgItem(hWnd, IDC_STCEM), SW_SHOW);
+						ShowWindow(GetDlgItem(hWnd, IDC_STCLIC), SW_SHOW);
+						ShowWindow(GetDlgItem(hWnd, IDC_EDTCRED), SW_HIDE);
+						SetDlgItemText(hWnd, IDC_BTNCRED, L"&Credits >");
+					}
+					else
+					{
+						ShowWindow(GetDlgItem(hWnd, IDC_STCNAME), SW_HIDE);
+						ShowWindow(GetDlgItem(hWnd, IDC_STCCOP), SW_HIDE);
+						ShowWindow(GetDlgItem(hWnd, IDC_STCEM), SW_HIDE);
+						ShowWindow(GetDlgItem(hWnd, IDC_STCLIC), SW_HIDE);
+						ShowWindow(GetDlgItem(hWnd, IDC_EDTCRED), SW_SHOW);
+						SetDlgItemText(hWnd, IDC_BTNCRED, L"< &About");
+					}
+					break;
 			}
 			return TRUE;
 		case WM_NOTIFY:
@@ -71,9 +98,9 @@ INT_PTR CALLBACK AboutDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam
 				case IDC_STCEM:
 					if (pNM->code == LEN_CLICKED)
 					{
-						WCHAR lpwTmp[128] = { 0 };
-						swprintf(lpwTmp, L"mailto:%s?subject=%s %s", APP_EMAIL, APP_NAME, lpwAppVersion);
-						ShellExecute(0, L"Open", lpwTmp, 0, 0, SW_NORMAL);
+						WCHAR lpTmp[128] = {};
+						swprintf(lpTmp, L"mailto:%s?subject=%s %s", APP_EMAIL, APP_NAME, lpAppVersion);
+						ShellExecute(0, L"Open", lpTmp, 0, 0, SW_NORMAL);
 					}
 					break;
 				default:

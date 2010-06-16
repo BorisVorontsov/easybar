@@ -12,6 +12,8 @@
 #include "easybar.h"
 #include "favoritesdlg.h"
 
+extern HINSTANCE hAppInstance;
+
 INT_PTR CALLBACK FavoritesDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
 	switch (uMsg)
@@ -21,8 +23,8 @@ INT_PTR CALLBACK FavoritesDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lP
 			//Инициализация диалога
 			//--------------------------------------------------------------------
 			ULONG i = 0;
-			LV_COLUMN LVC = { 0 };
-			LV_ITEM LVI = { 0 };
+			LV_COLUMN LVC = {};
+			LV_ITEM LVI = {};
 			HMENU hSysMenu = GetSystemMenu(hWnd, FALSE);
 			EnableMenuItem(hSysMenu, SC_CLOSE, MF_DISABLED | MF_GRAYED);
 			LVC.mask = LVCF_TEXT | LVCF_FMT | LVCF_WIDTH;
@@ -38,11 +40,11 @@ INT_PTR CALLBACK FavoritesDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lP
 			{
 				if (!pFavorites[i]) break;
 				LVI.mask = LVIF_TEXT;
-				LVI.pszText = pFavorites[i]->lpwDisplayName;
+				LVI.pszText = pFavorites[i]->lpDisplayName;
 				LVI.iItem = i;
 				ListView_InsertItem(GetDlgItem(hWnd, IDC_LVFILES), &LVI);
 				ListView_SetItemText(GetDlgItem(hWnd, IDC_LVFILES), i, 1,
-					pFavorites[i]->lpwPath);
+					pFavorites[i]->lpPath);
 			}
 			SetTimer(hWnd, 1, 200, 0);
 			SendMessage(hWnd, WM_TIMER, 1, 0);
@@ -54,41 +56,41 @@ INT_PTR CALLBACK FavoritesDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lP
 				case IDC_BTNACF:
 				{
 					ULONG lIndex;
-					LV_ITEM LVI = { 0 };
-					SHELLFLAGSTATE SFS = { 0 };
-					WCHAR lpwName[128] = { 0 };
+					LV_ITEM LVI = {};
+					SHELLFLAGSTATE SFS = {};
+					WCHAR lpName[128] = {};
 					lIndex = ListView_GetItemCount(GetDlgItem(hWnd, IDC_LVFILES));
-					SP_ExtractName(pEngine->m_lpwFileName, lpwName);
+					SP_ExtractName(pEngine->m_lpFileName, lpName);
 					SHGetSettings(&SFS, SSF_SHOWEXTENSIONS);
 					if (!SFS.fShowExtensions)
 					{
-						SP_ExtractLeftPart(lpwName, lpwName, '.');
+						SP_ExtractLeftPart(lpName, lpName, '.');
 					}
 					LVI.mask = LVIF_TEXT;
-					LVI.pszText = lpwName;
+					LVI.pszText = lpName;
 					LVI.iItem = lIndex;
 					ListView_InsertItem(GetDlgItem(hWnd, IDC_LVFILES), &LVI);
-					ListView_SetItemText(GetDlgItem(hWnd, IDC_LVFILES), lIndex, 1, pEngine->m_lpwFileName);
+					ListView_SetItemText(GetDlgItem(hWnd, IDC_LVFILES), lIndex, 1, pEngine->m_lpFileName);
 					break;
 				}
 				case IDC_BTNADD:
 				{
-					WCHAR lpwODFile[APP_OD_MS_MAX_FILE] = { 0 };
-					WCHAR lpwODFilter[APP_OD_MAX_FILTER] = { 0 };
-					WCHAR lpwExt[64] = { 0 };
+					WCHAR lpODFile[APP_OD_MS_MAX_FILE] = {};
+					WCHAR lpODFilter[APP_OD_MAX_FILTER] = {};
+					WCHAR lpExt[64] = {};
 					LPWSTR pFiles[FC_MAX_FILES];
 					ULONG i, lIndex, lODFileCnt = 0;
-					LV_ITEM LVI = { 0 };
-					SHELLFLAGSTATE SFS = { 0 };
-					WCHAR lpwName[128] = { 0 };
+					LV_ITEM LVI = {};
+					SHELLFLAGSTATE SFS = {};
+					WCHAR lpName[128] = {};
 					ZeroMemory(pFiles, sizeof(pFiles));
-					wcscpy(lpwODFilter, L"Media files (all types)|");
+					wcscpy(lpODFilter, L"Media files (all types)|");
 					for (i = 0; i < APP_SFT_UBOUND; i++)
 					{
 						if (wcslen(APP_SFT[i]) && (SFT_IsCategory(APP_SFT[i]) == SFTC_NONE))
 						{
-							swprintf(lpwExt, L"*.%s;", APP_SFT[i]);
-							wcscat(lpwODFilter, lpwExt);
+							swprintf(lpExt, L"*.%s;", APP_SFT[i]);
+							wcscat(lpODFilter, lpExt);
 						}
 					}
 					for (i = 0; i < APP_SFT_UBOUND; i++)
@@ -98,89 +100,92 @@ INT_PTR CALLBACK FavoritesDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lP
 							switch(SFT_IsCategory(APP_SFT[i]))
 							{
 								case SFTC_NONE:
-									swprintf(lpwExt, L"*.%s;", APP_SFT[i]);
-									wcscat(lpwODFilter, lpwExt);
+									swprintf(lpExt, L"*.%s;", APP_SFT[i]);
+									wcscat(lpODFilter, lpExt);
 									break;
 								case SFTC_VIDEO:
-									wcscat(lpwODFilter, L"|Video file|");
+									wcscat(lpODFilter, L"|Video file|");
 									break;
 								case SFTC_AUDIO:
-									wcscat(lpwODFilter, L"|Audio file|");
+									wcscat(lpODFilter, L"|Audio file|");
 									break;
 								case SFTC_MIDI:
-									wcscat(lpwODFilter, L"|MIDI file|");
+									wcscat(lpODFilter, L"|MIDI file|");
 									break;
 								case SFTC_IMAGE:
-									wcscat(lpwODFilter, L"|Image file|");
+									wcscat(lpODFilter, L"|Image file|");
 									break;
 								case SFTC_PLAYLIST:
-									wcscat(lpwODFilter, L"|Playlist file|");
+									wcscat(lpODFilter, L"|Playlist file|");
 									break;
 								case SFTC_OTHER:
-									wcscat(lpwODFilter, L"|Other|");
+									wcscat(lpODFilter, L"|Other|");
 									break;
 							}
 						}
 					}
-					wcscat(lpwODFilter, L"|Any file|*.*;||");
+					wcscat(lpODFilter, L"|Any file|*.*;||");
 					for (i = 0; i < (APP_OD_MAX_FILTER - 1); i++)
 					{
-						if (lpwODFilter[i] == '|')
+						if (lpODFilter[i] == '|')
 						{
-							if (lpwODFilter[i + 1] != '|')
+							if (lpODFilter[i + 1] != '|')
 							{
-								lpwODFilter[i] = '\0';
+								lpODFilter[i] = '\0';
 							}
 							else break;
 						}
 					}
-					if (GetOpenDialog(hAppInstance, hWnd, L"Add File(s)", lpwODFile, APP_OD_MS_MAX_FILE - 1,
-						lpwODFilter, 1, TRUE))
+					if (GetOpenDialog(hAppInstance, hWnd, L"Add File(s)", lpODFile, APP_OD_MS_MAX_FILE - 1,
+						lpODFilter, 1, TRUE, lpRecentDir))
 					{
 						for (i = 0; i < (APP_OD_MS_MAX_FILE - 1); i++)
 						{
-							if ((lpwODFile[i] == '\0') && (lpwODFile[i + 1] != '\0'))
+							if ((lpODFile[i] == '\0') && (lpODFile[i + 1] != '\0'))
 							{
-								lpwODFile[i] = '|';
+								lpODFile[i] = '|';
 							}
 						}
-						lODFileCnt = SP_Split(lpwODFile, &pFiles[0], '|', FC_MAX_FILES);
+						lODFileCnt = SP_Split(lpODFile, &pFiles[0], '|', FC_MAX_FILES);
 						if (lODFileCnt > 1)
 						{
-							WCHAR lpwDir[MAX_PATH] = { 0 }, lpwFile[MAX_PATH] = { 0 };
-							wcscpy(lpwDir, pFiles[0]);
-							SP_AddDirSep(lpwDir, lpwDir);
+							WCHAR lpDir[MAX_PATH] = {}, lpFile[MAX_PATH] = {};
+							wcscpy(lpDir, pFiles[0]);
+							SP_AddDirSep(lpDir, lpDir);
+							wcscpy(lpRecentDir, lpDir);
 							for (i = 1; i < lODFileCnt; i++)
 							{
-								wcscpy(lpwFile, lpwDir);
-								wcscat(lpwFile, pFiles[i]);
+								wcscpy(lpFile, lpDir);
+								wcscat(lpFile, pFiles[i]);
 								lIndex = ListView_GetItemCount(GetDlgItem(hWnd, IDC_LVFILES));
-								wcscpy(lpwName, pFiles[i]);
+								wcscpy(lpName, pFiles[i]);
 								SHGetSettings(&SFS, SSF_SHOWEXTENSIONS);
 								if (!SFS.fShowExtensions)
 								{
-									SP_ExtractLeftPart(lpwName, lpwName, '.');
+									SP_ExtractLeftPart(lpName, lpName, '.');
 								}
 								LVI.mask = LVIF_TEXT;
-								LVI.pszText = lpwName;
+								LVI.pszText = lpName;
 								LVI.iItem = lIndex;
 								ListView_InsertItem(GetDlgItem(hWnd, IDC_LVFILES), &LVI);
-								ListView_SetItemText(GetDlgItem(hWnd, IDC_LVFILES), lIndex, 1, lpwFile);
+								ListView_SetItemText(GetDlgItem(hWnd, IDC_LVFILES), lIndex, 1, lpFile);
 							}
 							for (i = 0; i < lODFileCnt; i++)
 								delete[] pFiles[i];
 						}
 						else
 						{
+							SP_ExtractDirectory(pFiles[0], lpRecentDir);
+							SP_AddDirSep(lpRecentDir, lpRecentDir);
 							lIndex = ListView_GetItemCount(GetDlgItem(hWnd, IDC_LVFILES));
-							SP_ExtractName(pFiles[0], lpwName);
+							SP_ExtractName(pFiles[0], lpName);
 							SHGetSettings(&SFS, SSF_SHOWEXTENSIONS);
 							if (!SFS.fShowExtensions)
 							{
-								SP_ExtractLeftPart(lpwName, lpwName, '.');
+								SP_ExtractLeftPart(lpName, lpName, '.');
 							}
 							LVI.mask = LVIF_TEXT;
-							LVI.pszText = lpwName;
+							LVI.pszText = lpName;
 							LVI.iItem = lIndex;
 							ListView_InsertItem(GetDlgItem(hWnd, IDC_LVFILES), &LVI);
 							ListView_SetItemText(GetDlgItem(hWnd, IDC_LVFILES), lIndex, 1, pFiles[0]);
@@ -214,8 +219,8 @@ Removing_NextItem:
 				case IDC_BTNMU:
 				{
 					ULONG i, lItemCnt;
-					WCHAR lpwName1[128] = { 0 }, lpwName2[128] = { 0 };
-					WCHAR lpwPath1[MAX_PATH] = { 0 }, lpwPath2[MAX_PATH] = { 0 };
+					WCHAR lpName1[128] = {}, lpName2[128] = {};
+					WCHAR lpPath1[MAX_PATH] = {}, lpPath2[MAX_PATH] = {};
 					lItemCnt = ListView_GetItemCount(GetDlgItem(hWnd, IDC_LVFILES));
 					if (lItemCnt <= 1) break;
 					for (i = 1; i < lItemCnt; i++)
@@ -227,15 +232,15 @@ Removing_NextItem:
 						}
 						if (ListView_GetItemState(GetDlgItem(hWnd, IDC_LVFILES), i, LVIS_SELECTED) == LVIS_SELECTED)
 						{
-							ListView_GetItemText(GetDlgItem(hWnd, IDC_LVFILES), i - 1, 0, lpwName1, 128);
-							ListView_GetItemText(GetDlgItem(hWnd, IDC_LVFILES), i - 1, 1, lpwPath1, MAX_PATH);
-							ListView_GetItemText(GetDlgItem(hWnd, IDC_LVFILES), i, 0, lpwName2, 128);
-							ListView_GetItemText(GetDlgItem(hWnd, IDC_LVFILES), i, 1, lpwPath2, MAX_PATH);
-							ListView_SetItemText(GetDlgItem(hWnd, IDC_LVFILES), i - 1, 0, lpwName2);
-							ListView_SetItemText(GetDlgItem(hWnd, IDC_LVFILES), i - 1, 1, lpwPath2);
+							ListView_GetItemText(GetDlgItem(hWnd, IDC_LVFILES), i - 1, 0, lpName1, 128);
+							ListView_GetItemText(GetDlgItem(hWnd, IDC_LVFILES), i - 1, 1, lpPath1, MAX_PATH);
+							ListView_GetItemText(GetDlgItem(hWnd, IDC_LVFILES), i, 0, lpName2, 128);
+							ListView_GetItemText(GetDlgItem(hWnd, IDC_LVFILES), i, 1, lpPath2, MAX_PATH);
+							ListView_SetItemText(GetDlgItem(hWnd, IDC_LVFILES), i - 1, 0, lpName2);
+							ListView_SetItemText(GetDlgItem(hWnd, IDC_LVFILES), i - 1, 1, lpPath2);
 							ListView_SetItemState(GetDlgItem(hWnd, IDC_LVFILES), i - 1, LVIS_SELECTED, LVIS_SELECTED);
-							ListView_SetItemText(GetDlgItem(hWnd, IDC_LVFILES), i, 0, lpwName1);
-							ListView_SetItemText(GetDlgItem(hWnd, IDC_LVFILES), i, 1, lpwPath1);
+							ListView_SetItemText(GetDlgItem(hWnd, IDC_LVFILES), i, 0, lpName1);
+							ListView_SetItemText(GetDlgItem(hWnd, IDC_LVFILES), i, 1, lpPath1);
 							ListView_SetItemState(GetDlgItem(hWnd, IDC_LVFILES), i, 0, LVIS_SELECTED);
 						}
 					}
@@ -244,8 +249,8 @@ Removing_NextItem:
 				case IDC_BTNMD:
 				{
 					ULONG lItemCnt;
-					WCHAR lpwName1[128] = { 0 }, lpwName2[128] = { 0 };
-					WCHAR lpwPath1[MAX_PATH] = { 0 }, lpwPath2[MAX_PATH] = { 0 };
+					WCHAR lpName1[128] = {}, lpName2[128] = {};
+					WCHAR lpPath1[MAX_PATH] = {}, lpPath2[MAX_PATH] = {};
 					lItemCnt = ListView_GetItemCount(GetDlgItem(hWnd, IDC_LVFILES));
 					if (lItemCnt <= 1) break;
 					for (LONG i = (lItemCnt - 2); i >= 0; i--)
@@ -257,15 +262,15 @@ Removing_NextItem:
 						}
 						if (ListView_GetItemState(GetDlgItem(hWnd, IDC_LVFILES), i, LVIS_SELECTED) == LVIS_SELECTED)
 						{
-							ListView_GetItemText(GetDlgItem(hWnd, IDC_LVFILES), i + 1, 0, lpwName1, 128);
-							ListView_GetItemText(GetDlgItem(hWnd, IDC_LVFILES), i + 1, 1, lpwPath1, MAX_PATH);
-							ListView_GetItemText(GetDlgItem(hWnd, IDC_LVFILES), i, 0, lpwName2, 128);
-							ListView_GetItemText(GetDlgItem(hWnd, IDC_LVFILES), i, 1, lpwPath2, MAX_PATH);
-							ListView_SetItemText(GetDlgItem(hWnd, IDC_LVFILES), i + 1, 0, lpwName2);
-							ListView_SetItemText(GetDlgItem(hWnd, IDC_LVFILES), i + 1, 1, lpwPath2);
+							ListView_GetItemText(GetDlgItem(hWnd, IDC_LVFILES), i + 1, 0, lpName1, 128);
+							ListView_GetItemText(GetDlgItem(hWnd, IDC_LVFILES), i + 1, 1, lpPath1, MAX_PATH);
+							ListView_GetItemText(GetDlgItem(hWnd, IDC_LVFILES), i, 0, lpName2, 128);
+							ListView_GetItemText(GetDlgItem(hWnd, IDC_LVFILES), i, 1, lpPath2, MAX_PATH);
+							ListView_SetItemText(GetDlgItem(hWnd, IDC_LVFILES), i + 1, 0, lpName2);
+							ListView_SetItemText(GetDlgItem(hWnd, IDC_LVFILES), i + 1, 1, lpPath2);
 							ListView_SetItemState(GetDlgItem(hWnd, IDC_LVFILES), i + 1, LVIS_SELECTED, LVIS_SELECTED);
-							ListView_SetItemText(GetDlgItem(hWnd, IDC_LVFILES), i, 0, lpwName1);
-							ListView_SetItemText(GetDlgItem(hWnd, IDC_LVFILES), i, 1, lpwPath1);
+							ListView_SetItemText(GetDlgItem(hWnd, IDC_LVFILES), i, 0, lpName1);
+							ListView_SetItemText(GetDlgItem(hWnd, IDC_LVFILES), i, 1, lpPath1);
 							ListView_SetItemState(GetDlgItem(hWnd, IDC_LVFILES), i, 0, LVIS_SELECTED);
 						}
 					}
@@ -274,27 +279,27 @@ Removing_NextItem:
 				case IDC_BTNSEL:
 				{
 					ULONG i = 0, lItemCnt = 0, lFileCnt = 0;
-					WCHAR lpwPath[MAX_PATH] = { 0 };
-					WCHAR lpwExt[64] = { 0 };
+					WCHAR lpPath[MAX_PATH] = {};
+					WCHAR lpExt[64] = {};
 					lItemCnt = ListView_GetItemCount(GetDlgItem(hWnd, IDC_LVFILES));
 					pFileCollection->Clear();
 					for (; i < lItemCnt; i++)
 					{
 						if (ListView_GetItemState(GetDlgItem(hWnd, IDC_LVFILES), i, LVIS_SELECTED) == LVIS_SELECTED)
 						{
-							ListView_GetItemText(GetDlgItem(hWnd, IDC_LVFILES), i, 1, lpwPath, MAX_PATH);
-							SP_ExtractRightPart(lpwPath, lpwExt, '.');
-							if (SFT_IsMemberOfCategory(lpwExt, SFTC_PLAYLIST))
+							ListView_GetItemText(GetDlgItem(hWnd, IDC_LVFILES), i, 1, lpPath, MAX_PATH);
+							SP_ExtractRightPart(lpPath, lpExt, '.');
+							if (SFT_IsMemberOfCategory(lpExt, SFTC_PLAYLIST))
 							{
-								lFileCnt += LoadPlaylist(lpwPath);
+								lFileCnt += LoadPlaylist(lpPath);
 							}
-							else if (IsDirectory(lpwPath))
+							else if (IsDirectory(lpPath))
 							{
-								lFileCnt += LoadDirectory(lpwPath);
+								lFileCnt += LoadDirectory(lpPath);
 							}
 							else
 							{
-								pFileCollection->AppendFile(lpwPath);
+								pFileCollection->AppendFile(lpPath);
 								lFileCnt++;
 							}
 						}
@@ -302,10 +307,12 @@ Removing_NextItem:
 					if (lFileCnt)
 					{
 						InitTrack((dwShuffle)?FCF_RANDOM:FCF_FIRST);
+						if (!(GetAsyncKeyState(VK_SHIFT) >> 15))
+							pEngine->Play(); //Auto-play
 					}
 					else
 					{
-						if (pEngine->m_lpwFileName) CloseTrack();
+						if (pEngine->m_lpFileName) CloseTrack();
 					}
 					PostMessage(hWnd, WM_CLOSE, 0, 0);
 					break;
@@ -317,37 +324,38 @@ Removing_NextItem:
 			return TRUE;
 		case WM_DROPFILES:
 		{
-			WCHAR lpwDFile[MAX_PATH] = { 0 };
+			WCHAR lpDFile[MAX_PATH] = {};
 			ULONG i = 0, lIndex, lDrFileCnt = 0;
-			LV_ITEM LVI = { 0 };
-			SHELLFLAGSTATE SFS = { 0 };
-			WCHAR lpwName[128] = { 0 };
+			LV_ITEM LVI = {};
+			SHELLFLAGSTATE SFS = {};
+			WCHAR lpName[128] = {};
 			HDROP hDrop = (HDROP)wParam;
 			lDrFileCnt = DragQueryFile(hDrop, 0xFFFFFFFF, 0, 0);
 			for (; i < lDrFileCnt; i++)
 			{
-				DragQueryFile(hDrop, i, lpwDFile, MAX_PATH);
+				DragQueryFile(hDrop, i, lpDFile, MAX_PATH);
 				lIndex = ListView_GetItemCount(GetDlgItem(hWnd, IDC_LVFILES));
-				if (IsDirectory(lpwDFile))
+				if (IsDirectory(lpDFile))
 				{
-					SP_RemDirSep(lpwDFile, lpwDFile);
-					SP_ExtractName(lpwDFile, lpwName);
+					SP_RemDirSep(lpDFile, lpDFile);
+					SP_ExtractName(lpDFile, lpName);
 				}
 				else
 				{
-					SP_ExtractName(lpwDFile, lpwName);
+					SP_ExtractName(lpDFile, lpName);
 					SHGetSettings(&SFS, SSF_SHOWEXTENSIONS);
 					if (!SFS.fShowExtensions)
 					{
-						SP_ExtractLeftPart(lpwName, lpwName, '.');
+						SP_ExtractLeftPart(lpName, lpName, '.');
 					}
 				}
 				LVI.mask = LVIF_TEXT;
-				LVI.pszText = lpwName;
+				LVI.pszText = lpName;
 				LVI.iItem = lIndex;
 				ListView_InsertItem(GetDlgItem(hWnd, IDC_LVFILES), &LVI);
-				ListView_SetItemText(GetDlgItem(hWnd, IDC_LVFILES), lIndex, 1, lpwDFile);
+				ListView_SetItemText(GetDlgItem(hWnd, IDC_LVFILES), lIndex, 1, lpDFile);
 			}
+			DragFinish(hDrop);
 			return TRUE;
 		}
 		case WM_NOTIFY:
@@ -392,7 +400,7 @@ Removing_NextItem:
 		{
 			if (wParam == 1)
 			{
-				BOOL bCtlsFlag1 = (pEngine->m_lpwFileName != 0);
+				BOOL bCtlsFlag1 = (pEngine->m_lpFileName != 0);
 				BOOL bCtlsFlag2 = (ListView_GetSelectedCount(GetDlgItem(hWnd, IDC_LVFILES)) != 0);
 				BOOL bCtlsFlag3 = (ListView_GetItemCount(GetDlgItem(hWnd, IDC_LVFILES)) != 0);
 				EnableWindow(GetDlgItem(hWnd, IDC_BTNACF), bCtlsFlag1);
@@ -407,24 +415,24 @@ Removing_NextItem:
 		case WM_CLOSE:
 		{
 			ULONG i = 0, lItemCnt = 0;
-			WCHAR lpwName[128] = { 0 }, lpwPath[MAX_PATH] = { 0 };
+			WCHAR lpName[128] = {}, lpPath[MAX_PATH] = {};
 			for (; (i < APP_MAX_STRINGS) && (pFavorites[i]); i++)
 			{
-				delete[] pFavorites[i]->lpwPath;
-				delete[] pFavorites[i]->lpwDisplayName;
+				delete[] pFavorites[i]->lpPath;
+				delete[] pFavorites[i]->lpDisplayName;
 				delete pFavorites[i];
 				pFavorites[i] = 0;
 			}
 			lItemCnt = ListView_GetItemCount(GetDlgItem(hWnd, IDC_LVFILES));
 			for (i = 0; i < lItemCnt; i++)
 			{
-				ListView_GetItemText(GetDlgItem(hWnd, IDC_LVFILES), i, 1, lpwPath, MAX_PATH);
+				ListView_GetItemText(GetDlgItem(hWnd, IDC_LVFILES), i, 1, lpPath, MAX_PATH);
 				pFavorites[i] = new FAVFILE;
-				pFavorites[i]->lpwPath = new WCHAR[MAX_PATH];
-				wcscpy(pFavorites[i]->lpwPath, lpwPath);
-				ListView_GetItemText(GetDlgItem(hWnd, IDC_LVFILES), i, 0, lpwName, 128);
-				pFavorites[i]->lpwDisplayName = new WCHAR[128];
-				wcscpy(pFavorites[i]->lpwDisplayName, lpwName);
+				pFavorites[i]->lpPath = new WCHAR[MAX_PATH];
+				wcscpy(pFavorites[i]->lpPath, lpPath);
+				ListView_GetItemText(GetDlgItem(hWnd, IDC_LVFILES), i, 0, lpName, 128);
+				pFavorites[i]->lpDisplayName = new WCHAR[128];
+				wcscpy(pFavorites[i]->lpDisplayName, lpName);
 			}
 			KillTimer(hWnd, 1);
 			EndDialog(hWnd, 0);

@@ -20,7 +20,7 @@ CToolTips::~CToolTips()
 int CToolTips::Initialize()
 {
 	if ((m_hInstance == 0) || (m_hOwner == 0)) return 0;
-	INITCOMMONCONTROLSEX ICC = { 0 };
+	INITCOMMONCONTROLSEX ICC = {};
 	InitCommonControlsEx(&ICC);
 	m_hToolTipWnd = CreateWindowEx(WS_EX_TOPMOST, TOOLTIPS_CLASS, 0, WS_POPUP,
 		CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,
@@ -31,37 +31,37 @@ int CToolTips::Initialize()
 	return 1;
 }
 
-int CToolTips::AddToolTip(HWND hCtrl, LPCWSTR lpwText)
+int CToolTips::AddToolTip(HWND hCtrl, LPCWSTR lpText)
 {
 	if (!m_hToolTipWnd) return 0;
-	TOOLINFO TI = { 0 };
+	TOOLINFO TI = {};
 	TI.cbSize = sizeof(TI);
 	TI.uFlags = TTF_SUBCLASS | TTF_IDISHWND; 
 	TI.hwnd = hCtrl; 
 	TI.uId = (UINT_PTR)hCtrl; 
-	TI.lpszText = new WCHAR[wcslen(lpwText) + 1];
-	wcscpy(TI.lpszText, lpwText);
+	TI.lpszText = new WCHAR[wcslen(lpText) + 1];
+	wcscpy(TI.lpszText, lpText);
 	GetClientRect(hCtrl, &TI.rect);
-	return SendMessage(m_hToolTipWnd, TTM_ADDTOOL, 0, (LPARAM)&TI);
+	return (int)SendMessage(m_hToolTipWnd, TTM_ADDTOOL, 0, (LPARAM)&TI);
 }
 
-void CToolTips::GetToolTip(HWND hCtrl, LPWSTR lpwText)
+void CToolTips::GetToolTip(HWND hCtrl, LPWSTR lpText)
 {
 	if (!m_hToolTipWnd) return;
-	TOOLINFO TI = { 0 };
+	TOOLINFO TI = {};
 	TI.cbSize = sizeof(TI);
 	TI.hwnd = hCtrl;
 	TI.uId = (UINT_PTR)hCtrl; 
-	TI.lpszText = lpwText;
+	TI.lpszText = lpText;
 	SendMessage(m_hToolTipWnd, TTM_GETTEXT, 0, (LPARAM)&TI);
 }
 
 int CToolTips::RemoveToolTip(HWND hCtrl)
 {
 	if (!m_hToolTipWnd) return 0;
-	TOOLINFO TI = { 0 };
+	TOOLINFO TI = {};
 	ULONG i, lTTCount;
-	lTTCount = SendMessage(m_hToolTipWnd, TTM_GETTOOLCOUNT, 0, 0);
+	lTTCount = (ULONG)SendMessage(m_hToolTipWnd, TTM_GETTOOLCOUNT, 0, 0);
 	for (i = 0; i < lTTCount; i++)
 	{
 		SendMessage(m_hToolTipWnd, TTM_ENUMTOOLS, i, (LPARAM)&TI);

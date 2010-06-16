@@ -8,10 +8,10 @@
 
 CFileAssociations::CFileAssociations()
 {
-	ZeroMemory(m_lpwAppPath, sizeof(m_lpwAppPath));
+	ZeroMemory(m_lpAppPath, sizeof(m_lpAppPath));
 	m_dwIconIndex = 0;
-	ZeroMemory(m_lpwRegAppKey, sizeof(m_lpwRegAppKey));
-	ZeroMemory(m_lpwFileDesc, sizeof(m_lpwFileDesc));
+	ZeroMemory(m_lpRegAppKey, sizeof(m_lpRegAppKey));
+	ZeroMemory(m_lpFileDesc, sizeof(m_lpFileDesc));
 	for (ULONG i = 0; i < FA_MAX_CUSTOMACTIONS; i++)
 		m_pCustomActions[i] = 0;
 }
@@ -25,17 +25,17 @@ CFileAssociations::~CFileAssociations()
 }
 
 //Функция добавляет дополнительное действие в список дополнительных действий
-BOOL CFileAssociations::AddCustomAction(LPCWSTR lpwRegCmdKey, LPCWSTR lpwMenuName,
-										LPCWSTR lpwCmdLine, BOOL bDefault)
+BOOL CFileAssociations::AddCustomAction(LPCWSTR lpRegCmdKey, LPCWSTR lpMenuName,
+										LPCWSTR lpCmdLine, BOOL bDefault)
 {
 	for (ULONG i = 0; i < FA_MAX_CUSTOMACTIONS; i++)
 	{
 		if (m_pCustomActions[i] == 0)
 		{
 			m_pCustomActions[i] = new FACUSTOMACTION;
-			wcscpy(m_pCustomActions[i]->lpwRegCmdKey, lpwRegCmdKey);
-			wcscpy(m_pCustomActions[i]->lpwMenuName, lpwMenuName);
-			wcscpy(m_pCustomActions[i]->lpwCmdLine, lpwCmdLine);
+			wcscpy(m_pCustomActions[i]->lpRegCmdKey, lpRegCmdKey);
+			wcscpy(m_pCustomActions[i]->lpMenuName, lpMenuName);
+			wcscpy(m_pCustomActions[i]->lpCmdLine, lpCmdLine);
 			m_pCustomActions[i]->bDefault = bDefault;
 			break;
 		}
@@ -58,43 +58,43 @@ void CFileAssociations::ClearCustomActions()
 }
 
 //Функция связывает указанное расширение с программой
-void CFileAssociations::AddAssociation(LPCWSTR lpwExtension, BOOL bCreateStdAction)
+void CFileAssociations::AddAssociation(LPCWSTR lpExtension, BOOL bCreateStdAction)
 {
-	if ((!wcslen(m_lpwAppPath)) || (!wcslen(m_lpwRegAppKey)) || (!wcslen(m_lpwFileDesc))) return;
+	if ((!wcslen(m_lpAppPath)) || (!wcslen(m_lpRegAppKey)) || (!wcslen(m_lpFileDesc))) return;
 	ULONG i;
-	LPWSTR lpwExtTmp = new WCHAR[wcslen(lpwExtension) + 1];
-    WCHAR lpwKeyName[64] = { 0 };
-    WCHAR lpwData[MAX_PATH] = { 0 };
+	LPWSTR lpExtTmp = new WCHAR[wcslen(lpExtension) + 1];
+    WCHAR lpKeyName[64] = {};
+    WCHAR lpData[MAX_PATH] = {};
     HKEY hKey, hSubKey;
 	DWORD dwDisposition, dwSZSIZE;
-	wcscpy(lpwExtTmp, lpwExtension);
-	_wcslwr(lpwExtTmp);
-	if (RegOpenKeyEx(HKEY_CLASSES_ROOT, m_lpwRegAppKey, 0, KEY_ALL_ACCESS, &hKey) != ERROR_SUCCESS)
+	wcscpy(lpExtTmp, lpExtension);
+	_wcslwr(lpExtTmp);
+	if (RegOpenKeyEx(HKEY_CLASSES_ROOT, m_lpRegAppKey, 0, KEY_ALL_ACCESS, &hKey) != ERROR_SUCCESS)
 	{
-		if (RegCreateKeyEx(HKEY_CLASSES_ROOT, m_lpwRegAppKey, 0, L"REG_DWORD", REG_OPTION_NON_VOLATILE,
+		if (RegCreateKeyEx(HKEY_CLASSES_ROOT, m_lpRegAppKey, 0, L"REG_DWORD", REG_OPTION_NON_VOLATILE,
 			KEY_ALL_ACCESS, 0, &hKey, &dwDisposition) == ERROR_SUCCESS)
 		{
-			RegSetValueEx(hKey, 0, 0, REG_SZ, (CONST LPBYTE)m_lpwFileDesc, (wcslen(m_lpwFileDesc) + 1) * sizeof(WCHAR));
+			RegSetValueEx(hKey, 0, 0, REG_SZ, (CONST LPBYTE)m_lpFileDesc, (DWORD)(wcslen(m_lpFileDesc) + 1) * sizeof(WCHAR));
 			if (bCreateStdAction)
 			{
 				if (RegCreateKeyEx(hKey, L"shell\\open", 0, L"REG_DWORD", REG_OPTION_NON_VOLATILE,
 					KEY_ALL_ACCESS, 0, &hSubKey, &dwDisposition) == ERROR_SUCCESS)
 				{
-					wcscpy(lpwData, L"&Open");
-					RegSetValueEx(hSubKey, 0, 0, REG_SZ, (CONST LPBYTE)lpwData, (wcslen(lpwData) + 1) * sizeof(WCHAR));
+					wcscpy(lpData, L"&Open");
+					RegSetValueEx(hSubKey, 0, 0, REG_SZ, (CONST LPBYTE)lpData, (DWORD)(wcslen(lpData) + 1) * sizeof(WCHAR));
 					RegCloseKey(hSubKey);
 				}
 				if (RegCreateKeyEx(hKey, L"shell\\open\\command", 0, L"REG_DWORD", REG_OPTION_NON_VOLATILE,
 					KEY_ALL_ACCESS, 0, &hSubKey, &dwDisposition) == ERROR_SUCCESS)
 				{
-					swprintf(lpwData, L"\"%s\" \"%%1\"", m_lpwAppPath);
-					RegSetValueEx(hSubKey, 0, 0, REG_SZ, (CONST LPBYTE)lpwData, (wcslen(lpwData) + 1) * sizeof(WCHAR));
+					swprintf(lpData, L"\"%s\" \"%%1\"", m_lpAppPath);
+					RegSetValueEx(hSubKey, 0, 0, REG_SZ, (CONST LPBYTE)lpData, (DWORD)(wcslen(lpData) + 1) * sizeof(WCHAR));
 					RegCloseKey(hSubKey);
 				}
 				if (RegOpenKeyEx(hKey, L"shell", 0, KEY_ALL_ACCESS, &hSubKey) == ERROR_SUCCESS)
 				{
-					wcscpy(lpwData, L"open");
-					RegSetValueEx(hSubKey, 0, 0, REG_SZ, (CONST LPBYTE)lpwData, (wcslen(lpwData) + 1) * sizeof(WCHAR));
+					wcscpy(lpData, L"open");
+					RegSetValueEx(hSubKey, 0, 0, REG_SZ, (CONST LPBYTE)lpData, (DWORD)(wcslen(lpData) + 1) * sizeof(WCHAR));
 					RegCloseKey(hSubKey);
 				}
 			}
@@ -102,28 +102,28 @@ void CFileAssociations::AddAssociation(LPCWSTR lpwExtension, BOOL bCreateStdActi
 			{
 				if (m_pCustomActions[i])
 				{
-					swprintf(lpwKeyName, L"shell\\%s", m_pCustomActions[i]->lpwRegCmdKey);
-					if (RegCreateKeyEx(hKey, lpwKeyName, 0, L"REG_DWORD", REG_OPTION_NON_VOLATILE,
+					swprintf(lpKeyName, L"shell\\%s", m_pCustomActions[i]->lpRegCmdKey);
+					if (RegCreateKeyEx(hKey, lpKeyName, 0, L"REG_DWORD", REG_OPTION_NON_VOLATILE,
 						KEY_ALL_ACCESS, 0, &hSubKey, &dwDisposition) == ERROR_SUCCESS)
 					{
-						RegSetValueEx(hSubKey, 0, 0, REG_SZ, (CONST LPBYTE)m_pCustomActions[i]->lpwMenuName,
-							(wcslen(m_pCustomActions[i]->lpwMenuName) + 1) * sizeof(WCHAR));
+						RegSetValueEx(hSubKey, 0, 0, REG_SZ, (CONST LPBYTE)m_pCustomActions[i]->lpMenuName,
+							(DWORD)(wcslen(m_pCustomActions[i]->lpMenuName) + 1) * sizeof(WCHAR));
 						RegCloseKey(hSubKey);
 					}
-					swprintf(lpwKeyName, L"shell\\%s\\command", m_pCustomActions[i]->lpwRegCmdKey);
-					if (RegCreateKeyEx(hKey, lpwKeyName, 0, L"REG_DWORD", REG_OPTION_NON_VOLATILE,
+					swprintf(lpKeyName, L"shell\\%s\\command", m_pCustomActions[i]->lpRegCmdKey);
+					if (RegCreateKeyEx(hKey, lpKeyName, 0, L"REG_DWORD", REG_OPTION_NON_VOLATILE,
 						KEY_ALL_ACCESS, 0, &hSubKey, &dwDisposition) == ERROR_SUCCESS)
 					{
-						RegSetValueEx(hSubKey, 0, 0, REG_SZ, (CONST LPBYTE)m_pCustomActions[i]->lpwCmdLine,
-							(wcslen(m_pCustomActions[i]->lpwCmdLine) + 1) * sizeof(WCHAR));
+						RegSetValueEx(hSubKey, 0, 0, REG_SZ, (CONST LPBYTE)m_pCustomActions[i]->lpCmdLine,
+							(DWORD)(wcslen(m_pCustomActions[i]->lpCmdLine) + 1) * sizeof(WCHAR));
 						RegCloseKey(hSubKey);
 					}
 					if (m_pCustomActions[i]->bDefault)
 					{
 						if (RegOpenKeyEx(hKey, L"shell", 0, KEY_ALL_ACCESS, &hSubKey) == ERROR_SUCCESS)
 						{
-							RegSetValueEx(hSubKey, 0, 0, REG_SZ, (CONST LPBYTE)m_pCustomActions[i]->lpwRegCmdKey,
-								(wcslen(m_pCustomActions[i]->lpwRegCmdKey) + 1) * sizeof(WCHAR));
+							RegSetValueEx(hSubKey, 0, 0, REG_SZ, (CONST LPBYTE)m_pCustomActions[i]->lpRegCmdKey,
+								(DWORD)(wcslen(m_pCustomActions[i]->lpRegCmdKey) + 1) * sizeof(WCHAR));
 							RegCloseKey(hSubKey);
 						}
 					}
@@ -132,8 +132,8 @@ void CFileAssociations::AddAssociation(LPCWSTR lpwExtension, BOOL bCreateStdActi
 			if (RegCreateKeyEx(hKey, L"DefaultIcon", 0, L"REG_DWORD", REG_OPTION_NON_VOLATILE,
 				KEY_ALL_ACCESS, 0, &hSubKey, &dwDisposition) == ERROR_SUCCESS)
 			{
-				swprintf(lpwData, L"%s,%i", m_lpwAppPath, m_dwIconIndex);
-				RegSetValueEx(hSubKey, 0, 0, REG_SZ, (CONST LPBYTE)lpwData, (wcslen(lpwData) + 1) * sizeof(WCHAR));
+				swprintf(lpData, L"%s,%i", m_lpAppPath, m_dwIconIndex);
+				RegSetValueEx(hSubKey, 0, 0, REG_SZ, (CONST LPBYTE)lpData, (DWORD)(wcslen(lpData) + 1) * sizeof(WCHAR));
 				RegCloseKey(hSubKey);
 			}
 			RegCloseKey(hKey);
@@ -143,68 +143,68 @@ void CFileAssociations::AddAssociation(LPCWSTR lpwExtension, BOOL bCreateStdActi
 	{
 		RegCloseKey(hKey);
 	}
-    swprintf(lpwKeyName, L".%s", lpwExtTmp);
-    if (RegCreateKeyEx(HKEY_CLASSES_ROOT, lpwKeyName, 0, L"REG_DWORD", REG_OPTION_NON_VOLATILE,
+    swprintf(lpKeyName, L".%s", lpExtTmp);
+    if (RegCreateKeyEx(HKEY_CLASSES_ROOT, lpKeyName, 0, L"REG_DWORD", REG_OPTION_NON_VOLATILE,
 		KEY_ALL_ACCESS, 0, &hKey, &dwDisposition) == ERROR_SUCCESS)
 	{
-		ZeroMemory(lpwData, sizeof(lpwData));
-		dwSZSIZE = sizeof(lpwData);
-		RegQueryValueEx(hKey, 0, 0, 0, (LPBYTE)lpwData, &dwSZSIZE);
-		if (wcslen(lpwData))
+		ZeroMemory(lpData, sizeof(lpData));
+		dwSZSIZE = sizeof(lpData);
+		RegQueryValueEx(hKey, 0, 0, 0, (LPBYTE)lpData, &dwSZSIZE);
+		if (wcslen(lpData))
 		{
 			RegSetValueEx(hKey, L"PreviousAssociation", 0, REG_SZ,
-				(CONST LPBYTE)lpwData, (wcslen(lpwData) + 1) * sizeof(WCHAR));
+				(CONST LPBYTE)lpData, (DWORD)(wcslen(lpData) + 1) * sizeof(WCHAR));
 		}
-		RegSetValueEx(hKey, 0, 0, REG_SZ, (CONST LPBYTE)m_lpwRegAppKey, (wcslen(m_lpwRegAppKey) + 1) * sizeof(WCHAR));
+		RegSetValueEx(hKey, 0, 0, REG_SZ, (CONST LPBYTE)m_lpRegAppKey, (DWORD)(wcslen(m_lpRegAppKey) + 1) * sizeof(WCHAR));
 		RegCloseKey(hKey);
 	}
-	delete[] lpwExtTmp;
+	delete[] lpExtTmp;
 }
 
 //Функция удаляет связь расширения с программой
-//Если bCompletely будет равен TRUE - произойдет полное удаление, включая и 'm_lpwRegAppKey'
-void CFileAssociations::RemoveAssociation(LPCWSTR lpwExtension, BOOL bCompletely)
+//Если bCompletely будет равен TRUE - произойдет полное удаление, включая и 'm_lpRegAppKey'
+void CFileAssociations::RemoveAssociation(LPCWSTR lpExtension, BOOL bCompletely)
 {
-	if (!wcslen(m_lpwRegAppKey)) return;
+	if (!wcslen(m_lpRegAppKey)) return;
 	ULONG i;
-	LPWSTR lpwExtTmp = new WCHAR[wcslen(lpwExtension) + 1];
-    WCHAR lpwKeyName[64] = { 0 };
-    WCHAR lpwData[MAX_PATH] = { 0 };
+	LPWSTR lpExtTmp = new WCHAR[wcslen(lpExtension) + 1];
+    WCHAR lpKeyName[64] = {};
+    WCHAR lpData[MAX_PATH] = {};
 	HKEY hKey;
 	DWORD dwSZSIZE;
-	wcscpy(lpwExtTmp, lpwExtension);
-	_wcslwr(lpwExtTmp);
+	wcscpy(lpExtTmp, lpExtension);
+	_wcslwr(lpExtTmp);
     if (bCompletely)
 	{
-        swprintf(lpwKeyName, L"%s\\DefaultIcon", m_lpwRegAppKey);
-        RegDeleteKey(HKEY_CLASSES_ROOT, lpwKeyName);
-        swprintf(lpwKeyName, L"%s\\shell\\open\\command", m_lpwRegAppKey);
-        RegDeleteKey(HKEY_CLASSES_ROOT, lpwKeyName);
-        swprintf(lpwKeyName, L"%s\\shell\\open", m_lpwRegAppKey);
-        RegDeleteKey(HKEY_CLASSES_ROOT, lpwKeyName);
+        swprintf(lpKeyName, L"%s\\DefaultIcon", m_lpRegAppKey);
+        RegDeleteKey(HKEY_CLASSES_ROOT, lpKeyName);
+        swprintf(lpKeyName, L"%s\\shell\\open\\command", m_lpRegAppKey);
+        RegDeleteKey(HKEY_CLASSES_ROOT, lpKeyName);
+        swprintf(lpKeyName, L"%s\\shell\\open", m_lpRegAppKey);
+        RegDeleteKey(HKEY_CLASSES_ROOT, lpKeyName);
 		for (i = 0; i < FA_MAX_CUSTOMACTIONS; i++)
 		{
 			if (m_pCustomActions[i])
 			{
-				swprintf(lpwKeyName, L"%s\\shell\\%s\\command", m_lpwRegAppKey, m_pCustomActions[i]->lpwRegCmdKey);
-				RegDeleteKey(HKEY_CLASSES_ROOT, lpwKeyName);
-				swprintf(lpwKeyName, L"%s\\shell\\%s", m_lpwRegAppKey, m_pCustomActions[i]->lpwRegCmdKey);
-				RegDeleteKey(HKEY_CLASSES_ROOT, lpwKeyName);
+				swprintf(lpKeyName, L"%s\\shell\\%s\\command", m_lpRegAppKey, m_pCustomActions[i]->lpRegCmdKey);
+				RegDeleteKey(HKEY_CLASSES_ROOT, lpKeyName);
+				swprintf(lpKeyName, L"%s\\shell\\%s", m_lpRegAppKey, m_pCustomActions[i]->lpRegCmdKey);
+				RegDeleteKey(HKEY_CLASSES_ROOT, lpKeyName);
 			}
 		}
-        swprintf(lpwKeyName, L"%s\\shell", m_lpwRegAppKey);
-        RegDeleteKey(HKEY_CLASSES_ROOT, lpwKeyName);
-        RegDeleteKey(HKEY_CLASSES_ROOT, m_lpwRegAppKey);
+        swprintf(lpKeyName, L"%s\\shell", m_lpRegAppKey);
+        RegDeleteKey(HKEY_CLASSES_ROOT, lpKeyName);
+        RegDeleteKey(HKEY_CLASSES_ROOT, m_lpRegAppKey);
     }
-	swprintf(lpwKeyName, L".%s", lpwExtTmp);
-    if (RegOpenKeyEx(HKEY_CLASSES_ROOT, lpwKeyName, 0, KEY_ALL_ACCESS, &hKey) == ERROR_SUCCESS)
+	swprintf(lpKeyName, L".%s", lpExtTmp);
+    if (RegOpenKeyEx(HKEY_CLASSES_ROOT, lpKeyName, 0, KEY_ALL_ACCESS, &hKey) == ERROR_SUCCESS)
 	{
-		ZeroMemory(lpwData, sizeof(lpwData));
-		dwSZSIZE = sizeof(lpwData);
-		RegQueryValueEx(hKey, L"PreviousAssociation", 0, 0, (LPBYTE)lpwData, &dwSZSIZE);
-		if (wcslen(lpwData))
+		ZeroMemory(lpData, sizeof(lpData));
+		dwSZSIZE = sizeof(lpData);
+		RegQueryValueEx(hKey, L"PreviousAssociation", 0, 0, (LPBYTE)lpData, &dwSZSIZE);
+		if (wcslen(lpData))
 		{
-			RegSetValueEx(hKey, 0, 0, REG_SZ, (CONST LPBYTE)lpwData, (wcslen(lpwData) + 1) * sizeof(WCHAR));
+			RegSetValueEx(hKey, 0, 0, REG_SZ, (CONST LPBYTE)lpData, (DWORD)(wcslen(lpData) + 1) * sizeof(WCHAR));
 			RegDeleteValue(hKey, L"PreviousAssociation");
 		}
 		else
@@ -216,30 +216,30 @@ void CFileAssociations::RemoveAssociation(LPCWSTR lpwExtension, BOOL bCompletely
 		}
 		RegCloseKey(hKey);
 	}
-	delete[] lpwExtTmp;
+	delete[] lpExtTmp;
 }
 
 //Функция проверяет, связано ли указанное расширение с программой
-BOOL CFileAssociations::IsAssociated(LPCWSTR lpwExtension)
+BOOL CFileAssociations::IsAssociated(LPCWSTR lpExtension)
 {
-	if (!wcslen(m_lpwRegAppKey)) return FALSE;
-	LPWSTR lpwExtTmp = new WCHAR[wcslen(lpwExtension) + 1];
-	WCHAR lpwKeyName[64] = { 0 };
-	WCHAR lpwData[MAX_PATH] = { 0 };
+	if (!wcslen(m_lpRegAppKey)) return FALSE;
+	LPWSTR lpExtTmp = new WCHAR[wcslen(lpExtension) + 1];
+	WCHAR lpKeyName[64] = {};
+	WCHAR lpData[MAX_PATH] = {};
 	DWORD dwSZSIZE;
 	HKEY hKey;
 	BOOL bResult = FALSE;
-	wcscpy(lpwExtTmp, lpwExtension);
-	_wcslwr(lpwExtTmp);
-	swprintf(lpwKeyName, L".%s", lpwExtTmp);
-	if (RegOpenKeyEx(HKEY_CLASSES_ROOT, lpwKeyName, 0, KEY_ALL_ACCESS, &hKey) == ERROR_SUCCESS)
+	wcscpy(lpExtTmp, lpExtension);
+	_wcslwr(lpExtTmp);
+	swprintf(lpKeyName, L".%s", lpExtTmp);
+	if (RegOpenKeyEx(HKEY_CLASSES_ROOT, lpKeyName, 0, KEY_ALL_ACCESS, &hKey) == ERROR_SUCCESS)
 	{
-		dwSZSIZE = sizeof(lpwData);
-		RegQueryValueEx(hKey, 0, 0, 0, (LPBYTE)lpwData, &dwSZSIZE);
-		if (_wcsicmp(lpwData, m_lpwRegAppKey) == 0) bResult = TRUE;
+		dwSZSIZE = sizeof(lpData);
+		RegQueryValueEx(hKey, 0, 0, 0, (LPBYTE)lpData, &dwSZSIZE);
+		if (_wcsicmp(lpData, m_lpRegAppKey) == 0) bResult = TRUE;
 		RegCloseKey(hKey);
 	}
-	delete[] lpwExtTmp;
+	delete[] lpExtTmp;
 	return bResult;
 }
 

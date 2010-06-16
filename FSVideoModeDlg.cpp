@@ -18,9 +18,9 @@ INT_PTR CALLBACK FSVideoModeDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM 
 			//Инициализация диалога
 			//--------------------------------------------------------------------
 			ULONG i;
-			WCHAR lpwText[128] = { 0 };
+			WCHAR lpText[128] = {};
 			DWORD dwSelectedVM;
-			VIDEOMODE SVM = { 0 };
+			VIDEOMODE SVM = {};
 			dwVMArrSize = pVideoMode->EnumVideoModes(0);
 			pVMArray = new LPVIDEOMODE[dwVMArrSize];
 			for (i = 0; i < dwVMArrSize; i++)
@@ -30,9 +30,9 @@ INT_PTR CALLBACK FSVideoModeDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM 
 				SendDlgItemMessage(hWnd, IDC_CBOVM, CB_RESETCONTENT, 0, 0);
 				for (i = 0; i < dwVMArrSize; i++)
 				{
-					swprintf(lpwText, L"%i x %i, %i Bits, %i Hz", pVMArray[i]->dwPelsWidth,
+					swprintf(lpText, L"%i x %i, %i Bits, %i Hz", pVMArray[i]->dwPelsWidth,
 						pVMArray[i]->dwPelsHeight, pVMArray[i]->dwBitsPerPel, pVMArray[i]->dwDisplayFrequency);
-					SendDlgItemMessage(hWnd, IDC_CBOVM, CB_ADDSTRING, 0, (LPARAM)lpwText);
+					SendDlgItemMessage(hWnd, IDC_CBOVM, CB_ADDSTRING, 0, (LPARAM)lpText);
 				}
 				SVM.dwPelsWidth = dwFSVideoModeWidth;
 				SVM.dwPelsHeight = dwFSVideoModeHeight;
@@ -52,13 +52,13 @@ INT_PTR CALLBACK FSVideoModeDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM 
 			{
 				case IDC_BTNOK:
 				{
-					WCHAR lpwText[128] = { 0 };
-					DWORD dwSelItem = SendDlgItemMessage(hWnd, IDC_CBOVM, CB_GETCURSEL, 0, 0);
+					WCHAR lpText[128] = {};
+					DWORD dwSelItem = (DWORD)SendDlgItemMessage(hWnd, IDC_CBOVM, CB_GETCURSEL, 0, 0);
 					dwFSVideoModeWidth = pVMArray[dwSelItem]->dwPelsWidth;
 					dwFSVideoModeHeight = pVMArray[dwSelItem]->dwPelsHeight;
 					dwFSVideoModeBPP = pVMArray[dwSelItem]->dwBitsPerPel;
 					dwFSVideoModeDF = pVMArray[dwSelItem]->dwDisplayFrequency;
-					dwChangeFSVideoMode = SendDlgItemMessage(hWnd, IDC_CHKCVM, BM_GETCHECK, 0, 0);
+					dwChangeFSVideoMode = (DWORD)SendDlgItemMessage(hWnd, IDC_CHKCVM, BM_GETCHECK, 0, 0);
 					EndDialog(hWnd, 0);
 					break;
 				}

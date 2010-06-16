@@ -21,10 +21,15 @@ public:
 };
 //--------------------------------------------------------------------------
 
-#define DS_CB_WND_CLASS		L"DSCB_"
+#define DS_CB_WND_CLASS			L"DSCB_"
 
-#define DS_MEDIAEVENTEX		WM_USER + 0x800
-#define E_MAX_ARR_SIZE		1024
+#define DS_MEDIAEVENTEX			WM_APP + 0x800
+
+#define SASF_APPLYINITPARAMS	0x00000001
+
+#define E_MAX_ARR_SIZE			1024
+#define E_MAX_BA				64
+#define E_MAX_BF				128
 
 //Состояния "движка"
 typedef enum _ENGINESTATE
@@ -33,6 +38,13 @@ typedef enum _ENGINESTATE
 	E_STATE_PAUSED = 1,
 	E_STATE_PLAYING = 2
 } ENGINESTATE;
+
+//Тип потока (для переключения)
+typedef enum _DSSTREAMTYPE
+{
+	DSST_AUDIO = 0,
+	DSST_VIDEO = 1
+} DSSTREAMTYPE;
 
 //Категории фильтров DirectShow
 typedef enum _DSFCATEGORY
@@ -81,39 +93,43 @@ typedef struct _MEDIACONTENT
 	WCHAR MoreInfo[255];
 } MEDIACONTENT, *LPMEDIACONTENT;
 
+//Array Size
+#define AS(x) (sizeof(x) / sizeof(x[0]))
+
 //Safe Release
 #define SR(x) if(x) {(x)->Release(); x = NULL;}
 
 class CDirectShow
 {
 public:
-    CDirectShow();
-    ~CDirectShow();
+	CDirectShow();
+	~CDirectShow();
 	//Базовые функции
 	//-----------------------------------------------------------
 	int Initialize();
-    int Open();
-    void Play();
+	int Open();
+	void Play();
 	void Pause();
-    void Stop();
+	void Stop();
 	void Close();
 	double GetRate();
 	void SetRate(double dblRate);
 	int IsSeekable();
-    __int64 GetLength(BOOL bInMS = TRUE);
+	__int64 GetLength(BOOL bInMS = TRUE);
 	void SetLength(__int64 intNewLen, BOOL bInMS = TRUE);
-    __int64 GetPosition(BOOL bInMS = TRUE);
+	__int64 GetPosition(BOOL bInMS = TRUE);
 	void SetPosition(__int64 intNewPos,
 					 BOOL bInMS = TRUE,
 					 BOOL bSeekToKeyFrame = FALSE);
 	int GetMute();
 	void SetMute(int intValue);
 	int GetVolume();
-    void SetVolume(int intValue);
+	void SetVolume(int intValue);
 	int GetBalance();
 	void SetBalance(int intValue);
 	ENGINESTATE GetState();
-	int IsVideo();
+	int HasAudio();
+	int HasVideo();
 	int CanStep(DWORD dwFrames);
 	void FrameStep(DWORD dwFrames);
 	int GetOriginalVideoSize(LPSIZE pSZ);
@@ -128,59 +144,79 @@ public:
 	int GetFullscreen();
 	void SetFullscreen(int intMode);
 	int CopyCurrentFrame();
-	int SaveCurrentFrame(LPCWSTR lpwFileName);
+	int SaveCurrentFrame(LPCWSTR lpFileName);
 	//Дополнительные функции
 	//-----------------------------------------------------------
+	int GetAvailableStreams(DSSTREAMTYPE dStreamType,
+							LPWSTR *lpStmArr,
+							LPDWORD pArrSize,
+							DWORD dwBuffSize);
+	int SelectStream(DSSTREAMTYPE dStreamType,
+					 LPCWSTR lpStmName);
+	BOOL IsStreamSelected(DSSTREAMTYPE dStreamType,
+						  LPCWSTR lpStmName);
+
+	int GetAudioStreamsCount_E();
+	int SelectAudioStream_E(int intStmIndex,
+							int intStmInitVol,
+							int intStmInitBal,
+							DWORD dwFlags);
+	BOOL IsAudioStreamSelected_E(int intStmIndex);
+
 	int AddFGToROT();
-	int GetDSFiltersNames(LPWSTR *lpwDSFilArr,
-		                  LPDWORD pArrSize,
+	int GetDSFiltersNames(LPWSTR *lpDSFilArr,
+						  LPDWORD pArrSize,
 						  DWORD dwBuffSize);
-	int GetDSFilterInfo(LPCWSTR lpwDSFilName, LPDSFILTERINFO pDSFI);
-	int AddDSFilterToFilterGraph(LPCWSTR lpwDSFilName);
+	int GetDSFilterInfo(LPCWSTR lpDSFilName, LPDSFILTERINFO pDSFI);
+	int AddDSFilterToFilterGraph(LPCWSTR lpDSFilName);
 	void UpdateDSFiltersArray(DSFCATEGORY dCategory);
-	int GetFGFiltersNames(LPWSTR *lpwFGFilArr,
-		                  LPDWORD pArrSize,
+	int GetFGFiltersNames(LPWSTR *lpFGFilArr,
+						  LPDWORD pArrSize,
 						  DWORD dwBuffSize);
-	int FGFiltersPropertyPages(LPCWSTR lpwFGFilName, BOOL bCheck);
+	int FGFiltersPropertyPages(LPCWSTR lpFGFilName, BOOL bCheck);
 	void UpdateFGFiltersArray();
-	int GetDMONames(LPWSTR *lpwDMOArr,
-		            LPDWORD pArrSize,
+	int GetDMONames(LPWSTR *lpDMOArr,
+					LPDWORD pArrSize,
 					DWORD dwBuffSize);
-	int AddDMOToFilterGraph(LPCWSTR lpwDMOName);
+	int AddDMOToFilterGraph(LPCWSTR lpDMOName);
 	void UpdateDMOArray(DMOCATEGORY dCategory);
 	int GetMediaContent(LPMEDIACONTENT pMC);
-    LPWSTR m_lpwFileName;
-	LPCWSTR m_lpwAppName;
+	LPWSTR m_lpFileName;
+	LPCWSTR m_lpAppName;
 	HWND m_hAppWnd;
 protected:
-    //
+	//
 private:
 	void RemoveFGFromROT();
-	void DSErrorMsg(HRESULT hr, LPCWSTR lpwEM);
+	void DSErrorMsg(HRESULT hr, LPCWSTR lpEM);
+	void FreeMediaType(AM_MEDIA_TYPE *pMT);
 	void InitDSCBWnd(BOOL bCreate = TRUE);
 	static LRESULT CALLBACK DSCBWndProc(HWND hWnd,
-		                                UINT uMsg,
+										UINT uMsg,
 										WPARAM wParam,
 										LPARAM lParam);
 	HWND m_hDSCBWnd;
 	BOOL m_bNoFGError;
 	ULONG m_lCounter;
 	DWORD m_dwROTRegister;
+	ULONG m_lBACount;
+	int m_intCurrentBA;
 	ULONG m_lDSFilCount;
 	ULONG m_lFGFilCount;
 	ULONG m_lDMOCount;
 	int m_intPrevVol;
+	IAMStreamSelect *m_pAMStreamSelect;
 	IGraphBuilder *m_pGraphBuilder;
 	IMediaControl *m_pMediaControl;
 	IMediaSeeking *m_pMediaSeeking;
 	IMediaEventEx *m_pMediaEventEx;
-	IBasicAudio *m_pBasicAudio;
 	IBasicVideo2 *m_pBasicVideo2;
 	IVideoWindow *m_pVideoWindow;
 	IVideoFrameStep *m_pVideoFrameStep;
+	IBasicAudio *m_pBasicAudio[E_MAX_BA];
 	IMoniker *m_pDSFMoniker[E_MAX_ARR_SIZE];
-	IBaseFilter *m_pFGBaseFilter[E_MAX_ARR_SIZE];
-	LPWSTR m_lpwDMONames[E_MAX_ARR_SIZE];
+	IBaseFilter *m_pFGBaseFilter[E_MAX_BF];
+	LPWSTR m_lpDMONames[E_MAX_ARR_SIZE];
 	CLSID m_cDMOCLSIDs[E_MAX_ARR_SIZE];
 	GUID m_gidRecentDMOCat;
 };

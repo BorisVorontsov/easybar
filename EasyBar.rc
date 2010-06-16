@@ -13,13 +13,11 @@
 #undef APSTUDIO_READONLY_SYMBOLS
 
 /////////////////////////////////////////////////////////////////////////////
-// Russian resources
+// Russian (Russia) resources
 
 #if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_RUS)
-#ifdef _WIN32
 LANGUAGE LANG_RUSSIAN, SUBLANG_DEFAULT
 #pragma code_page(1251)
-#endif //_WIN32
 
 #ifdef APSTUDIO_INVOKED
 /////////////////////////////////////////////////////////////////////////////
@@ -46,18 +44,27 @@ END
 
 #endif    // APSTUDIO_INVOKED
 
-#endif    // Russian resources
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// String Table
+//
+
+STRINGTABLE
+BEGIN
+    IDS_CREDITS             "Jenya (jenyaobolon@ukr.net)\r\nUncle aka ElcnU (unclelab@gmail.com)"
+END
+
+#endif    // Russian (Russia) resources
 /////////////////////////////////////////////////////////////////////////////
 
 
 /////////////////////////////////////////////////////////////////////////////
-// English (U.S.) resources
+// English (United States) resources
 
 #if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENU)
-#ifdef _WIN32
 LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
 #pragma code_page(1252)
-#endif //_WIN32
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -65,8 +72,8 @@ LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 1,6,0,0
- PRODUCTVERSION 1,6,0,0
+ FILEVERSION 1,7,3,0
+ PRODUCTVERSION 1,7,3,0
  FILEFLAGSMASK 0x3fL
 #ifdef _DEBUG
  FILEFLAGS 0x1L
@@ -81,14 +88,15 @@ BEGIN
     BEGIN
         BLOCK "040904b0"
         BEGIN
+            VALUE "Comments", "alpha 2"
             VALUE "CompanyName", "Boris Vorontsov"
             VALUE "FileDescription", "EasyBar - media player"
-            VALUE "FileVersion", "1, 6, 0, 0"
+            VALUE "FileVersion", "1.7.3.0"
             VALUE "InternalName", "EasyBar"
             VALUE "LegalCopyright", "Copyright © Boris Vorontsov, 2007 - 2008"
             VALUE "OriginalFilename", "EasyBar.exe"
             VALUE "ProductName", "EasyBar"
-            VALUE "ProductVersion", "1, 6, 0, 0"
+            VALUE "ProductVersion", "1.7.3.0"
         END
     END
     BLOCK "VarFileInfo"
@@ -125,8 +133,8 @@ BEGIN
     CONTROL         "Use external filters",IDC_CHKUEF,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,6,188,75,11
 END
 
-IDD_PLAYER DIALOGEX 0, 0, 244, 70
-STYLE DS_SETFONT | DS_3DLOOK | DS_FIXEDSYS | WS_MINIMIZEBOX | WS_CAPTION | WS_SYSMENU | WS_THICKFRAME
+IDD_PLAYER DIALOGEX 0, 0, 241, 70
+STYLE DS_SETFONT | DS_MODALFRAME | DS_3DLOOK | DS_FIXEDSYS | WS_MINIMIZEBOX | WS_CLIPCHILDREN | WS_CAPTION | WS_SYSMENU
 EXSTYLE WS_EX_ACCEPTFILES | WS_EX_CONTROLPARENT | WS_EX_APPWINDOW
 CAPTION "#"
 MENU IDR_MAINMENU
@@ -155,19 +163,21 @@ BEGIN
     CONTROL         148,IDC_STCLOGO,"Static",SS_BITMAP,123,66,32,30
 END
 
-IDD_ABOUT DIALOGEX 0, 0, 204, 114
-STYLE DS_ABSALIGN | DS_SETFONT | DS_MODALFRAME | DS_3DLOOK | DS_FIXEDSYS | DS_CENTER | WS_POPUP | WS_CAPTION | WS_SYSMENU
+IDD_ABOUT DIALOGEX 0, 0, 204, 124
+STYLE DS_ABSALIGN | DS_SETFONT | DS_MODALFRAME | DS_3DLOOK | DS_FIXEDSYS | DS_CENTER | WS_POPUP | WS_CLIPCHILDREN | WS_CAPTION | WS_SYSMENU
 EXSTYLE WS_EX_CONTROLPARENT
 CAPTION "#"
 FONT 8, "MS Shell Dlg", 0, 0, 0x1
 BEGIN
-    DEFPUSHBUTTON   "&OK",IDC_BTNOK,159,96,40,15
-    ICON            IDI_MAIN,IDC_STCICON,10,10,20,20,SS_NOTIFY
+    DEFPUSHBUTTON   "&OK",IDC_BTNOK,159,106,40,15
+    PUSHBUTTON      "&Credits >",IDC_BTNCRED,4,106,50,15
+    ICON            IDI_MAIN,IDC_STCICON,6,12,20,20,SS_NOTIFY
     LTEXT           "#",IDC_STCNAME,45,10,153,10,0,WS_EX_TRANSPARENT
-    LTEXT           "#",IDC_STCCOP,45,20,153,10,0,WS_EX_TRANSPARENT
-    CONTROL         "",IDC_STCEM,"LABELEX",0x0,45,30,153,10
-    LTEXT           "#",IDC_STCLIC,6,48,192,36
-    CONTROL         "",IDC_STCALN1,"Static",SS_ETCHEDHORZ,6,90,192,1
+    LTEXT           "#",IDC_STCCOP,45,20,153,20,SS_NOPREFIX,WS_EX_TRANSPARENT
+    CONTROL         "",IDC_STCEM,"LABELEX",0x0,45,40,153,10
+    LTEXT           "#",IDC_STCLIC,6,59,192,36
+    CONTROL         "",IDC_STCALN1,"Static",SS_ETCHEDHORZ,6,101,193,1
+    EDITTEXT        IDC_EDTCRED,45,6,153,90,ES_MULTILINE | ES_AUTOHSCROLL | ES_READONLY | NOT WS_VISIBLE | WS_VSCROLL
 END
 
 IDD_PROPERTIES DIALOGEX 0, 0, 247, 261
@@ -290,6 +300,7 @@ BEGIN
     LTEXT           "Color:",IDC_STCC,140,15,20,10
     LTEXT           "",IDC_STCCOLOR,140,25,35,13,SS_NOTIFY,WS_EX_STATICEDGE
     PUSHBUTTON      "&Default",IDC_BTNDEFAULT,10,45,45,15
+    CONTROL         "&Preview",IDC_CHKP,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,138,48,41,10
 END
 
 IDD_FULLSCREENVIDEOMODE DIALOGEX 0, 0, 207, 76
@@ -305,18 +316,21 @@ BEGIN
     CONTROL         "&Change video mode",IDC_CHKCVM,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,5,62,80,10
 END
 
-IDD_ASSOCIATIONS DIALOGEX 0, 0, 152, 135
+IDD_ASSOCIATIONS DIALOGEX 0, 0, 152, 167
 STYLE DS_ABSALIGN | DS_SETFONT | DS_MODALFRAME | DS_3DLOOK | DS_FIXEDSYS | DS_CENTER | WS_POPUP | WS_CAPTION | WS_SYSMENU
 EXSTYLE WS_EX_CONTROLPARENT
 CAPTION "Associations"
 FONT 8, "MS Shell Dlg", 0, 0, 0x1
 BEGIN
-    DEFPUSHBUTTON   "&OK",IDC_BTNOK,100,95,45,15
-    PUSHBUTTON      "&Cancel",IDC_BTNCANCEL,100,115,45,15
-    PUSHBUTTON      "&All",IDC_BTNALL,100,10,45,15
-    PUSHBUTTON      "&None",IDC_BTNNONE,100,30,45,15
-    GROUPBOX        "File types",IDC_STCFT,5,5,90,125
-    LISTBOX         IDC_LSTFT,10,20,80,100,NOT LBS_NOTIFY | LBS_MULTIPLESEL | LBS_NOINTEGRALHEIGHT | LBS_DISABLENOSCROLL | WS_VSCROLL | WS_TABSTOP
+    DEFPUSHBUTTON   "&OK",IDC_BTNOK,100,127,45,15
+    PUSHBUTTON      "&Cancel",IDC_BTNCANCEL,100,147,45,15
+    PUSHBUTTON      "&Video",IDC_BTNVIDEO,100,10,45,15
+    PUSHBUTTON      "&Audio",IDC_BTNAUDIO,100,30,45,15
+    PUSHBUTTON      "&Images",IDC_BTNIMGS,100,50,45,15
+    PUSHBUTTON      "&Playlists",IDC_BTNPLS,100,70,45,15
+    PUSHBUTTON      "&Reset",IDC_BTNRESET,100,98,45,15
+    GROUPBOX        "File types",IDC_STCFT,5,5,90,157
+    LISTBOX         IDC_LSTFT,10,20,80,136,NOT LBS_NOTIFY | LBS_MULTIPLESEL | LBS_NOINTEGRALHEIGHT | LBS_DISABLENOSCROLL | WS_VSCROLL | WS_TABSTOP
 END
 
 IDD_TIMEINTERVALS DIALOGEX 0, 0, 187, 116
@@ -356,7 +370,7 @@ BEGIN
 END
 
 IDD_PLAYER_VW DIALOGEX 0, 0, 244, 70
-STYLE DS_SETFONT | DS_MODALFRAME | DS_3DLOOK | DS_FIXEDSYS | WS_CHILD | WS_SYSMENU
+STYLE DS_SETFONT | DS_MODALFRAME | DS_3DLOOK | DS_FIXEDSYS | WS_CHILD | WS_CLIPCHILDREN | WS_SYSMENU
 EXSTYLE WS_EX_ACCEPTFILES | WS_EX_CONTROLPARENT | WS_EX_APPWINDOW
 CLASS "EASYBAR_"
 FONT 8, "MS Shell Dlg", 0, 0, 0x1
@@ -375,6 +389,29 @@ BEGIN
     CONTROL         "",IDC_EBFMAIN,"EBFRAME",0x0,5,5,230,29
 END
 
+IDD_PLAYLIST DIALOGEX 0, 0, 207, 264
+STYLE DS_ABSALIGN | DS_SETFONT | DS_FIXEDSYS | DS_CENTER | WS_POPUP | WS_CLIPCHILDREN | WS_CAPTION | WS_SYSMENU | WS_THICKFRAME
+EXSTYLE WS_EX_ACCEPTFILES | WS_EX_CONTROLPARENT
+CAPTION "Playlist"
+MENU IDR_PLMENU
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    LISTBOX         IDC_LSTPL,0,0,120,120,LBS_OWNERDRAWFIXED | LBS_HASSTRINGS | LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP
+END
+
+IDD_PP_ADJUSTMENTS DIALOGEX 0, 0, 230, 210
+STYLE DS_SETFONT | DS_3DLOOK | DS_FIXEDSYS | DS_CONTROL | WS_CHILD
+EXSTYLE WS_EX_CONTROLPARENT
+FONT 8, "MS Shell Dlg", 0, 0, 0x1
+BEGIN
+    ICON            IDI_FILE,IDC_STCFILE,5,5,20,20
+    EDITTEXT        IDC_EDTFN,30,11,195,10,ES_AUTOHSCROLL | ES_READONLY | NOT WS_BORDER
+    CONTROL         "",IDC_STCFLN1,"Static",SS_ETCHEDHORZ,5,30,220,1
+    GROUPBOX        "Audio streams",IDC_STCAS,5,40,220,38
+    COMBOBOX        IDC_CBOAS,12,55,125,30,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+    PUSHBUTTON      "Select",IDC_BTNSAS,174,54,45,15
+END
+
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -382,7 +419,7 @@ END
 //
 
 #ifdef APSTUDIO_INVOKED
-GUIDELINES DESIGNINFO 
+GUIDELINES DESIGNINFO
 BEGIN
     IDD_EXTERNALFILTERS, DIALOG
     BEGIN
@@ -394,7 +431,7 @@ BEGIN
 
     IDD_PLAYER, DIALOG
     BEGIN
-        RIGHTMARGIN, 243
+        RIGHTMARGIN, 240
     END
 
     IDD_VIDEO, DIALOG
@@ -410,7 +447,7 @@ BEGIN
         LEFTMARGIN, 7
         RIGHTMARGIN, 197
         TOPMARGIN, 7
-        BOTTOMMARGIN, 107
+        BOTTOMMARGIN, 117
     END
 
     IDD_PROPERTIES, DIALOG
@@ -482,7 +519,7 @@ BEGIN
         LEFTMARGIN, 7
         RIGHTMARGIN, 145
         TOPMARGIN, 7
-        BOTTOMMARGIN, 128
+        BOTTOMMARGIN, 160
     END
 
     IDD_TIMEINTERVALS, DIALOG
@@ -505,9 +542,392 @@ BEGIN
     BEGIN
         RIGHTMARGIN, 243
     END
+
+    IDD_PLAYLIST, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 200
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 257
+    END
+
+    IDD_PP_ADJUSTMENTS, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 223
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 203
+    END
 END
 #endif    // APSTUDIO_INVOKED
 
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Menu
+//
+
+IDR_MAINMENU MENU
+BEGIN
+    POPUP "&File"
+    BEGIN
+        MENUITEM "&Multiple Instances",         IDM_FILE_MULTIPLEINSTANCES
+        MENUITEM "&New Player\tCtrl+N",         IDM_FILE_NEWPLAYER
+        MENUITEM SEPARATOR
+        MENUITEM "&Open File(s)...\tCtrl+O",    IDM_FILE_OPENFILES
+        POPUP "O&pen Directory"
+        BEGIN
+            MENUITEM "&Open Directory...",          IDM_OD_OPENDIRECTORY
+            MENUITEM "O&pen Directory (Include Images)...", IDM_OD_OPENDIRECTORY_II
+        END
+        MENUITEM SEPARATOR
+        MENUITEM "&Add File(s)...\tCtrl+A",     IDM_FILE_ADDFILES
+        POPUP "A&dd Directory"
+        BEGIN
+            MENUITEM "&Add Directory...",           IDM_AD_ADDDIRECTORY
+            MENUITEM "A&dd Directory (Include Images)...", IDM_AD_ADDDIRECTORY_II
+        END
+        MENUITEM SEPARATOR
+        MENUITEM "Add &URL...\tCtrl+U",         IDM_FILE_ADDURL
+        MENUITEM SEPARATOR
+        MENUITEM "&Favorites...",               IDM_FILE_FAVORITES
+        MENUITEM SEPARATOR
+        MENUITEM "Reopen Current\tF5",          IDM_FILE_REOPENCURRENT
+        MENUITEM SEPARATOR
+        MENUITEM "&Close\tCtrl+C",              IDM_FILE_CLOSE
+        MENUITEM "D&elete from Playlist\tDelete", IDM_FILE_DELETEFROMPLAYLIST
+        MENUITEM SEPARATOR
+        MENUITEM "&Save File As...\tCtrl+S",    IDM_FILE_SAVEFILEAS
+        MENUITEM "Sa&ve Playlist As...",        IDM_FILE_SAVEPLAYLISTAS
+        MENUITEM SEPARATOR
+        MENUITEM "P&roperties...\tCtrl+P",      IDM_FILE_PROPERTIES
+        MENUITEM SEPARATOR
+        MENUITEM "Assoc&iations...",            IDM_FILE_ASSOCIATIONS
+        MENUITEM SEPARATOR
+        MENUITEM "Remem&ber Playlist",          IDM_FILE_REMEMBERPLAYLIST
+        MENUITEM SEPARATOR
+        MENUITEM "Close &Window\tEsc",          IDM_FILE_CLOSEWINDOW
+        MENUITEM "E&xit",                       IDM_FILE_EXIT
+    END
+    POPUP "&View"
+    BEGIN
+        POPUP "&Window Border"
+        BEGIN
+            MENUITEM "&Normal Window\tCtrl+Alt+0",  IDM_WB_NORMALWINDOW
+            MENUITEM "&Tool Window\tCtrl+Alt+1",    IDM_WB_TOOLWINDOW
+        END
+        MENUITEM "&Main Controls\tCtrl+0",      IDM_VIEW_MAINCONTROLS
+        MENUITEM "&Playlist\tCtrl+1",           IDM_VIEW_PLAYLIST
+        MENUITEM SEPARATOR
+        POPUP "&Title Bar"
+        BEGIN
+            MENUITEM "&Display Full Path",          IDM_TB_DISPLAYFULLPATH
+            MENUITEM "D&isplay File Name Only",     IDM_TB_DISPLAYFILENAMEONLY
+            MENUITEM SEPARATOR
+            MENUITEM "D&o not Change Title",        IDM_TB_DONOTCHANGETITLE
+        END
+        POPUP "&Interface"
+        BEGIN
+            MENUITEM "&Use System Colors",          IDM_INTERFACE_USESYSTEMCOLORS
+            MENUITEM SEPARATOR
+            MENUITEM "&Define Colors...",           IDM_INTERFACE_DEFINECOLORS
+        END
+        POPUP "&On Top"
+        BEGIN
+            MENUITEM "&Never\tCtrl+Shift+T",        IDM_ONTOP_NEVER
+            MENUITEM "&Always\tCtrl+T",             IDM_ONTOP_ALWAYS
+            MENUITEM "&While Playing\tCtrl+Alt+T",  IDM_ONTOP_WHILEPLAYING
+        END
+        POPUP "Po&sition at Startup"
+        BEGIN
+            MENUITEM "&Screen Center",              IDM_PAS_SCREENCENTER
+            MENUITEM "R&estore Previous",           IDM_PAS_RESTOREPREVIOUS
+            MENUITEM "&Random",                     IDM_PAS_RANDOM
+        END
+        POPUP "Op&acity"
+        BEGIN
+            MENUITEM "100%",                        IDM_OPACITY_100
+            MENUITEM "75%",                         IDM_OPACITY_75
+            MENUITEM "50%",                         IDM_OPACITY_50
+            MENUITEM "25%",                         IDM_OPACITY_25
+            MENUITEM "&Custom...",                  IDM_OPACITY_CUSTOM
+            MENUITEM SEPARATOR
+            MENUITEM "&Opaque on Focus",            IDM_OPACITY_OPAQUEONFOCUS
+        END
+        MENUITEM SEPARATOR
+        MENUITEM "T&ray Icon",                  IDM_VIEW_TRAYICON
+    END
+    POPUP "&Playback"
+    BEGIN
+        POPUP "At Start&up"
+        BEGIN
+            MENUITEM "&Resume Playback",            IDM_AS_RESUMEPLAYBACK
+        END
+        MENUITEM SEPARATOR
+        POPUP "&Repeat"
+        BEGIN
+            MENUITEM "Repeat &Off",                 IDM_REPEAT_REPEATOFF
+            MENUITEM "Repeat &All\tR",              IDM_REPEAT_REPEATALL
+            MENUITEM "Repeat O&ne",                 IDM_REPEAT_REPEATONE
+        END
+        MENUITEM "S&huffle\tS",                 IDM_PLAYBACK_SHUFFLE
+        MENUITEM SEPARATOR
+        MENUITEM "&Previous File\tCtrl+Left",   IDM_PLAYBACK_PREVIOUSFILE
+        MENUITEM "&Next File\tCtrl+Right",      IDM_PLAYBACK_NEXTFILE
+        MENUITEM SEPARATOR
+        MENUITEM "P&lay/Pause\tSpace",          IDM_PLAYBACK_PLAYPAUSE
+        MENUITEM "&Stop\tPeriod",               IDM_PLAYBACK_STOP
+        MENUITEM "Fra&me Step\tCtrl+Space",     IDM_PLAYBACK_FRAMESTEP
+        MENUITEM SEPARATOR
+        POPUP "Ra&te"
+        BEGIN
+            MENUITEM "&Normal\tCtrl+Shift+R",       IDM_RATE_NORMAL
+            MENUITEM SEPARATOR
+            MENUITEM "&Decrease\tCtrl+Down",        IDM_RATE_DECREASE
+            MENUITEM "&Increase\tCtrl+Up",          IDM_RATE_INCREASE
+        END
+        POPUP "S&eek"
+        BEGIN
+            MENUITEM "&Step Backward\tLeft",        IDM_SEEK_STEPBACKWARD
+            MENUITEM "S&tep Forward\tRight",        IDM_SEEK_STEPFORWARD
+            MENUITEM "&Jump Backward\tShift+Left",  IDM_SEEK_JUMPBACKWARD
+            MENUITEM "J&ump Forward\tShift+Right",  IDM_SEEK_JUMPFORWARD
+            MENUITEM "&Long Jump Backward\tCtrl+Shift+Left", IDM_SEEK_LONGJUMPBACKWARD
+            MENUITEM "L&ong Jump Forward\tCtrl+Shift+Right", IDM_SEEK_LONGJUMPFORWARD
+            MENUITEM "&Define Time Intervals...",   IDM_SEEK_DEFINETIMEINTERVALS
+            MENUITEM SEPARATOR
+            MENUITEM "&Rewind\tBackspace",          IDM_SEEK_REWIND
+            MENUITEM SEPARATOR
+            MENUITEM "S&eek by Key Frames\tCtrl+K", IDM_SEEK_SEEKBYKEYFRAMES
+        END
+        MENUITEM SEPARATOR
+        POPUP "&Volume"
+        BEGIN
+            MENUITEM "&Mute\tCtrl+M",               IDM_VOLUME_MUTE
+            MENUITEM SEPARATOR
+            MENUITEM "&Decrease\tDown",             IDM_VOLUME_DECREASE
+            MENUITEM "&Increase\tUp",               IDM_VOLUME_INCREASE
+        END
+        POPUP "&Balance"
+        BEGIN
+            MENUITEM "&Normal\tCtrl+Shift+B",       IDM_BALANCE_NORMAL
+            MENUITEM SEPARATOR
+            MENUITEM "&Left\tAlt+Down",             IDM_BALANCE_LEFT
+            MENUITEM "&Right\tAlt+Up",              IDM_BALANCE_RIGHT
+        END
+        MENUITEM SEPARATOR
+        MENUITEM "Save &Current Frame\tAlt+S",  IDM_PLAYBACK_SAVECURRENTFRAME
+        MENUITEM SEPARATOR
+        POPUP "Aspect Rat&io"
+        BEGIN
+            MENUITEM "&Keep Aspect Ratio\tCtrl+K",  IDM_AR_KEEPASPECTRATIO
+            MENUITEM SEPARATOR
+            MENUITEM "Default\tShift+1",            IDM_AR_DEFAULT
+            MENUITEM "4:3\tShift+2",                IDM_AR_43
+            MENUITEM "5:4\tShift+3",                IDM_AR_54
+            MENUITEM "16:9\tShift+4",               IDM_AR_169
+        END
+        POPUP "&Zoom"
+        BEGIN
+            MENUITEM "&Half Size\tAlt+1",           IDM_ZOOM_HALFSIZE
+            MENUITEM "&Normal Size\tAlt+2",         IDM_ZOOM_NORMALSIZE
+            MENUITEM "&Double Size\tAlt+3",         IDM_ZOOM_DOUBLESIZE
+        END
+        POPUP "&Fullscreen"
+        BEGIN
+            MENUITEM "&Fullscreen/Normal\tEnter",   IDM_FULLSCREEN_FULLSCREENNORMAL
+            MENUITEM SEPARATOR
+            MENUITEM "&Video Mode...",              IDM_FULLSCREEN_VIDEOMODE
+        END
+        MENUITEM SEPARATOR
+        POPUP "&Advanced"
+        BEGIN
+            MENUITEM "&Add Graph to ROT",           IDM_PB_ADV_AGTROT
+            MENUITEM SEPARATOR
+            POPUP "&DMO"
+            BEGIN
+                MENUITEM "&Use DMO",                    IDM_DMO_USEDMO
+                MENUITEM SEPARATOR
+                POPUP "&Standard Audio Effects"
+                BEGIN
+                    MENUITEM "Parametric Equalizer",        IDM_SAE_PARAMEQ
+                    MENUITEM "Waves Reverberation",         IDM_SAE_WAVESREVERB
+                    MENUITEM "Gargle",                      IDM_SAE_GARGLE
+                    MENUITEM "Distortion",                  IDM_SAE_DISTORTION
+                    MENUITEM "Compressor",                  IDM_SAE_COMPRESSOR
+                    MENUITEM "Echo",                        IDM_SAE_ECHO
+                    MENUITEM "Flanger",                     IDM_SAE_FLANGER
+                    MENUITEM "Chorus",                      IDM_SAE_CHORUS
+                    MENUITEM "Environmental Reverberation", IDM_SAE_I3DL2REVERB
+                END
+            END
+            MENUITEM "&External Filters...",        IDM_PB_ADV_EXTFLT
+        END
+        MENUITEM SEPARATOR
+        POPUP "After Playbac&k"
+        BEGIN
+            MENUITEM "&Close Window",               IDM_AP_CLOSEWINDOW
+            MENUITEM "&Exit",                       IDM_AP_EXIT
+            MENUITEM SEPARATOR
+            MENUITEM "&Stand By",                   IDM_AP_STANDBY
+            MENUITEM "&Hibernate",                  IDM_AP_HIBERNATE
+            MENUITEM "Sh&utdown",                   IDM_AP_SHUTDOWN
+            MENUITEM "&Log Off",                    IDM_AP_LOGOFF
+            MENUITEM SEPARATOR
+            MENUITEM "&Do Nothing",                 IDM_AP_DONOTHING
+        END
+    END
+    POPUP "&Help", HELP
+    BEGIN
+        MENUITEM "H&elp Topics\tF1",            IDM_HELP_HELPTOPICS
+        MENUITEM SEPARATOR
+        MENUITEM "&About",                      IDM_HELP_ABOUT
+    END
+END
+
+IDR_PLMENU MENU
+BEGIN
+    POPUP "&File"
+    BEGIN
+        MENUITEM "&Open File(s)...",            IDM_FILE_OPENFILES
+        POPUP "O&pen Directory"
+        BEGIN
+            MENUITEM "&Open Directory...",          IDM_OD_OPENDIRECTORY
+            MENUITEM "O&pen Directory (Include Images)...", IDM_OD_OPENDIRECTORY_II
+        END
+        MENUITEM SEPARATOR
+        MENUITEM "&Add File(s)...",             IDM_FILE_ADDFILES
+        POPUP "A&dd Directory"
+        BEGIN
+            MENUITEM "&Add Directory...",           IDM_AD_ADDDIRECTORY
+            MENUITEM "A&dd Directory (Include Images)...", IDM_AD_ADDDIRECTORY_II
+        END
+        MENUITEM SEPARATOR
+        MENUITEM "Add &URL...",                 IDM_FILE_ADDURL
+    END
+    POPUP "&Selection"
+    BEGIN
+        MENUITEM "&Move Up\tShift+Up",          IDM_SELECTION_MOVEUP
+        MENUITEM "M&ove Down\tShift+Down",      IDM_SELECTION_MOVEDOWN
+        MENUITEM SEPARATOR
+        MENUITEM "&Crop",                       IDM_SELECTION_CROP
+        MENUITEM "&Delete\tCtrl+Delete",        IDM_SELECTION_DELETE
+    END
+    POPUP "&Misc"
+    BEGIN
+        MENUITEM "&Find...\tCtrl+F",            IDM_MISC_FIND
+        MENUITEM SEPARATOR
+        POPUP "&Sort"
+        BEGIN
+            MENUITEM "&Sort by Title",              IDM_SORT_SORTBYTITLE
+            MENUITEM "&Reverse Sort by Title",      IDM_SORT_REVERSESORTBYTITLE
+        END
+        MENUITEM "&Clear Playlist\tShift+Delete", IDM_MISC_CLEARPLAYLIST
+    END
+END
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Icon
+//
+
+// Icon with lowest ID value placed first to ensure application icon
+// remains consistent on all systems.
+IDI_MAIN                ICON                    "EB_ICON.ico"
+IDI_FILE                ICON                    "FILE_ICON.ico"
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Accelerator
+//
+
+IDR_MAINACCEL ACCELERATORS
+BEGIN
+    "4",            IDM_AR_169,             VIRTKEY, SHIFT, NOINVERT
+    "2",            IDM_AR_43,              VIRTKEY, SHIFT, NOINVERT
+    "3",            IDM_AR_54,              VIRTKEY, SHIFT, NOINVERT
+    "1",            IDM_AR_DEFAULT,         VIRTKEY, SHIFT, NOINVERT
+    "K",            IDM_AR_KEEPASPECTRATIO, VIRTKEY, CONTROL, NOINVERT
+    VK_DOWN,        IDM_BALANCE_LEFT,       VIRTKEY, ALT, NOINVERT
+    "B",            IDM_BALANCE_NORMAL,     VIRTKEY, SHIFT, CONTROL, NOINVERT
+    VK_UP,          IDM_BALANCE_RIGHT,      VIRTKEY, ALT, NOINVERT
+    "A",            IDM_FILE_ADDFILES,      VIRTKEY, CONTROL, NOINVERT
+    "U",            IDM_FILE_ADDURL,        VIRTKEY, CONTROL, NOINVERT
+    "C",            IDM_FILE_CLOSE,         VIRTKEY, CONTROL, NOINVERT
+    VK_ESCAPE,      IDM_FILE_CLOSEWINDOW,   VIRTKEY, NOINVERT
+    VK_DELETE,      IDM_FILE_DELETEFROMPLAYLIST, VIRTKEY, NOINVERT
+    "N",            IDM_FILE_NEWPLAYER,     VIRTKEY, CONTROL, NOINVERT
+    "O",            IDM_FILE_OPENFILES,     VIRTKEY, CONTROL, NOINVERT
+    "P",            IDM_FILE_PROPERTIES,    VIRTKEY, CONTROL, NOINVERT
+    VK_F5,          IDM_FILE_REOPENCURRENT, VIRTKEY, NOINVERT
+    "S",            IDM_FILE_SAVEFILEAS,    VIRTKEY, CONTROL, NOINVERT
+    VK_RETURN,      IDM_FULLSCREEN_FULLSCREENNORMAL, VIRTKEY, NOINVERT
+    VK_F1,          IDM_HELP_HELPTOPICS,    VIRTKEY, NOINVERT
+    "T",            IDM_ONTOP_ALWAYS,       VIRTKEY, CONTROL, NOINVERT
+    "T",            IDM_ONTOP_NEVER,        VIRTKEY, SHIFT, CONTROL, NOINVERT
+    "T",            IDM_ONTOP_WHILEPLAYING, VIRTKEY, CONTROL, ALT, NOINVERT
+    VK_SPACE,       IDM_PLAYBACK_FRAMESTEP, VIRTKEY, CONTROL, NOINVERT
+    VK_RIGHT,       IDM_PLAYBACK_NEXTFILE,  VIRTKEY, CONTROL, NOINVERT
+    VK_SPACE,       IDM_PLAYBACK_PLAYPAUSE, VIRTKEY, NOINVERT
+    VK_LEFT,        IDM_PLAYBACK_PREVIOUSFILE, VIRTKEY, CONTROL, NOINVERT
+    "S",            IDM_PLAYBACK_SAVECURRENTFRAME, VIRTKEY, ALT, NOINVERT
+    "S",            IDM_PLAYBACK_SHUFFLE,   VIRTKEY, NOINVERT
+    ".",            IDM_PLAYBACK_STOP,      ASCII,  NOINVERT
+    VK_DOWN,        IDM_RATE_DECREASE,      VIRTKEY, CONTROL, NOINVERT
+    VK_UP,          IDM_RATE_INCREASE,      VIRTKEY, CONTROL, NOINVERT
+    "R",            IDM_RATE_NORMAL,        VIRTKEY, SHIFT, CONTROL, NOINVERT
+    "R",            IDM_REPEAT_REPEATALL,   VIRTKEY, NOINVERT
+    VK_LEFT,        IDM_SEEK_JUMPBACKWARD,  VIRTKEY, SHIFT, NOINVERT
+    VK_RIGHT,       IDM_SEEK_JUMPFORWARD,   VIRTKEY, SHIFT, NOINVERT
+    VK_LEFT,        IDM_SEEK_LONGJUMPBACKWARD, VIRTKEY, SHIFT, CONTROL, NOINVERT
+    VK_RIGHT,       IDM_SEEK_LONGJUMPFORWARD, VIRTKEY, SHIFT, CONTROL, NOINVERT
+    VK_BACK,        IDM_SEEK_REWIND,        VIRTKEY, NOINVERT
+    "K",            IDM_SEEK_SEEKBYKEYFRAMES, VIRTKEY, CONTROL, NOINVERT
+    VK_LEFT,        IDM_SEEK_STEPBACKWARD,  VIRTKEY, NOINVERT
+    VK_RIGHT,       IDM_SEEK_STEPFORWARD,   VIRTKEY, NOINVERT
+    "0",            IDM_VIEW_MAINCONTROLS,  VIRTKEY, CONTROL, NOINVERT
+    "1",            IDM_VIEW_PLAYLIST,      VIRTKEY, CONTROL, NOINVERT
+    VK_DOWN,        IDM_VOLUME_DECREASE,    VIRTKEY, NOINVERT
+    VK_UP,          IDM_VOLUME_INCREASE,    VIRTKEY, NOINVERT
+    "M",            IDM_VOLUME_MUTE,        VIRTKEY, CONTROL, NOINVERT
+    "0",            IDM_WB_NORMALWINDOW,    VIRTKEY, CONTROL, ALT, NOINVERT
+    "1",            IDM_WB_TOOLWINDOW,      VIRTKEY, CONTROL, ALT, NOINVERT
+    "3",            IDM_ZOOM_DOUBLESIZE,    VIRTKEY, ALT, NOINVERT
+    "1",            IDM_ZOOM_HALFSIZE,      VIRTKEY, ALT, NOINVERT
+    "2",            IDM_ZOOM_NORMALSIZE,    VIRTKEY, ALT, NOINVERT
+END
+
+IDR_PLACCEL ACCELERATORS
+BEGIN
+    VK_DELETE,      IDM_MISC_CLEARPLAYLIST, VIRTKEY, SHIFT, NOINVERT
+    "F",            IDM_MISC_FIND,          VIRTKEY, CONTROL, NOINVERT
+    VK_DOWN,        IDM_SELECTION_MOVEDOWN, VIRTKEY, SHIFT, NOINVERT
+    VK_UP,          IDM_SELECTION_MOVEUP,   VIRTKEY, SHIFT, NOINVERT
+    VK_DELETE,      IDM_SELECTION_DELETE,   VIRTKEY, CONTROL, NOINVERT
+END
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Bitmap
+//
+
+IDB_BALANCENORMAL       BITMAP                  "BalanceNormal.bmp"
+IDB_NEXTFILE            BITMAP                  "NextFile.bmp"
+IDB_PAUSE               BITMAP                  "Pause.bmp"
+IDB_PLAY                BITMAP                  "Play.bmp"
+IDB_PREVIOUSFILE        BITMAP                  "PreviousFile.bmp"
+IDB_SOUNDOFF            BITMAP                  "SoundOff.bmp"
+IDB_SOUNDON             BITMAP                  "SoundOn.bmp"
+IDB_STEPBACKWARD        BITMAP                  "StepBackward.bmp"
+IDB_STEPFORWARD         BITMAP                  "StepForward.bmp"
+IDB_LOGO                BITMAP                  "Logo.bmp"
+IDB_CHECKMARK           BITMAP                  "CheckMark.bmp"
+IDB_RADIOCHECKMARK      BITMAP                  "RadioCheckMark.bmp"
+IDB_AISPAUSE            BITMAP                  "AIS_Pause.bmp"
+IDB_AISPLAY             BITMAP                  "AIS_Play.bmp"
+IDB_AISSTOP             BITMAP                  "AIS_Stop.bmp"
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -1811,353 +2231,7 @@ BEGIN
     0xcec3, 0x87c8, 0xa791, "\247" 
 END
 
-
-/////////////////////////////////////////////////////////////////////////////
-//
-// Menu
-//
-
-IDR_MAINMENU MENU 
-BEGIN
-    POPUP "&File"
-    BEGIN
-        MENUITEM "&Multiple Instances",         IDM_FILE_MULTIPLEINSTANCES
-        MENUITEM "&New Player\tCtrl+N",         IDM_FILE_NEWPLAYER
-        MENUITEM SEPARATOR
-        MENUITEM "&Open File(s)...\tCtrl+O",    IDM_FILE_OPENFILES
-        MENUITEM "O&pen Directory...",          IDM_FILE_OPENDIRECTORY
-        MENUITEM SEPARATOR
-        MENUITEM "&Add File(s)...\tCtrl+A",     IDM_FILE_ADDFILES
-        MENUITEM "A&dd Directory...",           IDM_FILE_ADDDIRECTORY
-        MENUITEM SEPARATOR
-        MENUITEM "Add &URL...\tCtrl+U",         IDM_FILE_ADDURL
-        MENUITEM SEPARATOR
-        MENUITEM "&Favorites...",               IDM_FILE_FAVORITES
-        MENUITEM SEPARATOR
-        MENUITEM "Reopen Current\tF5",          IDM_FILE_REOPENCURRENT
-        MENUITEM SEPARATOR
-        MENUITEM "&Close\tCtrl+C",              IDM_FILE_CLOSE
-        MENUITEM "D&elete from Playlist\tDelete", IDM_FILE_DELETEFROMPLAYLIST
-        MENUITEM SEPARATOR
-        MENUITEM "&Save File As...\tCtrl+S",    IDM_FILE_SAVEFILEAS
-        MENUITEM "Sa&ve Playlist As...",        IDM_FILE_SAVEPLAYLISTAS
-        MENUITEM SEPARATOR
-        MENUITEM "P&roperties\tCtrl+P",         IDM_FILE_PROPERTIES
-        MENUITEM SEPARATOR
-        MENUITEM "Assoc&iations...",            IDM_FILE_ASSOCIATIONS
-        MENUITEM SEPARATOR
-        MENUITEM "Remem&ber Playlist",          IDM_FILE_REMEMBERPLAYLIST
-        MENUITEM SEPARATOR
-        MENUITEM "Close &Window\tEsc",          IDM_FILE_CLOSEWINDOW
-        MENUITEM "E&xit",                       IDM_FILE_EXIT
-    END
-    POPUP "&View"
-    BEGIN
-        POPUP "&Window Border"
-        BEGIN
-            MENUITEM "&Normal Window\tCtrl+Alt+0",  IDM_WB_NORMALWINDOW
-            MENUITEM "&Tool Window\tCtrl+Alt+1",    IDM_WB_TOOLWINDOW
-        END
-        MENUITEM "&Main Controls\tCtrl+0",      IDM_VIEW_MAINCONTROLS
-        MENUITEM SEPARATOR
-        POPUP "&Title Bar"
-        BEGIN
-            MENUITEM "&Display Full Path",          IDM_TB_DISPLAYFULLPATH
-            MENUITEM "D&isplay File Name Only",     IDM_TB_DISPLAYFILENAMEONLY
-            MENUITEM SEPARATOR
-            MENUITEM "D&o not Change Title",        IDM_TB_DONOTCHANGETITLE
-        END
-        POPUP "&Interface"
-        BEGIN
-            MENUITEM "&Use System Colors",          IDM_INTERFACE_USESYSTEMCOLORS
-            MENUITEM SEPARATOR
-            MENUITEM "&Define Colors...",           IDM_INTERFACE_DEFINECOLORS
-        END
-        POPUP "&On Top"
-        BEGIN
-            MENUITEM "&Never\tCtrl+Shift+T",        IDM_ONTOP_NEVER
-            MENUITEM "&Always\tCtrl+T",             IDM_ONTOP_ALWAYS
-            MENUITEM "&While Playing\tCtrl+Alt+T",  IDM_ONTOP_WHILEPLAYING
-        END
-        POPUP "&Position at Startup"
-        BEGIN
-            MENUITEM "&Screen Center",              IDM_PAS_SCREENCENTER
-            MENUITEM "R&estore Previous",           IDM_PAS_RESTOREPREVIOUS
-            MENUITEM "&Random",                     IDM_PAS_RANDOM
-        END
-        POPUP "Op&acity"
-        BEGIN
-            MENUITEM "100%",                        IDM_OPACITY_100
-            MENUITEM "75%",                         IDM_OPACITY_75
-            MENUITEM "50%",                         IDM_OPACITY_50
-            MENUITEM "25%",                         IDM_OPACITY_25
-            MENUITEM "&Custom...",                  IDM_OPACITY_CUSTOM
-            MENUITEM SEPARATOR
-            MENUITEM "&Opaque on Focus",            IDM_OPACITY_OPAQUEONFOCUS
-        END
-        MENUITEM SEPARATOR
-        MENUITEM "T&ray Icon",                  IDM_VIEW_TRAYICON
-    END
-    POPUP "&Playback"
-    BEGIN
-        POPUP "At Start&up"
-        BEGIN
-            MENUITEM "&Resume Playback",            IDM_AS_RESUMEPLAYBACK
-        END
-        MENUITEM SEPARATOR
-        POPUP "&Repeat"
-        BEGIN
-            MENUITEM "Repeat &Off",                 IDM_REPEAT_REPEATOFF
-            MENUITEM "Repeat &All\tR",              IDM_REPEAT_REPEATALL
-            MENUITEM "Repeat O&ne",                 IDM_REPEAT_REPEATONE
-        END
-        MENUITEM "S&huffle\tS",                 IDM_PLAYBACK_SHUFFLE
-        MENUITEM SEPARATOR
-        MENUITEM "&Previous File\tCtrl+Left",   IDM_PLAYBACK_PREVIOUSFILE
-        MENUITEM "&Next File\tCtrl+Right",      IDM_PLAYBACK_NEXTFILE
-        MENUITEM SEPARATOR
-        MENUITEM "P&lay/Pause\tSpace",          IDM_PLAYBACK_PLAYPAUSE
-        MENUITEM "&Stop\tPeriod",               IDM_PLAYBACK_STOP
-        MENUITEM "Fra&me Step\tCtrl+Space",     IDM_PLAYBACK_FRAMESTEP
-        MENUITEM SEPARATOR
-        POPUP "Ra&te"
-        BEGIN
-            MENUITEM "&Normal\tCtrl+Shift+R",       IDM_RATE_NORMAL
-            MENUITEM SEPARATOR
-            MENUITEM "&Decrease\tCtrl+Down",        IDM_RATE_DECREASE
-            MENUITEM "&Increase\tCtrl+Up",          IDM_RATE_INCREASE
-        END
-        POPUP "S&eek"
-        BEGIN
-            MENUITEM "&Step Backward\tLeft",        IDM_SEEK_STEPBACKWARD
-            MENUITEM "S&tep Forward\tRight",        IDM_SEEK_STEPFORWARD
-            MENUITEM "&Jump Backward\tShift+Left",  IDM_SEEK_JUMPBACKWARD
-            MENUITEM "J&ump Forward\tShift+Right",  IDM_SEEK_JUMPFORWARD
-            MENUITEM "&Long Jump Backward\tCtrl+Shift+Left", IDM_SEEK_LONGJUMPBACKWARD
-            MENUITEM "L&ong Jump Forward\tCtrl+Shift+Right", IDM_SEEK_LONGJUMPFORWARD
-            MENUITEM "&Define Time Intervals...",   IDM_SEEK_DEFINETIMEINTERVALS
-            MENUITEM SEPARATOR
-            MENUITEM "&Rewind\tBackspace",          IDM_SEEK_REWIND
-            MENUITEM SEPARATOR
-            MENUITEM "S&eek by Key Frames\tCtrl+K", IDM_SEEK_SEEKBYKEYFRAMES
-        END
-        MENUITEM SEPARATOR
-        POPUP "&Volume"
-        BEGIN
-            MENUITEM "&Mute\tCtrl+M",               IDM_VOLUME_MUTE
-            MENUITEM SEPARATOR
-            MENUITEM "&Decrease\tDown",             IDM_VOLUME_DECREASE
-            MENUITEM "&Increase\tUp",               IDM_VOLUME_INCREASE
-        END
-        POPUP "&Balance"
-        BEGIN
-            MENUITEM "&Normal\tCtrl+Shift+B",       IDM_BALANCE_NORMAL
-            MENUITEM SEPARATOR
-            MENUITEM "&Left\tAlt+Down",             IDM_BALANCE_LEFT
-            MENUITEM "&Right\tAlt+Up",              IDM_BALANCE_RIGHT
-        END
-        MENUITEM SEPARATOR
-        MENUITEM "Save &Current Frame\tAlt+S",  IDM_PLAYBACK_SAVECURRENTFRAME
-        MENUITEM SEPARATOR
-        POPUP "Aspect Rat&io"
-        BEGIN
-            MENUITEM "&Keep Aspect Ratio\tCtrl+K",  IDM_AR_KEEPASPECTRATIO
-            MENUITEM SEPARATOR
-            MENUITEM "Default\tShift+1",            IDM_AR_DEFAULT
-            MENUITEM "4:3\tShift+2",                IDM_AR_43
-            MENUITEM "5:4\tShift+3",                IDM_AR_54
-            MENUITEM "16:9\tShift+4",               IDM_AR_169
-        END
-        POPUP "&Zoom"
-        BEGIN
-            MENUITEM "&Half Size\tAlt+1",           IDM_ZOOM_HALFSIZE
-            MENUITEM "&Normal Size\tAlt+2",         IDM_ZOOM_NORMALSIZE
-            MENUITEM "&Double Size\tAlt+3",         IDM_ZOOM_DOUBLESIZE
-        END
-        POPUP "&Fullscreen"
-        BEGIN
-            MENUITEM "&Fullscreen/Normal\tEnter",   IDM_FULLSCREEN_FULLSCREENNORMAL
-            MENUITEM SEPARATOR
-            MENUITEM "&Video Mode...",              IDM_FULLSCREEN_VIDEOMODE
-        END
-        MENUITEM SEPARATOR
-        POPUP "&Advanced"
-        BEGIN
-            MENUITEM "&Add Graph to ROT",           IDM_PB_ADV_AGTROT
-            MENUITEM SEPARATOR
-            POPUP "&DMO"
-            BEGIN
-                MENUITEM "&Use DMO",                    IDM_DMO_USEDMO
-                MENUITEM SEPARATOR
-                POPUP "&Standard Audio Effects"
-                BEGIN
-                    MENUITEM "Parametric Equalizer",        IDM_SAE_PARAMEQ
-                    MENUITEM "Waves Reverberation",         IDM_SAE_WAVESREVERB
-                    MENUITEM "Gargle",                      IDM_SAE_GARGLE
-                    MENUITEM "Distortion",                  IDM_SAE_DISTORTION
-                    MENUITEM "Compressor",                  IDM_SAE_COMPRESSOR
-                    MENUITEM "Echo",                        IDM_SAE_ECHO
-                    MENUITEM "Flanger",                     IDM_SAE_FLANGER
-                    MENUITEM "Chorus",                      IDM_SAE_CHORUS
-                    MENUITEM "Environmental Reverberation", IDM_SAE_I3DL2REVERB
-                END
-            END
-            MENUITEM "&External Filters...",        IDM_PB_ADV_EXTFLT
-        END
-        MENUITEM SEPARATOR
-        POPUP "After Playbac&k"
-        BEGIN
-            MENUITEM "&Close Window",               IDM_AP_CLOSEWINDOW
-            MENUITEM "&Exit",                       IDM_AP_EXIT
-            MENUITEM SEPARATOR
-            MENUITEM "&Stand By",                   IDM_AP_STANDBY
-            MENUITEM "&Hibernate",                  IDM_AP_HIBERNATE
-            MENUITEM "Sh&utdown",                   IDM_AP_SHUTDOWN
-            MENUITEM "&Log Off",                    IDM_AP_LOGOFF
-            MENUITEM SEPARATOR
-            MENUITEM "&Do Nothing",                 IDM_AP_DONOTHING
-        END
-    END
-    POPUP "&Help"
-    BEGIN
-        MENUITEM "H&elp Topics\tF1",            IDM_HELP_HELPTOPICS
-        MENUITEM SEPARATOR
-        MENUITEM "&About",                      IDM_HELP_ABOUT
-    END
-END
-
-
-/////////////////////////////////////////////////////////////////////////////
-//
-// Icon
-//
-
-// Icon with lowest ID value placed first to ensure application icon
-// remains consistent on all systems.
-IDI_MAIN                ICON                    "EB_ICON.ico"
-IDI_FILE                ICON                    "FILE_ICON.ico"
-
-/////////////////////////////////////////////////////////////////////////////
-//
-// Accelerator
-//
-
-IDR_MAINACCEL ACCELERATORS 
-BEGIN
-    "4",            IDM_AR_169,             VIRTKEY, SHIFT, NOINVERT
-    "2",            IDM_AR_43,              VIRTKEY, SHIFT, NOINVERT
-    "3",            IDM_AR_54,              VIRTKEY, SHIFT, NOINVERT
-    "1",            IDM_AR_DEFAULT,         VIRTKEY, SHIFT, NOINVERT
-    "K",            IDM_AR_KEEPASPECTRATIO, VIRTKEY, CONTROL, NOINVERT
-    VK_DOWN,        IDM_BALANCE_LEFT,       VIRTKEY, ALT, NOINVERT
-    "B",            IDM_BALANCE_NORMAL,     VIRTKEY, SHIFT, CONTROL, NOINVERT
-    VK_UP,          IDM_BALANCE_RIGHT,      VIRTKEY, ALT, NOINVERT
-    "A",            IDM_FILE_ADDFILES,      VIRTKEY, CONTROL, NOINVERT
-    "U",            IDM_FILE_ADDURL,        VIRTKEY, CONTROL, NOINVERT
-    "C",            IDM_FILE_CLOSE,         VIRTKEY, CONTROL, NOINVERT
-    VK_ESCAPE,      IDM_FILE_CLOSEWINDOW,   VIRTKEY, NOINVERT
-    VK_DELETE,      IDM_FILE_DELETEFROMPLAYLIST, VIRTKEY, NOINVERT
-    "N",            IDM_FILE_NEWPLAYER,     VIRTKEY, CONTROL, NOINVERT
-    "O",            IDM_FILE_OPENFILES,     VIRTKEY, CONTROL, NOINVERT
-    "P",            IDM_FILE_PROPERTIES,    VIRTKEY, CONTROL, NOINVERT
-    VK_F5,          IDM_FILE_REOPENCURRENT, VIRTKEY, NOINVERT
-    "S",            IDM_FILE_SAVEFILEAS,    VIRTKEY, CONTROL, NOINVERT
-    VK_RETURN,      IDM_FULLSCREEN_FULLSCREENNORMAL, VIRTKEY, NOINVERT
-    VK_F1,          IDM_HELP_HELPTOPICS,    VIRTKEY, NOINVERT
-    "T",            IDM_ONTOP_ALWAYS,       VIRTKEY, CONTROL, NOINVERT
-    "T",            IDM_ONTOP_NEVER,        VIRTKEY, SHIFT, CONTROL, NOINVERT
-    "T",            IDM_ONTOP_WHILEPLAYING, VIRTKEY, CONTROL, ALT, NOINVERT
-    "S",            IDM_PLAYBACK_SAVECURRENTFRAME, VIRTKEY, ALT, NOINVERT
-    VK_SPACE,       IDM_PLAYBACK_FRAMESTEP, VIRTKEY, CONTROL, NOINVERT
-    VK_RIGHT,       IDM_PLAYBACK_NEXTFILE,  VIRTKEY, CONTROL, NOINVERT
-    VK_SPACE,       IDM_PLAYBACK_PLAYPAUSE, VIRTKEY, NOINVERT
-    VK_LEFT,        IDM_PLAYBACK_PREVIOUSFILE, VIRTKEY, CONTROL, NOINVERT
-    "S",            IDM_PLAYBACK_SHUFFLE,   VIRTKEY, NOINVERT
-    ".",            IDM_PLAYBACK_STOP,      ASCII,  NOINVERT
-    VK_DOWN,        IDM_RATE_DECREASE,      VIRTKEY, CONTROL, NOINVERT
-    VK_UP,          IDM_RATE_INCREASE,      VIRTKEY, CONTROL, NOINVERT
-    "R",            IDM_RATE_NORMAL,        VIRTKEY, SHIFT, CONTROL, NOINVERT
-    "R",            IDM_REPEAT_REPEATALL,   VIRTKEY, NOINVERT
-    VK_LEFT,        IDM_SEEK_JUMPBACKWARD,  VIRTKEY, SHIFT, NOINVERT
-    VK_RIGHT,       IDM_SEEK_JUMPFORWARD,   VIRTKEY, SHIFT, NOINVERT
-    VK_LEFT,        IDM_SEEK_LONGJUMPBACKWARD, VIRTKEY, SHIFT, CONTROL, NOINVERT
-    VK_RIGHT,       IDM_SEEK_LONGJUMPFORWARD, VIRTKEY, SHIFT, CONTROL, NOINVERT
-    VK_BACK,        IDM_SEEK_REWIND,        VIRTKEY, NOINVERT
-    "K",            IDM_SEEK_SEEKBYKEYFRAMES, VIRTKEY, CONTROL, NOINVERT
-    VK_LEFT,        IDM_SEEK_STEPBACKWARD,  VIRTKEY, NOINVERT
-    VK_RIGHT,       IDM_SEEK_STEPFORWARD,   VIRTKEY, NOINVERT
-    "0",            IDM_VIEW_MAINCONTROLS,  VIRTKEY, CONTROL, NOINVERT
-    VK_DOWN,        IDM_VOLUME_DECREASE,    VIRTKEY, NOINVERT
-    VK_UP,          IDM_VOLUME_INCREASE,    VIRTKEY, NOINVERT
-    "M",            IDM_VOLUME_MUTE,        VIRTKEY, CONTROL, NOINVERT
-    "0",            IDM_WB_NORMALWINDOW,    VIRTKEY, CONTROL, ALT, NOINVERT
-    "1",            IDM_WB_TOOLWINDOW,      VIRTKEY, CONTROL, ALT, NOINVERT
-    "3",            IDM_ZOOM_DOUBLESIZE,    VIRTKEY, ALT, NOINVERT
-    "1",            IDM_ZOOM_HALFSIZE,      VIRTKEY, ALT, NOINVERT
-    "2",            IDM_ZOOM_NORMALSIZE,    VIRTKEY, ALT, NOINVERT
-END
-
-
-/////////////////////////////////////////////////////////////////////////////
-//
-// RT_MANIFEST
-//
-
-IDR_XPMANIFEST RT_MANIFEST 
-BEGIN
-    0x3f3c, 0x6d78, 0x206c, 0x6576, 0x7372, 0x6f69, 0x3d6e, 0x3122, 0x302e, 
-    0x2022, 0x6e65, 0x6f63, 0x6964, 0x676e, 0x223d, 0x5455, 0x2d46, 0x2238, 
-    0x7320, 0x6174, 0x646e, 0x6c61, 0x6e6f, 0x3d65, 0x7922, 0x7365, 0x3f22, 
-    0x0d3e, 0x3c0a, 0x7361, 0x6573, 0x626d, 0x796c, 0x7820, 0x6c6d, 0x736e, 
-    0x223d, 0x7275, 0x3a6e, 0x6373, 0x6568, 0x616d, 0x2d73, 0x696d, 0x7263, 
-    0x736f, 0x666f, 0x2d74, 0x6f63, 0x3a6d, 0x7361, 0x2e6d, 0x3176, 0x2022, 
-    0x616d, 0x696e, 0x6566, 0x7473, 0x6556, 0x7372, 0x6f69, 0x3d6e, 0x3122, 
-    0x302e, 0x3e22, 0x0a0d, 0x3c09, 0x7361, 0x6573, 0x626d, 0x796c, 0x6449, 
-    0x6e65, 0x6974, 0x7974, 0x0a0d, 0x0909, 0x6576, 0x7372, 0x6f69, 0x3d6e, 
-    0x3122, 0x302e, 0x302e, 0x302e, 0x0d22, 0x090a, 0x7009, 0x6f72, 0x6563, 
-    0x7373, 0x726f, 0x7241, 0x6863, 0x7469, 0x6365, 0x7574, 0x6572, 0x223d, 
-    0x222a, 0x0a0d, 0x0909, 0x616e, 0x656d, 0x223d, 0x6145, 0x7973, 0x6142, 
-    0x2272, 0x0a0d, 0x0909, 0x7974, 0x6570, 0x223d, 0x6977, 0x336e, 0x2232, 
-    0x0a0d, 0x2f09, 0x0d3e, 0x090a, 0x643c, 0x7365, 0x7263, 0x7069, 0x6974, 
-    0x6e6f, 0x453e, 0x7361, 0x4279, 0x7261, 0x2f3c, 0x6564, 0x6373, 0x6972, 
-    0x7470, 0x6f69, 0x3e6e, 0x0a0d, 0x3c09, 0x6564, 0x6570, 0x646e, 0x6e65, 
-    0x7963, 0x0d3e, 0x090a, 0x3c09, 0x6564, 0x6570, 0x646e, 0x6e65, 0x4174, 
-    0x7373, 0x6d65, 0x6c62, 0x3e79, 0x0a0d, 0x0909, 0x3c09, 0x7361, 0x6573, 
-    0x626d, 0x796c, 0x6449, 0x6e65, 0x6974, 0x7974, 0x0a0d, 0x0909, 0x0909, 
-    0x7974, 0x6570, 0x223d, 0x6977, 0x336e, 0x2232, 0x0a0d, 0x0909, 0x0909, 
-    0x616e, 0x656d, 0x223d, 0x694d, 0x7263, 0x736f, 0x666f, 0x2e74, 0x6957, 
-    0x646e, 0x776f, 0x2e73, 0x6f43, 0x6d6d, 0x6e6f, 0x432d, 0x6e6f, 0x7274, 
-    0x6c6f, 0x2273, 0x0a0d, 0x0909, 0x0909, 0x6576, 0x7372, 0x6f69, 0x3d6e, 
-    0x3622, 0x302e, 0x302e, 0x302e, 0x0d22, 0x090a, 0x0909, 0x7009, 0x6f72, 
-    0x6563, 0x7373, 0x726f, 0x7241, 0x6863, 0x7469, 0x6365, 0x7574, 0x6572, 
-    0x223d, 0x222a, 0x0a0d, 0x0909, 0x0909, 0x7570, 0x6c62, 0x6369, 0x654b, 
-    0x5479, 0x6b6f, 0x6e65, 0x223d, 0x3536, 0x3539, 0x3662, 0x3134, 0x3434, 
-    0x6363, 0x3166, 0x6664, 0x0d22, 0x090a, 0x0909, 0x6c09, 0x6e61, 0x7567, 
-    0x6761, 0x3d65, 0x2a22, 0x0d22, 0x090a, 0x0909, 0x3e2f, 0x0a0d, 0x0909, 
-    0x2f3c, 0x6564, 0x6570, 0x646e, 0x6e65, 0x4174, 0x7373, 0x6d65, 0x6c62, 
-    0x3e79, 0x0a0d, 0x3c09, 0x642f, 0x7065, 0x6e65, 0x6564, 0x636e, 0x3e79, 
-    0x0a0d, 0x2f3c, 0x7361, 0x6573, 0x626d, 0x796c, "\076" 
-END
-
-
-/////////////////////////////////////////////////////////////////////////////
-//
-// Bitmap
-//
-
-IDB_BALANCENORMAL       BITMAP                  "BalanceNormal.bmp"
-IDB_NEXTFILE            BITMAP                  "NextFile.bmp"
-IDB_PAUSE               BITMAP                  "Pause.bmp"
-IDB_PLAY                BITMAP                  "Play.bmp"
-IDB_PREVIOUSFILE        BITMAP                  "PreviousFile.bmp"
-IDB_SOUNDOFF            BITMAP                  "SoundOff.bmp"
-IDB_SOUNDON             BITMAP                  "SoundOn.bmp"
-IDB_STEPBACKWARD        BITMAP                  "StepBackward.bmp"
-IDB_STEPFORWARD         BITMAP                  "StepForward.bmp"
-IDB_LOGO                BITMAP                  "Logo.bmp"
-IDB_CHECKMARK           BITMAP                  "CheckMark.bmp"
-IDB_RADIOCHECKMARK      BITMAP                  "RadioCheckMark.bmp"
-#endif    // English (U.S.) resources
+#endif    // English (United States) resources
 /////////////////////////////////////////////////////////////////////////////
 
 

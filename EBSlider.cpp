@@ -21,7 +21,7 @@
 
 BOOL InitEBSlider(HINSTANCE hInstance)
 {
-	WNDCLASSEX WCEX = { 0 };
+	WNDCLASSEX WCEX = {};
 	WCEX.cbSize = sizeof(WCEX);
 	WCEX.style = CS_HREDRAW | CS_VREDRAW;
 	WCEX.hInstance = hInstance;
@@ -40,11 +40,11 @@ LRESULT CALLBACK EBSliderProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam
 	{
 		pEBSP = new EBSPROPERTIES;
 		ZeroMemory(pEBSP, sizeof(EBSPROPERTIES));
-		SetWindowLongPtr(hWnd, GWL_USERDATA, (LONG_PTR)pEBSP);
+		SetWindowLongPtr(hWnd, GWLP_USERDATA, (LONG_PTR)pEBSP);
 	}
 	else
 	{
-		pEBSP = (LPEBSPROPERTIES)GetWindowLongPtr(hWnd, GWL_USERDATA);
+		pEBSP = (LPEBSPROPERTIES)GetWindowLongPtr(hWnd, GWLP_USERDATA);
 	}
 	switch (uMsg)
 	{
@@ -78,8 +78,8 @@ LRESULT CALLBACK EBSliderProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam
 			PostMessage(hWnd, EBSM_DRAWCONTROL, 0, 0);
 			break;
 		case EBSM_SETRANGE:
-			pEBSP->lMin = wParam;
-			pEBSP->lMax = lParam;
+			pEBSP->lMin = (LONG)wParam;
+			pEBSP->lMax = (LONG)lParam;
 			PostMessage(hWnd, EBSM_DRAWCONTROL, 0, 0);
 			break;
 		case EBSM_GETRANGE:
@@ -88,10 +88,10 @@ LRESULT CALLBACK EBSliderProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam
 			break;
 		case EBSM_SETPOS:
 		{
-			pEBSP->lPos = lParam;
+			pEBSP->lPos = (LONG)lParam;
 			if (wParam)
 			{
-				NMHDR NM = { 0 };
+				NMHDR NM = {};
 				NM.code = EBSN_CHANGE_SP;
 				NM.hwndFrom = hWnd;
 				NM.idFrom = GetDlgCtrlID(hWnd);
@@ -103,8 +103,8 @@ LRESULT CALLBACK EBSliderProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam
 		case EBSM_GETPOS:
 			return pEBSP->lPos;
 		case EBSM_SETLINECOLORS:
-			pEBSP->crLineColorOne = wParam;
-			pEBSP->crLineColorTwo = lParam;
+			pEBSP->crLineColorOne = (COLORREF)wParam;
+			pEBSP->crLineColorTwo = (COLORREF)lParam;
 			PostMessage(hWnd, EBSM_DRAWCONTROL, 0, 0);
 			break;
 		case EBSM_GETLINECOLORS:
@@ -112,14 +112,14 @@ LRESULT CALLBACK EBSliderProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam
 			*(PLONG)lParam = pEBSP->crLineColorTwo;
 			break;
 		case EBSM_SETBKCOLOR:
-			pEBSP->crBkColor = lParam;
+			pEBSP->crBkColor = (COLORREF)lParam;
 			PostMessage(hWnd, EBSM_DRAWCONTROL, 0, 0);
 			break;
 		case EBSM_GETBKCOLOR:
 			return pEBSP->crBkColor;
 		case EBSM_SETBRCOLORS:
-			pEBSP->crBrColorOne = wParam;
-			pEBSP->crBrColorTwo = lParam;
+			pEBSP->crBrColorOne = (COLORREF)wParam;
+			pEBSP->crBrColorTwo = (COLORREF)lParam;
 			PostMessage(hWnd, EBSM_DRAWCONTROL, 0, 0);
 			break;
 		case EBSM_GETBRCOLORS:
@@ -127,7 +127,7 @@ LRESULT CALLBACK EBSliderProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam
 			*(PLONG)lParam = pEBSP->crBrColorTwo;
 			break;
 		case EBSM_SETMODE:
-			pEBSP->lMode = lParam;
+			pEBSP->lMode = (LONG)lParam;
 			PostMessage(hWnd, EBSM_DRAWCONTROL, 0, 0);
 			break;
 		case EBSM_GETMODE:
@@ -190,9 +190,9 @@ LRESULT CALLBACK EBSliderProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam
 			{
 				HPEN hIPen, hOldPen;
 				LONG lPos;
-				TRIVERTEX TV[2] = { 0 };
-				GRADIENT_RECT GR = { 0 };
-				RECT RCB = { 0 };
+				TRIVERTEX TV[2] = {};
+				GRADIENT_RECT GR = {};
+				RECT RCB = {};
 				if (IsWindowEnabled(hWnd))
 				{
 					HBRUSH hBkBrush = CreateSolidBrush(pEBSP->crBkColor);
@@ -329,8 +329,8 @@ LRESULT CALLBACK EBSliderProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam
 					HDC hLDC;
 					HBRUSH hGlBrush;
 					HBITMAP hTmpBitmap, hOldBitmap;
-					RECT RCGE = { 0 };
-					BLENDFUNCTION BF = { 0 };
+					RECT RCGE = {};
+					BLENDFUNCTION BF = {};
 					CopyRect(&RCGE, &pEBSP->CRC);
 					RCGE.right -= RCGE.left;
 					RCGE.bottom -= RCGE.top;
@@ -362,7 +362,7 @@ LRESULT CALLBACK EBSliderProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam
 			return 1;
 		case WM_PAINT:
 		{
-			PAINTSTRUCT PS = { 0 };
+			PAINTSTRUCT PS = {};
 			HDC hDC = BeginPaint(hWnd, &PS);
 			BitBlt(hDC, 0, 0, pEBSP->CRC.right, pEBSP->CRC.bottom, pEBSP->hDBDC, 0, 0, SRCCOPY);
 			EndPaint(hWnd, &PS);

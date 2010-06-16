@@ -3,6 +3,7 @@
 
 #include <windows.h>
 #include <shlobj.h>
+#include <stdio.h>
 
 #include "common.h"
 
@@ -10,7 +11,7 @@
 
 //Рисование текста с эффектом 3D
 void Draw3DText(HWND hWnd,
-				LPWSTR lpwText,
+				LPWSTR lpText,
 				COLORREF crBkColorOne,
 				COLORREF crBkColorTwo,
 				DWORD dwBkDirection,
@@ -19,7 +20,7 @@ void Draw3DText(HWND hWnd,
 				LONG lShadOffsetX,
 				LONG lShadOffsetY)
 {
-	RECT RC = { 0 };
+	RECT RC = {};
 	HDC hDC = GetDC(hWnd);
 	HFONT hFont = CreateFont(-MulDiv(8, GetDeviceCaps(hDC, LOGPIXELSY), 72)
 		, 0, 0, 0, 0, FALSE, FALSE, 0, DEFAULT_CHARSET, OUT_DEFAULT_PRECIS,
@@ -35,8 +36,8 @@ void Draw3DText(HWND hWnd,
 	}
 	else
 	{
-		TRIVERTEX TV[2] = { 0 };
-		GRADIENT_RECT GR = { 0 };
+		TRIVERTEX TV[2] = {};
+		GRADIENT_RECT GR = {};
 		TV[0].x = RC.left;
 		TV[0].y = RC.top;
 		TV[0].Red = GetRValue(crBkColorOne) << 8;
@@ -58,11 +59,11 @@ void Draw3DText(HWND hWnd,
 	{
 		OffsetRect(&RC, lShadOffsetX, lShadOffsetY);
 		SetTextColor(hDC, crShadowColor);
-		DrawText(hDC, lpwText, -1, &RC, DT_VCENTER | DT_CENTER | DT_SINGLELINE);
+		DrawText(hDC, lpText, -1, &RC, DT_VCENTER | DT_CENTER | DT_SINGLELINE);
 		OffsetRect(&RC, -(lShadOffsetX), -(lShadOffsetY));
 	}
 	SetTextColor(hDC, crFontColor);
-	DrawText(hDC, lpwText, -1, &RC, DT_VCENTER | DT_CENTER | DT_SINGLELINE);
+	DrawText(hDC, lpText, -1, &RC, DT_VCENTER | DT_CENTER | DT_SINGLELINE);
 	SelectObject(hDC, hOldFont);
 	DeleteObject(hFont);
 	ReleaseDC(hWnd, hDC);
@@ -71,26 +72,29 @@ void Draw3DText(HWND hWnd,
 //Устанавливает ListBox'у параметры для горизонтальной прокрутки
 void SetLBHorizontalExtent(HWND hListBox)
 {
-	WCHAR lpwText[MAX_PATH] = { 0 };
+	WCHAR lpText[MAX_PATH] = {};
 	HDC hDC;
-	HFONT hOldFont;
-	RECT RCL = { 0 };
-	LONG lLBStyle, lMaxTextWidth = 0;
+	HFONT hLBFont, hOldLBFont;
+	RECT RCL = {};
+	LONG_PTR lLBStyle;
+	LONG lMaxTextWidth = 0;
 	ULONG i, uItemsCnt;
 	hDC = GetDC(hListBox);
-	hOldFont = (HFONT)SelectObject(hDC, (HFONT)GetStockObject(DEFAULT_GUI_FONT));
-	uItemsCnt = SendMessage(hListBox, LB_GETCOUNT, 0, 0);
+	if (!(hLBFont = (HFONT)SendMessage(hListBox, WM_GETFONT, 0, 0)))
+		hLBFont = (HFONT)GetStockObject(DEFAULT_GUI_FONT);
+	hOldLBFont = (HFONT)SelectObject(hDC, hLBFont);
+	uItemsCnt = (ULONG)SendMessage(hListBox, LB_GETCOUNT, 0, 0);
 	for (i = 0; i < uItemsCnt; i++)
 	{
-		SendMessage(hListBox, LB_GETTEXT, i, (LPARAM)lpwText);
-		DrawText(hDC, lpwText, -1, &RCL, DT_LEFT | DT_SINGLELINE | DT_CALCRECT);
+		SendMessage(hListBox, LB_GETTEXT, i, (LPARAM)lpText);
+		DrawText(hDC, lpText, -1, &RCL, DT_LEFT | DT_SINGLELINE | DT_CALCRECT);
 		if (RCL.right > lMaxTextWidth) lMaxTextWidth = RCL.right;
 	}
-	lLBStyle = GetWindowLong(hListBox, GWL_STYLE);
+	lLBStyle = GetWindowLongPtr(hListBox, GWL_STYLE);
 	if ((lLBStyle & WS_VSCROLL) == WS_VSCROLL)
 		lMaxTextWidth += GetSystemMetrics(SM_CXVSCROLL);
 	SendMessage(hListBox, LB_SETHORIZONTALEXTENT, lMaxTextWidth, 0);
-	SelectObject(hDC, hOldFont);
+	SelectObject(hDC, hOldLBFont);
 	ReleaseDC(hListBox, hDC);
 }
 
@@ -99,7 +103,7 @@ void MoveToCenter(HWND hWnd,
 				  LONG lXOffset,
 				  LONG lYOffset)
 {
-	RECT RC = { 0 };
+	RECT RC = {};
 	int intSX = 0, intSY = 0;
 	int intNL = 0, intNT = 0;
 	GetWindowRect(hWnd, &RC); 
@@ -107,13 +111,13 @@ void MoveToCenter(HWND hWnd,
 	intSY = GetSystemMetrics(SM_CYSCREEN);
 	intNL = ((intSX / 2) - ((RC.right - RC.left) / 2)) + lXOffset;
 	intNT = ((intSY / 2) - ((RC.bottom - RC.top) / 2)) + lYOffset;
-	SetWindowPos(hWnd, HWND_TOP, intNL, intNT, 0, 0, SWP_NOSIZE);
+	SetWindowPos(hWnd, 0, intNL, intNT, 0, 0, SWP_NOSIZE | SWP_NOZORDER);
 }
 
 //Прилипание к краям экрана
 void StickyWindow(HWND hWnd, LPRECT pCRC)
 {
-	RECT RCW = { 0 };
+	RECT RCW = {};
 	int intThreshold = 5; //Порог прилипания
 	int intSX = 0, intSY = 0;
 	GetWindowRect(hWnd, &RCW);
@@ -144,119 +148,141 @@ void ShowMousePointer(BOOL bShow)
 }
 
 BOOL GetAppPath(HINSTANCE hApp,
-				LPWSTR lpwPath,
+				LPWSTR lpPath,
 				DWORD dwPathLen,
 				BOOL bAddQuotes)
 {
-    LPWSTR lpwBuff = new WCHAR[dwPathLen];
-	if (GetModuleFileName(hApp, lpwBuff, dwPathLen) == 0)
+	LPWSTR lpBuff = new WCHAR[dwPathLen];
+	if (GetModuleFileName(hApp, lpBuff, dwPathLen) == 0)
 	{
-		delete[] lpwBuff;
+		delete[] lpBuff;
 		return FALSE;
 	}
-	if (wcschr(lpwBuff, ' ') && bAddQuotes)
+	if (wcschr(lpBuff, ' ') && bAddQuotes)
 	{
-		WCHAR lpwQt[1] = { 0 };
-		lpwQt[0] = '"';
-		wcscpy(lpwPath, lpwQt);
-		wcscat(lpwPath, lpwBuff);
-		wcscat(lpwPath, lpwQt);
+		WCHAR lpQt[1] = {};
+		lpQt[0] = '"';
+		wcscpy(lpPath, lpQt);
+		wcscat(lpPath, lpBuff);
+		wcscat(lpPath, lpQt);
 	}
-	else wcscpy(lpwPath, lpwBuff);
-	delete[] lpwBuff;
+	else wcscpy(lpPath, lpBuff);
+	delete[] lpBuff;
 	return TRUE;
 }
 
-DWORD ReadFileVersion(LPWSTR lpwFileName,
-					  LPWSTR Result,
-					  BOOL bMMOnly)
+DWORD ReadFileVersion(LPCWSTR lpFileName,
+					  LPWSTR lpResult,
+					  UINT uResultSize,
+					  DWORD dwFlags)
 {
-    DWORD dwDummy;
+	DWORD dwDummy;
 	BYTE *bBuffer;
 	VS_FIXEDFILEINFO *VS_BUFF;
-    DWORD dwBufferLen;
-    UINT uVerBufferLen;
-	WCHAR lpwTmp[8] = { 0 };
-    dwBufferLen = GetFileVersionInfoSize(lpwFileName, &dwDummy);
-    if (dwBufferLen < 1)
+	DWORD dwBufferLen;
+	UINT uVerBufferLen;
+	WCHAR lpTmp[8] = {};
+	SIZE_T szRLen;
+	dwBufferLen = GetFileVersionInfoSize(lpFileName, &dwDummy);
+	if (dwBufferLen < 1)
 	{
-		Result = L"None";
+		wcscpy(lpResult, L"None");
 		return 0;
 	}
-    bBuffer = new BYTE[dwBufferLen];
-    GetFileVersionInfo(lpwFileName, 0, dwBufferLen, &bBuffer[0]);
-    VerQueryValue(&bBuffer[0], L"\\", (PVOID *)&VS_BUFF, &uVerBufferLen);
-	_itow(HIWORD(VS_BUFF->dwProductVersionMS), lpwTmp, 10);
-	wcscpy(Result, lpwTmp);
-	wcscat(Result, L".");
-	_itow(LOWORD(VS_BUFF->dwProductVersionMS), lpwTmp, 10);
-	wcscat(Result, lpwTmp);
-	if (!bMMOnly)
+	bBuffer = new BYTE[dwBufferLen];
+	GetFileVersionInfo(lpFileName, 0, dwBufferLen, &bBuffer[0]);
+	VerQueryValue(&bBuffer[0], L"\\", (PVOID *)&VS_BUFF, &uVerBufferLen);
+	ZeroMemory(lpResult, uResultSize);
+	if ((dwFlags & RFV_MAJOR) == RFV_MAJOR)
 	{
-		wcscat(Result, L".");
-		_itow(HIWORD(VS_BUFF->dwProductVersionLS), lpwTmp, 10);
-		wcscat(Result, lpwTmp);
-		wcscat(Result, L".");
-		_itow(LOWORD(VS_BUFF->dwProductVersionLS), lpwTmp, 10);
-		wcscat(Result, lpwTmp);
+		_itow(HIWORD(VS_BUFF->dwProductVersionMS), lpTmp, 10);
+		wcscpy(lpResult, lpTmp);
+	}
+	if ((dwFlags & RFV_MINOR) == RFV_MINOR)
+	{
+		szRLen = wcslen(lpResult);
+		if (szRLen && (lpResult[szRLen - 1] != '\0'))
+			wcscat(lpResult, L".");
+		_itow(LOWORD(VS_BUFF->dwProductVersionMS), lpTmp, 10);
+		wcscat(lpResult, lpTmp);
+	}
+	if ((dwFlags & RFV_RELEASE) == RFV_RELEASE)
+	{
+		szRLen = wcslen(lpResult);
+		if (szRLen && (lpResult[szRLen - 1] != '\0'))
+			wcscat(lpResult, L".");
+		_itow(HIWORD(VS_BUFF->dwProductVersionLS), lpTmp, 10);
+		wcscat(lpResult, lpTmp);
+	}
+	if ((dwFlags & RFV_BUILD) == RFV_BUILD)
+	{
+		szRLen = wcslen(lpResult);
+		if (szRLen && (lpResult[szRLen - 1] != '\0'))
+			wcscat(lpResult, L".");
+		_itow(LOWORD(VS_BUFF->dwProductVersionLS), lpTmp, 10);
+		wcscat(lpResult, lpTmp);
 	}
 	delete[] bBuffer;
 	return 1;
 }
 
-DWORD GetOpenDialog(HINSTANCE hInstance,
+SIZE_T GetOpenDialog(HINSTANCE hInstance,
 					HWND hWnd,
-					LPCWSTR lpwTitle,
-					LPWSTR lpwFileName,
+					LPCWSTR lpTitle,
+					LPWSTR lpFileName,
 					DWORD dwFNSize,
-					LPCWSTR lpwFilter,
+					LPCWSTR lpFilter,
 					DWORD dwFilterIndex,
-					BOOL bMultiSelect)
+					BOOL bMultiSelect,
+					LPCWSTR lpInitialDir)
 {
-	OPENFILENAME OFN = { 0 };
+	OPENFILENAME OFN = {};
 	OFN.lStructSize = sizeof(OFN);
 	OFN.hInstance = hInstance;
 	OFN.hwndOwner = hWnd;
 	OFN.Flags = OFN_FILEMUSTEXIST | OFN_HIDEREADONLY | OFN_LONGNAMES;
 	if (bMultiSelect)
 		OFN.Flags |= OFN_ALLOWMULTISELECT | OFN_EXPLORER;
-	OFN.lpstrTitle = lpwTitle;
-	OFN.lpstrFile = lpwFileName;
+	OFN.lpstrTitle = lpTitle;
+	OFN.lpstrFile = lpFileName;
 	OFN.nMaxFile = dwFNSize;
-	OFN.lpstrFilter = lpwFilter;
+	OFN.lpstrFilter = lpFilter;
 	OFN.nFilterIndex = dwFilterIndex;
+	OFN.lpstrInitialDir = lpInitialDir;
 	if (GetOpenFileName(&OFN))
 	{
-		return wcslen(lpwFileName);
+		return wcslen(lpFileName);
 	}
 	else return 0;
 }
 
-DWORD GetSaveDialog(HINSTANCE hInstance,
+SIZE_T GetSaveDialog(HINSTANCE hInstance,
 					HWND hWnd,
-					LPCWSTR lpwTitle,
-					LPWSTR lpwFileName,
+					LPCWSTR lpTitle,
+					LPWSTR lpFileName,
 					DWORD dwFNSize,
-					LPCWSTR lpwFilter,
+					LPCWSTR lpFilter,
 					LPDWORD pFilterIndex,
-					LPCWSTR lpwDefExt)
+					LPCWSTR lpDefExt,
+					LPCWSTR lpInitialDir)
 {
-	OPENFILENAME OFN = { 0 };
+	OPENFILENAME OFN = {};
 	OFN.lStructSize = sizeof(OFN);
 	OFN.hInstance = hInstance;
 	OFN.hwndOwner = hWnd;
 	OFN.Flags = OFN_HIDEREADONLY | OFN_LONGNAMES | OFN_OVERWRITEPROMPT |
 		OFN_NOREADONLYRETURN | OFN_EXPLORER;
-	OFN.lpstrTitle = lpwTitle;
-	OFN.lpstrFile = lpwFileName;
+	OFN.lpstrTitle = lpTitle;
+	OFN.lpstrFile = lpFileName;
 	OFN.nMaxFile = dwFNSize;
-	OFN.lpstrFilter = lpwFilter;
+	OFN.lpstrFilter = lpFilter;
 	OFN.nFilterIndex = *pFilterIndex;
-	OFN.lpstrDefExt = lpwDefExt;
+	OFN.lpstrDefExt = lpDefExt;
+	OFN.lpstrInitialDir = lpInitialDir;
 	if (GetSaveFileName(&OFN))
 	{
 		*pFilterIndex = OFN.nFilterIndex;
-		return wcslen(lpwFileName);
+		return wcslen(lpFileName);
 	}
 	else return 0;
 }
@@ -265,9 +291,9 @@ BOOL GetColorDialog(HINSTANCE hInstance,
 					HWND hWnd,
 					LPCOLORREF crColor)
 {
-	CHOOSECOLOR CC = { 0 };
+	CHOOSECOLOR CC = {};
 	ULONG i, lClr = 0;
-	COLORREF crCustomColors[16] = { 0 };
+	COLORREF crCustomColors[16] = {};
 	for (i = 0; i < 16; i++)
 	{
 		crCustomColors[i] = RGB(255 - lClr, 255 - lClr, 255 - lClr);
@@ -279,7 +305,7 @@ BOOL GetColorDialog(HINSTANCE hInstance,
 	CC.rgbResult = *crColor;
 	CC.lpCustColors = crCustomColors;
 	CC.Flags = CC_RGBINIT | CC_FULLOPEN;
-    if (ChooseColor(&CC))
+	if (ChooseColor(&CC))
 	{
 		*crColor = CC.rgbResult;
 		return TRUE;
@@ -287,58 +313,115 @@ BOOL GetColorDialog(HINSTANCE hInstance,
 	return FALSE;
 }
 
-DWORD GetBrowseForFolderDialog(HWND hWnd, LPWSTR lpwFolder, LPCWSTR lpwTitle)
+SIZE_T GetBrowseForFolderDialog(HWND hWnd, LPWSTR lpFolder, LPCWSTR lpTitle, LPCWSTR lpInitialDir)
 {
-	CoInitialize(0);
-	DWORD dwResult = 0;
-    BROWSEINFO BI = { 0 };
-    LPITEMIDLIST pIIDL;
-    BI.hwndOwner = hWnd;
+	HRESULT hResult = CoInitialize(NULL);
+	if (FAILED(hResult)) return 0;
+	SIZE_T szResult = 0;
+	BROWSEINFO BI = {};
+	LPITEMIDLIST pIIDL;
+	BI.hwndOwner = hWnd;
 	BI.ulFlags = BIF_RETURNONLYFSDIRS | BIF_NEWDIALOGSTYLE | BIF_EDITBOX;
-	BI.lpszTitle = lpwTitle;
-    pIIDL = SHBrowseForFolder(&BI);
+	BI.lpszTitle = lpTitle;
+	BI.lpfn = BFFCallbackProc;
+	BI.lParam = (LPARAM)lpInitialDir;
+	pIIDL = SHBrowseForFolder(&BI);
 	if (!pIIDL)
 	{
 		CoUninitialize();
-		return dwResult;
+		return szResult;
 	}
-    if (SHGetPathFromIDList(pIIDL, lpwFolder))
+	if (SHGetPathFromIDList(pIIDL, lpFolder))
 	{
-		dwResult = wcslen(lpwFolder);
+		szResult = wcslen(lpFolder);
 	}
 	CoTaskMemFree(pIIDL);
-	CoUninitialize();
-	return dwResult;
+	if (hResult == S_OK)
+		CoUninitialize();
+	return szResult;
 }
 
-void AdjustPrivilege(LPWSTR lpwPrivilege)
+int CALLBACK BFFCallbackProc(HWND hWnd, UINT uMsg, LPARAM lParam, LPARAM lpData)
+{
+	if (uMsg == BFFM_INITIALIZED)
+	{
+		if (lpData)
+			SendMessage(hWnd, BFFM_SETSELECTION, TRUE, lpData);
+	}
+	return 0;
+}
+
+//Получение уникального имени в формате "_имя_раб._стола_-_ID_сессии_"
+//Вызывающий ответственнен за удаление строки посредством delete[]
+LPWSTR CreateUniqueName()
+{
+	LPWSTR lpDesktopName = NULL, lpResult;
+	WCHAR lpSessionID[32] = {};
+	DWORD dwDesktopNameSize;
+	SIZE_T szSessionIDSize;
+	HDESK hDesktop;
+	HANDLE hToken;
+	PTOKEN_STATISTICS pTS;
+	DWORD dwTSSize;
+
+	hDesktop = GetThreadDesktop(GetCurrentThreadId());
+	GetUserObjectInformation(hDesktop, UOI_NAME, lpDesktopName, 0, &dwDesktopNameSize);
+	lpDesktopName = new WCHAR[dwDesktopNameSize / sizeof(WCHAR)];
+	ZeroMemory(lpDesktopName, dwDesktopNameSize);
+	GetUserObjectInformation(hDesktop, UOI_NAME, lpDesktopName, dwDesktopNameSize,
+		&dwDesktopNameSize);
+
+	OpenProcessToken(GetCurrentProcess(), TOKEN_QUERY, &hToken);
+	GetTokenInformation(hToken, TokenStatistics, NULL, 0, &dwTSSize);
+
+	pTS = (PTOKEN_STATISTICS)new BYTE[dwTSSize];
+
+	if (GetTokenInformation(hToken, TokenStatistics, (LPVOID)pTS, dwTSSize, &dwTSSize))
+	{
+		swprintf(lpSessionID, L"-%08x%08x", pTS->AuthenticationId.HighPart,
+			pTS->AuthenticationId.LowPart);
+	}
+
+	delete[] pTS;
+
+	dwDesktopNameSize /= sizeof(WCHAR);
+	szSessionIDSize =  wcslen(lpSessionID);
+	lpResult = new WCHAR[dwDesktopNameSize + szSessionIDSize + 1];
+	wcscpy(lpResult, lpDesktopName);
+	wcscat(lpResult, lpSessionID);
+	lpResult[dwDesktopNameSize + szSessionIDSize] = '\0';
+
+	return lpResult;
+}
+
+void AdjustPrivilege(LPWSTR lpPrivilege)
 {
 	HANDLE hToken;
-	TOKEN_PRIVILEGES TKP = { 0 };
-	TOKEN_PRIVILEGES TKPOLD = { 0 };
+	TOKEN_PRIVILEGES TKP = {};
+	TOKEN_PRIVILEGES TKPOLD = {};
 	DWORD dwPSLength;
-    if (OpenProcessToken(GetCurrentProcess(), TOKEN_ADJUST_PRIVILEGES | TOKEN_QUERY, &hToken))
+	if (OpenProcessToken(GetCurrentProcess(), TOKEN_ADJUST_PRIVILEGES | TOKEN_QUERY, &hToken))
 	{
-        LookupPrivilegeValue(0, lpwPrivilege, &TKP.Privileges[0].Luid);
-        TKP.PrivilegeCount = 1;
-        TKP.Privileges[0].Attributes = SE_PRIVILEGE_ENABLED;
-        AdjustTokenPrivileges(hToken, 0, &TKP, sizeof(TKPOLD), &TKPOLD, &dwPSLength);
-    }
+		LookupPrivilegeValue(NULL, lpPrivilege, &TKP.Privileges[0].Luid);
+		TKP.PrivilegeCount = 1;
+		TKP.Privileges[0].Attributes = SE_PRIVILEGE_ENABLED;
+		AdjustTokenPrivileges(hToken, FALSE, &TKP, sizeof(TKPOLD), &TKPOLD, &dwPSLength);
+	}
 }
 
-BOOL IsFile(LPWSTR lpwPath)
+BOOL IsFile(LPWSTR lpPath)
 {
-	LPWSTR lpwTmp = new WCHAR[MAX_PATH];
+	LPWSTR lpTmp = new WCHAR[MAX_PATH];
 	DWORD dwErr;
-	wcscpy(lpwTmp, lpwPath);
-	if ((lpwTmp[0] == '"') && (lpwTmp[wcslen(lpwTmp) - 1] == '"'))
+	wcscpy(lpTmp, lpPath);
+	if ((lpTmp[0] == '"') && (lpTmp[wcslen(lpTmp) - 1] == '"'))
 	{
-		lpwTmp++;
-		lpwTmp[wcslen(lpwTmp) - 1] = '\0';
+		lpTmp++;
+		lpTmp[wcslen(lpTmp) - 1] = '\0';
 	}
-	HANDLE hFile = CreateFile(lpwTmp, GENERIC_READ, 0, 0, OPEN_EXISTING,
-		FILE_ATTRIBUTE_NORMAL, 0);
-	delete[] lpwTmp;
+	HANDLE hFile = CreateFile(lpTmp, GENERIC_READ, 0, NULL, OPEN_EXISTING,
+		FILE_ATTRIBUTE_NORMAL, NULL);
+	delete[] lpTmp;
 	if (hFile == INVALID_HANDLE_VALUE)
 	{	
 		dwErr = GetLastError();
@@ -356,23 +439,25 @@ BOOL IsFile(LPWSTR lpwPath)
 	return TRUE;
 }
 
-BOOL IsDirectory(LPWSTR lpwPath)
+BOOL IsDirectory(LPWSTR lpPath)
 {
-	WIN32_FILE_ATTRIBUTE_DATA FAD = { 0 };
-	LPWSTR lpwTmp = new WCHAR[MAX_PATH];
-	wcscpy(lpwTmp, lpwPath);
-	if ((lpwTmp[0] == '"') && (lpwTmp[wcslen(lpwTmp) - 1] == '"'))
+	WIN32_FILE_ATTRIBUTE_DATA FAD = {};
+	LPWSTR lpTmp = new WCHAR[MAX_PATH];
+	wcscpy(lpTmp, lpPath);
+	if ((lpTmp[0] == '"') && (lpTmp[wcslen(lpTmp) - 1] == '"'))
 	{
-		lpwTmp++;
-		lpwTmp[wcslen(lpwTmp) - 1] = '\0';
+		lpTmp++;
+		lpTmp[wcslen(lpTmp) - 1] = '\0';
 	}
-	if (GetFileAttributesEx(lpwTmp, GetFileExInfoStandard, (LPVOID)&FAD) != 0)
+	if (GetFileAttributesEx(lpTmp, GetFileExInfoStandard, (LPVOID)&FAD) != 0)
 	{
 		if ((FAD.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) == FILE_ATTRIBUTE_DIRECTORY)
 		{
+			delete[] lpTmp;
 			return TRUE;
 		}
 	}
+	delete[] lpTmp;
 	return FALSE;
 }
 
@@ -398,76 +483,87 @@ void CheckBounds(long *Value, long Min, long Max)
 	if (*Value > Max) *Value = Max;
 }
 
-BOOL IsNumeric(LPCWSTR lpwText)
+BOOL IsNumeric(LPCWSTR lpText)
 {
-	DWORD i = 0, dwTextSize = wcslen(lpwText);
-	if (dwTextSize == 0) return FALSE;
-	for (; i < (dwTextSize - 1); i++);
+	SIZE_T i = 0, szTextSize = wcslen(lpText);
+	if (szTextSize == 0) return FALSE;
+	for (; i < (szTextSize - 1); i++)
 	{
-		if (((lpwText[i] < '0') || (lpwText[i] > '9')) &&
-			(lpwText[i] != '.')) return FALSE;
+		if ((lpText[i] == '-') && (i == 0)) continue;
+		if (((lpText[i] < '0') || (lpText[i] > '9')) &&
+			(lpText[i] != '.')) return FALSE;
 	}
 	return TRUE;
 }
 
-BOOL IsURL(LPCWSTR lpwText)
+BOOL IsURL(LPCWSTR lpText)
 {
-	if (wcsstr(lpwText, L"http://") == lpwText) return TRUE;
-	if (wcsstr(lpwText, L"https://") == lpwText) return TRUE;
-	if (wcsstr(lpwText, L"ftp://") == lpwText) return TRUE;
-	if (wcsstr(lpwText, L"mms://") == lpwText) return TRUE; //Под вопросом
-	if (wcsstr(lpwText, L"file://") == lpwText) return TRUE;
+	if (wcsstr(lpText, L"http://") == lpText) return TRUE;
+	if (wcsstr(lpText, L"https://") == lpText) return TRUE;
+	if (wcsstr(lpText, L"ftp://") == lpText) return TRUE;
+	if (wcsstr(lpText, L"mms://") == lpText) return TRUE; //Под вопросом
+	if (wcsstr(lpText, L"file://") == lpText) return TRUE;
 	/* Другие протоколы пока учитывать не будем */
 	return FALSE;
 }
 
-DWORD WinAPIErrMsg(DWORD dwCode, LPCWSTR lpwComment)
+void ProcessMessages()
 {
-	WCHAR lpwError[MAX_PATH] = { 0 };
-	WCHAR lpwMsg[512] = { 0 };
-    DWORD dwResult = FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM, 0, dwCode, 0,
-		lpwError, MAX_PATH, 0);
+	MSG Msg;
+	if (PeekMessage(&Msg, 0, 0, 0, PM_REMOVE))
+	{
+		TranslateMessage(&Msg);
+		DispatchMessage(&Msg);
+	}
+}
+
+DWORD WinAPIErrMsg(DWORD dwCode, LPCWSTR lpComment)
+{
+	WCHAR lpError[MAX_PATH] = {};
+	WCHAR lpMsg[512] = {};
+	DWORD dwResult = FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM, NULL, dwCode, 0,
+		lpError, MAX_PATH, NULL);
 	if (dwResult)
 	{
-		if (lpwComment)
+		if (lpComment)
 		{
-			wcscpy(lpwMsg, lpwComment);
-			wcscat(lpwMsg, L"\n\n");
-			wcscat(lpwMsg, lpwError);
+			wcscpy(lpMsg, lpComment);
+			wcscat(lpMsg, L"\n\n");
+			wcscat(lpMsg, lpError);
 		}
 		else
 		{
-			wcscpy(lpwMsg, lpwError);
+			wcscpy(lpMsg, lpError);
 		}
-		MessageBox(0, lpwMsg, L"Error", MB_ICONEXCLAMATION);
+		MessageBox(NULL, lpMsg, L"Error", MB_ICONEXCLAMATION);
 	}
 	return dwResult;
 }
 
 DWORD DebugMsgLngA(long Value)
 {
-	char lpDbgMsg[64] = { 0 };
+	char lpDbgMsg[64] = {};
 	_ltoa(Value, lpDbgMsg, 10);
-	return MessageBoxA(0, lpDbgMsg, "Debug", MB_OKCANCEL |
+	return MessageBoxA(NULL, lpDbgMsg, "Debug", MB_OKCANCEL |
 		MB_DEFBUTTON1 | MB_ICONEXCLAMATION);
 }
 
 DWORD DebugMsgLngW(long Value)
 {
-	WCHAR lpwDbgMsg[64] = { 0 };
-	_ltow(Value, lpwDbgMsg, 10);
-	return MessageBoxW(0, lpwDbgMsg, L"Debug", MB_OKCANCEL |
+	WCHAR lpDbgMsg[64] = {};
+	_ltow(Value, lpDbgMsg, 10);
+	return MessageBoxW(NULL, lpDbgMsg, L"Debug", MB_OKCANCEL |
 		MB_DEFBUTTON1 | MB_ICONEXCLAMATION);
 }
 
 DWORD DebugMsgStrA(LPSTR String)
 {
-	return MessageBoxA(0, String, "Debug", MB_OKCANCEL |
+	return MessageBoxA(NULL, String, "Debug", MB_OKCANCEL |
 		MB_DEFBUTTON1 | MB_ICONEXCLAMATION);
 }
 
 DWORD DebugMsgStrW(LPWSTR String)
 {
-	return MessageBoxW(0, String, L"Debug", MB_OKCANCEL |
+	return MessageBoxW(NULL, String, L"Debug", MB_OKCANCEL |
 		MB_DEFBUTTON1 | MB_ICONEXCLAMATION);
 }

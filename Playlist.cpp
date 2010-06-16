@@ -12,87 +12,90 @@
 #include "strparser.h"
 #include "common.h"
 #include "filecollection.h"
+#include "playlistdlg.h"
 #include "easybar.h"
 #include "playlist.h"
 
+extern WCHAR lpAppVersionMM[10];
+
 //Общая функция загрузки списков
 //В зависимости от расширения файла функция вызывает соответствующие подфункции
-DWORD LoadPlaylist(LPCWSTR lpwFileName)
+DWORD LoadPlaylist(LPCWSTR lpFileName)
 {
-	WCHAR lpwExt[64] = { 0 };
-	SP_ExtractRightPart(lpwFileName, lpwExt, '.');
-	if (_wcsicmp(lpwExt, L"ebl") == 0)
+	WCHAR lpExt[64] = {};
+	SP_ExtractRightPart(lpFileName, lpExt, '.');
+	if (_wcsicmp(lpExt, L"ebl") == 0)
 	{
-		return LoadPlaylist_EBL(lpwFileName);
+		return LoadPlaylist_EBL(lpFileName);
 	}
-	else if (_wcsicmp(lpwExt, L"wpl") == 0)
+	else if ((_wcsicmp(lpExt, L"m3u") == 0) || (_wcsicmp(lpExt, L"m3u8") == 0))
 	{
-		return LoadPlaylist_WPL(lpwFileName);
+		return LoadPlaylist_M3U(lpFileName);
 	}
-	else if (_wcsicmp(lpwExt, L"asx") == 0)
+	else if (_wcsicmp(lpExt, L"wpl") == 0)
 	{
-		return LoadPlaylist_ASX(lpwFileName);
+		return LoadPlaylist_WPL(lpFileName);
 	}
-	else if (_wcsicmp(lpwExt, L"xspf") == 0)
+	else if (_wcsicmp(lpExt, L"asx") == 0)
 	{
-		return LoadPlaylist_XSPF(lpwFileName);
+		return LoadPlaylist_ASX(lpFileName);
 	}
-	else if (_wcsicmp(lpwExt, L"pls") == 0)
+	else if (_wcsicmp(lpExt, L"xspf") == 0)
 	{
-		return LoadPlaylist_PLS(lpwFileName);
+		return LoadPlaylist_XSPF(lpFileName);
 	}
-	else if (_wcsicmp(lpwExt, L"mpcpl") == 0)
+	else if (_wcsicmp(lpExt, L"pls") == 0)
 	{
-		return LoadPlaylist_MPCPL(lpwFileName);
+		return LoadPlaylist_PLS(lpFileName);
+	}
+	else if (_wcsicmp(lpExt, L"mpcpl") == 0)
+	{
+		return LoadPlaylist_MPCPL(lpFileName);
 	}
 	else
 	{
-		return LoadPlaylist_Common(lpwFileName);
+		return LoadPlaylist_Common(lpFileName);
 	}
 }
 
 //Общая функция сохранения списков
 //В зависимости от расширения файла функция вызывает соответствующие подфункции
-void SavePlaylist(LPCWSTR lpwFileName)
+void SavePlaylist(LPCWSTR lpFileName)
 {
-	WCHAR lpwExt[64] = { 0 };
-	SP_ExtractRightPart(lpwFileName, lpwExt, '.');
-	if (_wcsicmp(lpwExt, L"ebl") == 0)
+	WCHAR lpExt[64] = {};
+	SP_ExtractRightPart(lpFileName, lpExt, '.');
+	if (_wcsicmp(lpExt, L"ebl") == 0)
 	{
-		SavePlaylist_EBL(lpwFileName);
+		SavePlaylist_EBL(lpFileName);
 	}
-	else if (_wcsicmp(lpwExt, L"m3u") == 0)
+	else if ((_wcsicmp(lpExt, L"m3u") == 0) || (_wcsicmp(lpExt, L"m3u8") == 0))
 	{
-		SavePlaylist_M3U(lpwFileName);
+		SavePlaylist_M3U(lpFileName);
 	}
-	else if (_wcsicmp(lpwExt, L"m3u8") == 0)
+	else if (_wcsicmp(lpExt, L"asx") == 0)
 	{
-		SavePlaylist_M3U8(lpwFileName);
-	}
-	else if (_wcsicmp(lpwExt, L"asx") == 0)
-	{
-		SavePlaylist_ASX(lpwFileName);
+		SavePlaylist_ASX(lpFileName);
 	}
 }
 
 //Загрузка списков, в которых путь к файлу занимает отдельную строку
-//По умолчанию читаются файлы в кодировке ANSI. Для M3U8 и файлов с BOM UTF-8
+//По умолчанию читаются файлы в кодировке ANSI. Для файлов с BOM UTF-8
 //выбирается кодировка UTF-8
-static DWORD LoadPlaylist_Common(LPCWSTR lpwFileName)
+DWORD LoadPlaylist_Common(LPCWSTR lpFileName)
 {
 	FILE *pPlaylist;
-	ULONG lLineSize = 0, lLineCnt = 0, lFileCnt = 0;
+	SIZE_T szLineSize;
+	ULONG lLineCnt = 0, lFileCnt = 0;
 	BOOL bEncInUTF8 = FALSE;
-	char lpLine[MAX_PATH * sizeof(WCHAR)] = { 0 };
-	WCHAR lpwLine[MAX_PATH] = { 0 };
-	WCHAR lpwExt[64] = { 0 };
-	SP_ExtractRightPart(lpwFileName, lpwExt, '.');
-	pPlaylist = _wfopen(lpwFileName, L"rt");
-	if (_wcsicmp(lpwExt, L"m3u8") == 0) bEncInUTF8 = TRUE;
+	char lpLine[MAX_PATH * sizeof(WCHAR)] = {};
+	WCHAR lpUnicLine[MAX_PATH] = {};
+	WCHAR lpExt[64] = {};
+	SP_ExtractRightPart(lpFileName, lpExt, '.');
+	pPlaylist = _wfopen(lpFileName, L"rt");
 	while (!feof(pPlaylist))
 	{
 		ZeroMemory(lpLine, sizeof(lpLine));
-		ZeroMemory(lpwLine, sizeof(lpwLine));
+		ZeroMemory(lpLine, sizeof(lpLine));
 		fgets(lpLine, sizeof(lpLine), pPlaylist);
 		if (lLineCnt == 0)
 		{
@@ -103,29 +106,18 @@ static DWORD LoadPlaylist_Common(LPCWSTR lpwFileName)
 				bEncInUTF8 = TRUE;
 			}
 		}
-		if (bEncInUTF8)
-		{
-			MultiByteToWideChar(CP_UTF8, 0, lpLine, -1, lpwLine, sizeof(lpwLine) / sizeof(WCHAR));
-		}
-		else
-		{
-			MultiByteToWideChar(CP_ACP, 0, lpLine, -1, lpwLine, sizeof(lpwLine) / sizeof(WCHAR));
-		}
-		lLineSize = wcslen(lpwLine);
-		if (lpwLine[lLineSize - 1] == '\n')
-		{
-			lpwLine[lLineSize - 1] = '\0';
-			lLineSize--;
-		}
-		CheckPath(lpwFileName, lpwLine, lpwLine);
-		if (IsFile(lpwLine) || IsURL(lpwLine))
+		MultiByteToWideChar((bEncInUTF8)?CP_UTF8:CP_ACP, 0, lpLine, -1, lpUnicLine,
+			sizeof(lpLine) / sizeof(WCHAR));
+		szLineSize = TrimNLChr(lpUnicLine);
+		CheckPath(lpFileName, lpUnicLine, lpUnicLine);
+		if (IsFile(lpUnicLine) || IsURL(lpUnicLine))
 		{
 			//Для BSL (и подобных) - удаление кавычек
-			if ((lpwLine[0] == '\"') && (lpwLine[lLineSize - 1] == '\"'))
+			if ((lpLine[0] == '\"') && (lpLine[szLineSize - 1] == '\"'))
 			{
-				SP_TrimEx(lpwLine, lpwLine, '\"');
+				SP_TrimEx(lpUnicLine, lpUnicLine, '\"');
 			}
-			pFileCollection->AppendFile(lpwLine);
+			pFileCollection->AppendFile(lpUnicLine);
 			lFileCnt++;
 		}
 		lLineCnt++;
@@ -134,30 +126,114 @@ static DWORD LoadPlaylist_Common(LPCWSTR lpwFileName)
 	return lFileCnt;
 }
 
-//Загрузка списка в формате EBL (EasyBar [Play]List), кодировка UTF-8
-static DWORD LoadPlaylist_EBL(LPCWSTR lpwFileName)
+//Загрузка списка в форматах M3U и M3U8, кодировка ANSI и UTF-8 соответственно
+DWORD LoadPlaylist_M3U(LPCWSTR lpFileName)
 {
 	FILE *pPlaylist;
-	ULONG i, lLineSize = 0, lLineCnt = 0, lArgsCnt = 0, lFileCnt = 0;
-	BOOL SignatureOK = FALSE, EncodingOK = FALSE;
-	char lpLine[MAX_PATH * sizeof(WCHAR)] = { 0 };
-	WCHAR lpwLine[MAX_PATH] = { 0 };
-	LPWSTR pArgs[3];
-	pPlaylist = _wfopen(lpwFileName, L"rt");
+	SIZE_T szLineSize;
+	ULONG lLineCnt = 0, lArgsCnt, lFileCnt = 0;
+	BOOL bEncInUTF8 = FALSE;
+	char lpLine[MAX_PATH * sizeof(WCHAR)] = {};
+	WCHAR lpUnicLine[MAX_PATH] = {};
+	WCHAR lpExt[64] = {};
+	WCHAR lpKeyword[8] = {};
+	LPWSTR lpExtInf[2];
+	LPPLITEMDESC pPLID = 0;
+	SP_ExtractRightPart(lpFileName, lpExt, '.');
+	pPlaylist = _wfopen(lpFileName, L"rt");
+	if (_wcsicmp(lpExt, L"m3u8") == 0) bEncInUTF8 = TRUE;
 	while (!feof(pPlaylist))
 	{
 		ZeroMemory(lpLine, sizeof(lpLine));
-		ZeroMemory(lpwLine, sizeof(lpwLine));
+		ZeroMemory(lpLine, sizeof(lpLine));
 		fgets(lpLine, sizeof(lpLine), pPlaylist);
-		MultiByteToWideChar(CP_UTF8, 0, lpLine, -1, lpwLine, sizeof(lpwLine) / sizeof(WCHAR));
-		lLineSize = wcslen(lpwLine);
-		if (lpwLine[lLineSize - 1] == '\n')
+		if (lLineCnt == 0)
 		{
-			lpwLine[lLineSize - 1] = '\0';
-			lLineSize--;
+			if (strstr(lpLine, BOM_UTF8_TEXT) == lpLine)
+				CopyMemory(lpLine, lpLine + 3, sizeof(lpLine) - 3);
 		}
+		MultiByteToWideChar((bEncInUTF8)?CP_UTF8:CP_ACP, 0, lpLine, -1, lpUnicLine,
+			sizeof(lpLine) / sizeof(WCHAR));
+		szLineSize = TrimNLChr(lpUnicLine);
+		if (lLineCnt == 0)
+		{
+			if (lpLine[0] != '#' || (szLineSize != 7)) return 0;
+			wcsncpy(lpKeyword, lpUnicLine, 7);
+			if (_wcsicmp(lpKeyword, L"#EXTM3U") != 0) return 0;
+		}
+		if ((lpLine[0] == '#') && (szLineSize > 7))
+		{
+			wcsncpy(lpKeyword, lpUnicLine, 7);
+			if (_wcsicmp(lpKeyword, L"#EXTINF") == 0)
+			{
+				//"#EXTINF:_p1_,_p2_\n"
+				lArgsCnt = SP_Split(&lpUnicLine[8], lpExtInf, ',', 2);
+				if (lArgsCnt >= 2)
+				{
+					pPLID = new PLITEMDESC;
+					SP_TrimEx(lpExtInf[0], lpExtInf[0], ' ');
+					pPLID->uDuration = _wtoi(lpExtInf[0]) * 1000;
+					SP_TrimEx(lpExtInf[1], lpExtInf[1], ' ');
+					wcsncpy(pPLID->lpTitle, lpExtInf[1], 127);
+				}
+				if (lpExtInf[0]) delete[] lpExtInf[0];
+				if (lpExtInf[1]) delete[] lpExtInf[1];
+			}
+			ZeroMemory(lpLine, sizeof(lpLine));
+			ZeroMemory(lpLine, sizeof(lpLine));
+			fgets(lpLine, sizeof(lpLine), pPlaylist);
+			MultiByteToWideChar((bEncInUTF8)?CP_UTF8:CP_ACP, 0, lpLine, -1, lpUnicLine,
+				sizeof(lpLine) / sizeof(WCHAR));
+			szLineSize = TrimNLChr(lpUnicLine);
+			CheckPath(lpFileName, lpUnicLine, lpUnicLine);
+			if (IsFile(lpUnicLine) || IsURL(lpUnicLine))
+			{
+				if (pPLID)
+				{
+					pFileCollection->AppendFile(lpUnicLine, (LONG_PTR)pPLID);
+					pPLID = 0;
+				}
+				else
+					pFileCollection->AppendFile(lpUnicLine);
+			}
+			else
+			{
+				if (pPLID)
+				{
+					delete pPLID;
+					pPLID = 0;
+				}
+			}
+			lFileCnt++;
+			lLineCnt += 2;
+		}
+		else lLineCnt++;
+	}
+	fclose(pPlaylist);
+	return lFileCnt;
+}
+
+//Загрузка списка в формате EBL (EasyBar [Play]List), кодировка UTF-8
+DWORD LoadPlaylist_EBL(LPCWSTR lpFileName)
+{
+	FILE *pPlaylist;
+	SIZE_T szLineSize;
+	ULONG i, lLineCnt = 0, lArgsCnt, lFileCnt = 0;
+	BOOL SignatureOK = FALSE, EncodingOK = FALSE;
+	char lpLine[MAX_PATH * sizeof(WCHAR)] = {};
+	WCHAR lpUnicLine[MAX_PATH] = {};
+	LPWSTR pArgs[4];
+	LPPLITEMDESC pPLID = 0;
+	pPlaylist = _wfopen(lpFileName, L"rt");
+	while (!feof(pPlaylist))
+	{
+		ZeroMemory(lpLine, sizeof(lpLine));
+		ZeroMemory(lpLine, sizeof(lpLine));
+		fgets(lpLine, sizeof(lpLine), pPlaylist);
+		MultiByteToWideChar(CP_UTF8, 0, lpLine, -1, lpUnicLine, sizeof(lpLine) / sizeof(WCHAR));
+		szLineSize = TrimNLChr(lpUnicLine);
 		ZeroMemory(pArgs, sizeof(pArgs));
-		lArgsCnt = SP_Split(lpwLine, &pArgs[0], ',', 3);
+		lArgsCnt = SP_Split(lpUnicLine, &pArgs[0], ',', 4);
 		if (lArgsCnt >= 2)
 		{
 			if (!SignatureOK)
@@ -196,11 +272,33 @@ static DWORD LoadPlaylist_EBL(LPCWSTR lpwFileName)
 				if (IsNumeric(pArgs[0]))
 				{
 					SP_TrimEx(pArgs[1], pArgs[1], ' ');
-					CheckPath(lpwFileName, pArgs[1], lpwLine);
-					if (IsFile(lpwLine) || IsURL(lpwLine))
+					CheckPath(lpFileName, pArgs[1], lpUnicLine);
+					if (lArgsCnt == 4)
 					{
-						pFileCollection->AppendFile(lpwLine);
+						pPLID = new PLITEMDESC;
+						SP_TrimEx(pArgs[2], pArgs[2], ' ');
+						wcsncpy(pPLID->lpTitle, pArgs[2], 127);
+						SP_TrimEx(pArgs[3], pArgs[3], ' ');
+						pPLID->uDuration = _wtoi(pArgs[3]);
+					}
+					if (IsFile(lpUnicLine) || IsURL(lpUnicLine))
+					{
+						if (pPLID)
+						{
+							pFileCollection->AppendFile(lpUnicLine, (LONG_PTR)pPLID);
+							pPLID = 0;
+						}
+						else
+							pFileCollection->AppendFile(lpUnicLine);
 						lFileCnt++;
+					}
+					else
+					{
+						if (pPLID)
+						{
+							delete pPLID;
+							pPLID = 0;
+						}
 					}
 				}
 			}
@@ -212,6 +310,7 @@ static DWORD LoadPlaylist_EBL(LPCWSTR lpwFileName)
 		if (pArgs[0]) delete[] pArgs[0];
 		if (pArgs[1]) delete[] pArgs[1];
 		if (pArgs[2]) delete[] pArgs[2];
+		if (pArgs[3]) delete[] pArgs[3];
 		lLineCnt++;
 	}
 ExitFunction:
@@ -219,30 +318,31 @@ ExitFunction:
 	if (pArgs[0]) delete[] pArgs[0];
 	if (pArgs[1]) delete[] pArgs[1];
 	if (pArgs[2]) delete[] pArgs[2];
+	if (pArgs[3]) delete[] pArgs[3];
 #endif
 	fclose(pPlaylist);
 	return lFileCnt;
 }
 
 //Загрузка списка в формате WPL (Windows Media Playlist), кодировка неизвестна
-static DWORD LoadPlaylist_WPL(LPCWSTR lpwFileName)
+DWORD LoadPlaylist_WPL(LPCWSTR lpFileName)
 {
 	IXMLDOMDocument *pXMLDOMDocument = 0;
 	IXMLDOMNodeList *pMediaList = 0;
 	IXMLDOMNode *pMedia = 0, *pMediaSource = 0;
 	IXMLDOMNamedNodeMap *pMediaAttributes = 0;
-	VARIANT varFileName = { 0 };
+	VARIANT varFileName = {};
 	VARIANT_BOOL varResult;
 	BSTR bstrTmp;
 	ULONG lFileCnt = 0;
-	WCHAR lpwLine[MAX_PATH] = { 0 };
+	WCHAR lpLine[MAX_PATH] = {};
 	if (FAILED(CoCreateInstance(__uuidof(DOMDocument), 0, CLSCTX_INPROC_SERVER,
 		__uuidof(IXMLDOMDocument), (LPVOID *)&pXMLDOMDocument))) return 0;
 	pXMLDOMDocument->put_async(VARIANT_FALSE);
 	pXMLDOMDocument->put_validateOnParse(VARIANT_FALSE);
 	pXMLDOMDocument->put_resolveExternals(VARIANT_FALSE);
 	varFileName.vt = VT_BSTR;
-	varFileName.bstrVal = SysAllocString(lpwFileName);
+	varFileName.bstrVal = SysAllocString(lpFileName);
 	pXMLDOMDocument->load(varFileName, &varResult);
 	if (varResult == VARIANT_FALSE)
 	{
@@ -264,10 +364,10 @@ static DWORD LoadPlaylist_WPL(LPCWSTR lpwFileName)
 		pMedia->get_attributes(&pMediaAttributes);
 		pMediaAttributes->getNamedItem(L"src", &pMediaSource);
 		pMediaSource->get_text(&bstrTmp);
-		CheckPath(lpwFileName, bstrTmp, lpwLine);
-		if (IsFile(lpwLine) || IsURL(lpwLine))
+		CheckPath(lpFileName, bstrTmp, lpLine);
+		if (IsFile(lpLine) || IsURL(lpLine))
 		{
-			pFileCollection->AppendFile(lpwLine);
+			pFileCollection->AppendFile(lpLine);
 			lFileCnt++;
 		}
 		SysFreeString(bstrTmp);
@@ -283,24 +383,24 @@ static DWORD LoadPlaylist_WPL(LPCWSTR lpwFileName)
 }
 
 //Загрузка списка в формате ASX (Advanced Streaming Index), кодировка неизвестна
-static DWORD LoadPlaylist_ASX(LPCWSTR lpwFileName)
+DWORD LoadPlaylist_ASX(LPCWSTR lpFileName)
 {
 	IXMLDOMDocument *pXMLDOMDocument = 0;
 	IXMLDOMNodeList *pEntryList = 0;
 	IXMLDOMNode *pEntry = 0, *pRef = 0, *pHRef = 0;
 	IXMLDOMNamedNodeMap *pRefAttributes = 0;
-	VARIANT varFileName = { 0 };
+	VARIANT varFileName = {};
 	VARIANT_BOOL varResult;
 	BSTR bstrTmp;
 	ULONG lFileCnt = 0;
-	WCHAR lpwLine[MAX_PATH] = { 0 };
+	WCHAR lpLine[MAX_PATH] = {};
 	if (FAILED(CoCreateInstance(__uuidof(DOMDocument), 0, CLSCTX_INPROC_SERVER,
 		__uuidof(IXMLDOMDocument), (LPVOID *)&pXMLDOMDocument))) return 0;
 	pXMLDOMDocument->put_async(VARIANT_FALSE);
 	pXMLDOMDocument->put_validateOnParse(VARIANT_FALSE);
 	pXMLDOMDocument->put_resolveExternals(VARIANT_FALSE);
 	varFileName.vt = VT_BSTR;
-	varFileName.bstrVal = SysAllocString(lpwFileName);
+	varFileName.bstrVal = SysAllocString(lpFileName);
 	pXMLDOMDocument->load(varFileName, &varResult);
 	if (varResult == VARIANT_FALSE)
 	{
@@ -323,10 +423,10 @@ static DWORD LoadPlaylist_ASX(LPCWSTR lpwFileName)
 		pRef->get_attributes(&pRefAttributes);
 		pRefAttributes->getNamedItem(L"href", &pHRef);
 		pHRef->get_text(&bstrTmp);
-		CheckPath(lpwFileName, bstrTmp, lpwLine);
-		if (IsFile(lpwLine) || IsURL(lpwLine))
+		CheckPath(lpFileName, bstrTmp, lpLine);
+		if (IsFile(lpLine) || IsURL(lpLine))
 		{
-			pFileCollection->AppendFile(lpwLine);
+			pFileCollection->AppendFile(lpLine);
 			lFileCnt++;
 		}
 		SysFreeString(bstrTmp);
@@ -343,23 +443,23 @@ static DWORD LoadPlaylist_ASX(LPCWSTR lpwFileName)
 }
 
 //Загрузка списка в формате XSPF (VLC media player playlist), кодировка UTF-8
-static DWORD LoadPlaylist_XSPF(LPCWSTR lpwFileName)
+DWORD LoadPlaylist_XSPF(LPCWSTR lpFileName)
 {
 	IXMLDOMDocument *pXMLDOMDocument = 0;
 	IXMLDOMNodeList *pTrackList = 0;
 	IXMLDOMNode *pTrack = 0, *pLocation = 0;
-	VARIANT varFileName = { 0 };
+	VARIANT varFileName = {};
 	VARIANT_BOOL varResult;
 	BSTR bstrTmp;
 	ULONG lFileCnt = 0;
-	WCHAR lpwLine[MAX_PATH] = { 0 };
+	WCHAR lpLine[MAX_PATH] = {};
 	if (FAILED(CoCreateInstance(__uuidof(DOMDocument), 0, CLSCTX_INPROC_SERVER,
 		__uuidof(IXMLDOMDocument), (LPVOID *)&pXMLDOMDocument))) return 0;
 	pXMLDOMDocument->put_async(VARIANT_FALSE);
 	pXMLDOMDocument->put_validateOnParse(VARIANT_FALSE);
 	pXMLDOMDocument->put_resolveExternals(VARIANT_FALSE);
 	varFileName.vt = VT_BSTR;
-	varFileName.bstrVal = SysAllocString(lpwFileName);
+	varFileName.bstrVal = SysAllocString(lpFileName);
 	pXMLDOMDocument->load(varFileName, &varResult);
 	if (varResult == VARIANT_FALSE)
 	{
@@ -380,10 +480,10 @@ static DWORD LoadPlaylist_XSPF(LPCWSTR lpwFileName)
 	{
 		pTrack->selectSingleNode(L"location", &pLocation);
 		pLocation->get_text(&bstrTmp);
-		CheckPath(lpwFileName, bstrTmp, lpwLine);
-		if (IsFile(lpwLine) || IsURL(lpwLine))
+		CheckPath(lpFileName, bstrTmp, lpLine);
+		if (IsFile(lpLine) || IsURL(lpLine))
 		{
-			pFileCollection->AppendFile(lpwLine);
+			pFileCollection->AppendFile(lpLine);
 			lFileCnt++;
 		}
 		SysFreeString(bstrTmp);
@@ -398,21 +498,21 @@ static DWORD LoadPlaylist_XSPF(LPCWSTR lpwFileName)
 }
 
 //Загрузка списка в формате PLS (? Playlist), кодировка ANSI
-static DWORD LoadPlaylist_PLS(LPCWSTR lpwFileName)
+DWORD LoadPlaylist_PLS(LPCWSTR lpFileName)
 {
-	ULONG i = 0, lNumOfEntries = 0, lFileCnt = 0;
-	WCHAR lpwKey[32] = { 0 };
-	WCHAR lpwLine[MAX_PATH] = { 0 };
-	lNumOfEntries = GetPrivateProfileInt(L"playlist", L"numberofentries", 0, lpwFileName);
+	ULONG i = 0, lNumOfEntries, lFileCnt = 0;
+	WCHAR lpKey[32] = {};
+	WCHAR lpLine[MAX_PATH] = {};
+	lNumOfEntries = GetPrivateProfileInt(L"playlist", L"numberofentries", 0, lpFileName);
 	if (!lNumOfEntries) return 0;
 	for (; i <= lNumOfEntries; i++)
 	{
-		swprintf(lpwKey, L"file%i", i);
-		GetPrivateProfileString(L"playlist", lpwKey, 0, lpwLine, MAX_PATH, lpwFileName);
-		CheckPath(lpwFileName, lpwLine, lpwLine);
-		if (IsFile(lpwLine))
+		swprintf(lpKey, L"file%i", i);
+		GetPrivateProfileString(L"playlist", lpKey, 0, lpLine, MAX_PATH, lpFileName);
+		CheckPath(lpFileName, lpLine, lpLine);
+		if (IsFile(lpLine))
 		{
-			pFileCollection->AppendFile(lpwLine);
+			pFileCollection->AppendFile(lpLine);
 			lFileCnt++;
 		}
 	}
@@ -420,19 +520,20 @@ static DWORD LoadPlaylist_PLS(LPCWSTR lpwFileName)
 }
 
 //Загрузка списка в формате MPCPL (Media Player Classic Playlist), кодировка неизвестна
-static DWORD LoadPlaylist_MPCPL(LPCWSTR lpwFileName)
+DWORD LoadPlaylist_MPCPL(LPCWSTR lpFileName)
 {
 	FILE *pPlaylist;
-	ULONG lLineSize = 0, lLineCnt = 0, lArgsCnt = 0, lFileCnt = 0;
+	SIZE_T szLineSize;
+	ULONG lLineCnt = 0, lArgsCnt, lFileCnt = 0;
 	BOOL bEncInUTF8 = FALSE;
-	char lpLine[MAX_PATH * sizeof(WCHAR)] = { 0 };
-	WCHAR lpwLine[MAX_PATH] = { 0 };
+	char lpLine[MAX_PATH * sizeof(WCHAR)] = {};
+	WCHAR lpUnicLine[MAX_PATH] = {};
 	LPWSTR pArgs[3];
-	pPlaylist = _wfopen(lpwFileName, L"rt");
+	pPlaylist = _wfopen(lpFileName, L"rt");
 	while (!feof(pPlaylist))
 	{
 		ZeroMemory(lpLine, sizeof(lpLine));
-		ZeroMemory(lpwLine, sizeof(lpwLine));
+		ZeroMemory(lpLine, sizeof(lpLine));
 		fgets(lpLine, sizeof(lpLine), pPlaylist);
 		if (lLineCnt == 0)
 		{
@@ -444,29 +545,24 @@ static DWORD LoadPlaylist_MPCPL(LPCWSTR lpwFileName)
 		}
 		if (bEncInUTF8)
 		{
-			MultiByteToWideChar(CP_UTF8, 0, lpLine, -1, lpwLine, sizeof(lpwLine) / sizeof(WCHAR));
+			MultiByteToWideChar(CP_UTF8, 0, lpLine, -1, lpUnicLine, sizeof(lpLine) / sizeof(WCHAR));
 		}
 		else
 		{
-			MultiByteToWideChar(CP_ACP, 0, lpLine, -1, lpwLine, sizeof(lpwLine) / sizeof(WCHAR));
+			MultiByteToWideChar(CP_ACP, 0, lpLine, -1, lpUnicLine, sizeof(lpLine) / sizeof(WCHAR));
 		}
-		lLineSize = wcslen(lpwLine);
-		if (lpwLine[lLineSize - 1] == '\n')
-		{
-			lpwLine[lLineSize - 1] = '\0';
-			lLineSize--;
-		}
+		szLineSize = TrimNLChr(lpUnicLine);
 		ZeroMemory(pArgs, sizeof(pArgs));
-		lArgsCnt = SP_Split(lpwLine, &pArgs[0], ',', 3);
+		lArgsCnt = SP_Split(lpUnicLine, &pArgs[0], ',', 3);
 		if (lArgsCnt >= 3)
 		{
 			if (wcscmp(pArgs[1], L"filename") == 0)
 			{
-				CheckPath(lpwFileName, pArgs[2], lpwLine);
-				if (IsFile(lpwLine))
+				CheckPath(lpFileName, pArgs[2], lpUnicLine);
+				if (IsFile(lpUnicLine))
 				{
 					
-					pFileCollection->AppendFile(lpwLine);
+					pFileCollection->AppendFile(lpUnicLine);
 					lFileCnt++;
 				}
 			}
@@ -481,16 +577,18 @@ static DWORD LoadPlaylist_MPCPL(LPCWSTR lpwFileName)
 }
 
 //Сохранение списка в формате EBL, кодировка UTF-8
-static void SavePlaylist_EBL(LPCWSTR lpwFileName)
+void SavePlaylist_EBL(LPCWSTR lpFileName)
 {
 	FILE *pPlaylist;
-	ULONG i = 0, lFCFileCnt = 0, lMSCnt = 0;
-	char lpLine[MAX_PATH * sizeof(WCHAR)] = { 0 };
-	char lpTmp1[256] = { 0 }, lpTmp2[256] = { 0 }, lpTmp3[256] = { 0 };
-	WCHAR lpwLine[MAX_PATH] = { 0 };
-	WCHAR lpwTitle[128] = { 0 };
+	ULONG i, lTime, lFCFileCnt = 0;
+	char lpLine[MAX_PATH * sizeof(WCHAR)] = {};
+	char lpTmp1[256] = {}, lpTmp2[256] = {}, lpTmp3[/*64*/256] = {};
+	WCHAR lpTitle[128] = {};
+	WCHAR lpName[128] = {};
+	WCHAR lpUnicLine[MAX_PATH] = {};
+	LPPLITEMDESC pPLID = 0;
 	lFCFileCnt = pFileCollection->FileCount();
-	pPlaylist = _wfopen(lpwFileName, L"wt");
+	pPlaylist = _wfopen(lpFileName, L"wt");
 	WideCharToMultiByte(CP_UTF8, 0, EBL_KEYWORD_SIGNATURE, -1, lpTmp1, sizeof(lpTmp1), 0, 0);
 	WideCharToMultiByte(CP_UTF8, 0, EBL_SIGNATURE, -1, lpTmp2, sizeof(lpTmp2), 0, 0);
 	for (i = 0; ; i++)
@@ -514,86 +612,110 @@ static void SavePlaylist_EBL(LPCWSTR lpwFileName)
 	}
 	WideCharToMultiByte(CP_UTF8, 0, EBL_KEYWORD_GENERATOR, -1, lpTmp1, sizeof(lpTmp1), 0, 0);
 	WideCharToMultiByte(CP_UTF8, 0, APP_NAME, -1, lpTmp2, sizeof(lpTmp2), 0, 0);
-	WideCharToMultiByte(CP_UTF8, 0, lpwAppVersionMM, -1, lpTmp3, sizeof(lpTmp3), 0, 0);
+	WideCharToMultiByte(CP_UTF8, 0, lpAppVersionMM, -1, lpTmp3, sizeof(lpTmp3), 0, 0);
 	fprintf(pPlaylist, "%s, %s, %s\n", lpTmp1, lpTmp2, lpTmp3);
 	WideCharToMultiByte(CP_UTF8, 0, EBL_KEYWORD_TITLE, -1, lpTmp1, sizeof(lpTmp1), 0, 0);
-	SP_ExtractName(lpwFileName, lpwTitle);
-	SP_ExtractLeftPart(lpwTitle, lpwTitle, '.');
-	WideCharToMultiByte(CP_UTF8, 0, lpwTitle, -1, lpTmp2, sizeof(lpTmp2), 0, 0);
+	SP_ExtractName(lpFileName, lpTitle);
+	SP_ExtractLeftPart(lpTitle, lpTitle, '.');
+	WideCharToMultiByte(CP_UTF8, 0, lpTitle, -1, lpTmp2, sizeof(lpTmp2), 0, 0);
 	fprintf(pPlaylist, "%s, %s\n\n", lpTmp1, lpTmp2);
 	WideCharToMultiByte(CP_UTF8, 0, EBL_KEYWORD_MEDIASOURCES, -1, lpTmp1, sizeof(lpTmp1), 0, 0);
-	lMSCnt = lFCFileCnt;
-	fprintf(pPlaylist, "%s, %i\n", lpTmp1, lMSCnt);
+	fprintf(pPlaylist, "%s, %i\n", lpTmp1, lFCFileCnt);
 	for (; i < lFCFileCnt; i++)
 	{
-		pFileCollection->GetFile(lpwLine, i, FCF_BYINDEX);
-		WideCharToMultiByte(CP_UTF8, 0, lpwLine, -1, lpLine, sizeof(lpLine), 0, 0);
-		fprintf(pPlaylist, "%i, %s\n", i + 1, lpLine);
+		pPLID = 0;
+		pFileCollection->GetUserData(0, i, FCF_BYINDEX, (LONG_PTR&)pPLID);
+		pFileCollection->GetFile(lpUnicLine, i, FCF_BYINDEX);
+		if (pPLID)
+		{
+			lTime = pPLID->uDuration;
+			wcscpy(lpName, pPLID->lpTitle);
+		}
+		else
+		{
+			lTime = 0;
+			GetTitle(lpUnicLine, lpName);
+		}
+		WideCharToMultiByte(CP_UTF8, 0, lpUnicLine, -1, lpLine, sizeof(lpLine), 0, 0);
+		WideCharToMultiByte(CP_UTF8, 0, lpName, -1, lpTmp1, sizeof(lpTmp1), 0, 0);
+		fprintf(pPlaylist, "%i, %s, %s, %i\n", i + 1, lpLine, lpTmp1, lTime);
 	}
 	fclose(pPlaylist);
 }
 
 //Сохранение списка в формате M3U, кодировка ANSI
-static void SavePlaylist_M3U(LPCWSTR lpwFileName)
+/*void SavePlaylist_M3U(LPCWSTR lpFileName)
 {
 	FILE *pPlaylist;
 	ULONG i = 0, lFCFileCnt = 0;
-	char lpName[128] = { 0 };
-	WCHAR lpwName[128] = { 0 };
-	char lpLine[MAX_PATH] = { 0 };
-	WCHAR lpwLine[MAX_PATH] = { 0 };
-	pPlaylist = _wfopen(lpwFileName, L"wt");
+	char lpName[128] = {};
+	WCHAR lpName[128] = {};
+	char lpLine[MAX_PATH] = {};
+	WCHAR lpLine[MAX_PATH] = {};
+	pPlaylist = _wfopen(lpFileName, L"wt");
 	fputs("#EXTM3U\n", pPlaylist);
 	lFCFileCnt = pFileCollection->FileCount();
 	for (; i < lFCFileCnt; i++)
 	{
-		pFileCollection->GetFile(lpwLine, i, FCF_BYINDEX);
-		SP_ExtractName(lpwLine, lpwName);
-		WideCharToMultiByte(CP_ACP, 0, lpwName, -1, lpName, sizeof(lpName), 0, 0);
-		WideCharToMultiByte(CP_ACP, 0, lpwLine, -1, lpLine, sizeof(lpLine), 0, 0);
+		pFileCollection->GetFile(lpLine, i, FCF_BYINDEX);
+		SP_ExtractName(lpLine, lpName);
+		WideCharToMultiByte(CP_ACP, 0, lpName, -1, lpName, sizeof(lpName), 0, 0);
+		WideCharToMultiByte(CP_ACP, 0, lpLine, -1, lpLine, sizeof(lpLine), 0, 0);
 		fprintf(pPlaylist, "#EXTINF: 0, %s\n", lpName);
 		fprintf(pPlaylist, "%s\n", lpLine);
 	}
 	fclose(pPlaylist);
-}
+}*/
 
-//Сохранение списка в формате M3U8, кодировка UTF-8
-static void SavePlaylist_M3U8(LPCWSTR lpwFileName)
+//Сохранение списка в форматах M3U и M3U8, кодировка ANSI и UTF-8 соответственно
+void SavePlaylist_M3U(LPCWSTR lpFileName)
 {
 	FILE *pPlaylist;
-	ULONG i = 0, lFCFileCnt = 0;
-	char lpName[256] = { 0 };
-	WCHAR lpwName[128] = { 0 };
-	char lpLine[MAX_PATH * sizeof(WCHAR)] = { 0 };
-	WCHAR lpwLine[MAX_PATH] = { 0 };
-	pPlaylist = _wfopen(lpwFileName, L"wt");
+	ULONG i = 0, lTime, lFCFileCnt = 0;
+	char lpName[256] = {};
+	WCHAR lpUnicName[128] = {};
+	char lpLine[MAX_PATH * sizeof(WCHAR)] = {};
+	WCHAR lpUnicLine[MAX_PATH] = {};
+	LPPLITEMDESC pPLID = 0;
+	pPlaylist = _wfopen(lpFileName, L"wt");
 	fputs(BOM_UTF8_TEXT, pPlaylist);
 	fputs("#EXTM3U\n", pPlaylist);
 	lFCFileCnt = pFileCollection->FileCount();
 	for (; i < lFCFileCnt; i++)
 	{
-		pFileCollection->GetFile(lpwLine, i, FCF_BYINDEX);
-		SP_ExtractName(lpwLine, lpwName);
-		WideCharToMultiByte(CP_UTF8, 0, lpwName, -1, lpName, sizeof(lpName), 0, 0);
-		WideCharToMultiByte(CP_UTF8, 0, lpwLine, -1, lpLine, sizeof(lpLine), 0, 0);
-		fprintf(pPlaylist, "#EXTINF: 0, %s\n", lpName);
+		pPLID = 0;
+		pFileCollection->GetUserData(0, i, FCF_BYINDEX, (LONG_PTR&)pPLID);
+		pFileCollection->GetFile(lpUnicLine, i, FCF_BYINDEX);
+		if (pPLID)
+		{
+			lTime = pPLID->uDuration / 1000;
+			wcscpy(lpUnicName, pPLID->lpTitle);
+		}
+		else
+		{
+			lTime = 0;
+			GetTitle(lpUnicLine, lpUnicName);
+		}
+		WideCharToMultiByte(CP_UTF8, 0, lpUnicName, -1, lpName, sizeof(lpName), 0, 0);
+		WideCharToMultiByte(CP_UTF8, 0, lpUnicLine, -1, lpLine, sizeof(lpLine), 0, 0);
+		fprintf(pPlaylist, "#EXTINF:%i,%s\n", lTime, lpName);
 		fprintf(pPlaylist, "%s\n", lpLine);
 	}
 	fclose(pPlaylist);
 }
 
 //Сохранение списка в формате ASX, кодировка ?
-static void SavePlaylist_ASX(LPCWSTR lpwFileName)
+void SavePlaylist_ASX(LPCWSTR lpFileName)
 {
 	IXMLDOMDocument *pXMLDOMDocument = 0;
 	IXMLDOMElement *pAsxAttributes = 0, *pRefAttributes = 0;
 	IXMLDOMNode *pAsx = 0, *pTitle = 0, *pEntry = 0, *pInsertedNode = 0, *pRef = 0;
 	IXMLDOMText *pWhiteSpace = 0;
-	VARIANT varAsxVersion = { 0 }, varNodeType = { 0 }, varLine = { 0 },
-		varFileName = { 0 };
+	VARIANT varAsxVersion = {}, varNodeType = {}, varLine = {},
+		varFileName = {};
 	ULONG i = 0, lFCFileCnt = 0;
-	WCHAR lpwTitle[128] = { 0 };
-	WCHAR lpwLine[MAX_PATH] = { 0 };
+	WCHAR lpTitle[128] = {};
+	WCHAR lpLine[MAX_PATH] = {};
 	varNodeType.vt = VT_INT;
 	varNodeType.intVal = NODE_ELEMENT;
 	if (FAILED(CoCreateInstance(__uuidof(DOMDocument), 0, CLSCTX_INPROC_SERVER,
@@ -611,15 +733,15 @@ static void SavePlaylist_ASX(LPCWSTR lpwFileName)
 	pAsx->appendChild(pWhiteSpace, &pInsertedNode);
 	pWhiteSpace->Release();
 	pXMLDOMDocument->createNode(varNodeType, L"title", 0, &pTitle);
-	SP_ExtractName(lpwFileName, lpwTitle);
-	SP_ExtractLeftPart(lpwTitle, lpwTitle, '.');
-	pTitle->put_text(lpwTitle);
+	SP_ExtractName(lpFileName, lpTitle);
+	SP_ExtractLeftPart(lpTitle, lpTitle, '.');
+	pTitle->put_text(lpTitle);
 	pAsx->appendChild(pTitle, &pInsertedNode);
 	pTitle->Release();
 	lFCFileCnt = pFileCollection->FileCount();
 	for (; i < lFCFileCnt; i++)
 	{
-		pFileCollection->GetFile(lpwLine, i, FCF_BYINDEX);
+		pFileCollection->GetFile(lpLine, i, FCF_BYINDEX);
 		pXMLDOMDocument->createTextNode(L"\n\t", &pWhiteSpace);
 		pAsx->appendChild(pWhiteSpace, &pInsertedNode);
 		pWhiteSpace->Release();
@@ -629,9 +751,9 @@ static void SavePlaylist_ASX(LPCWSTR lpwFileName)
 		pEntry->appendChild(pWhiteSpace, &pInsertedNode);
 		pWhiteSpace->Release();
 		pXMLDOMDocument->createNode(varNodeType, L"title", 0, &pTitle);
-		SP_ExtractName(lpwLine, lpwTitle);
-		SP_ExtractLeftPart(lpwTitle, lpwTitle, '.');
-		pTitle->put_text(lpwTitle);
+		SP_ExtractName(lpLine, lpTitle);
+		SP_ExtractLeftPart(lpTitle, lpTitle, '.');
+		pTitle->put_text(lpTitle);
 		pEntry->appendChild(pTitle, &pInsertedNode);
 		pTitle->Release();
 		pXMLDOMDocument->createTextNode(L"\n\t\t", &pWhiteSpace);
@@ -640,7 +762,7 @@ static void SavePlaylist_ASX(LPCWSTR lpwFileName)
 		pXMLDOMDocument->createNode(varNodeType, L"ref", 0, &pRef);
 		pRef->QueryInterface(__uuidof(IXMLDOMElement), (LPVOID *)&pRefAttributes);
 		varLine.vt = VT_BSTR;
-		varLine.bstrVal = SysAllocString(lpwLine);
+		varLine.bstrVal = SysAllocString(lpLine);
 		pRefAttributes->setAttribute(L"href", varLine);
 		pEntry->appendChild(pRef, &pInsertedNode);
 		pXMLDOMDocument->createTextNode(L"\n\t", &pWhiteSpace);
@@ -655,7 +777,7 @@ static void SavePlaylist_ASX(LPCWSTR lpwFileName)
 	pAsx->appendChild(pWhiteSpace, &pInsertedNode);
 	pWhiteSpace->Release();
 	varFileName.vt = VT_BSTR;
-	varFileName.bstrVal = SysAllocString(lpwFileName);
+	varFileName.bstrVal = SysAllocString(lpFileName);
 	pXMLDOMDocument->save(varFileName);
 	VariantClear(&varNodeType);
 	VariantClear(&varAsxVersion);
@@ -666,20 +788,32 @@ static void SavePlaylist_ASX(LPCWSTR lpwFileName)
 }
 
 //Создание абсолютного пути к файлу из относительного
-static void CheckPath(LPCWSTR lpwPlaylist, LPCWSTR lpwFile, LPWSTR lpwResult)
+void CheckPath(LPCWSTR lpPlaylist, LPCWSTR lpFile, LPWSTR lpResult)
 {
-	WCHAR lpwPLDir[MAX_PATH] = { 0 };
-	WCHAR lpwFullPath[MAX_PATH] = { 0 };
-	LPWSTR lpwFilePart;
-	SP_ExtractDirectory(lpwPlaylist, lpwPLDir);
-	SetCurrentDirectory(lpwPLDir);
-	GetFullPathName(lpwFile, MAX_PATH, lpwFullPath, &lpwFilePart);
-	if (IsFile(lpwFullPath))
+	WCHAR lpPLDir[MAX_PATH] = {};
+	WCHAR lpFullPath[MAX_PATH] = {};
+	LPWSTR lpFilePart;
+	SP_ExtractDirectory(lpPlaylist, lpPLDir);
+	SetCurrentDirectory(lpPLDir);
+	GetFullPathName(lpFile, MAX_PATH, lpFullPath, &lpFilePart);
+	if (IsFile(lpFullPath))
 	{
-		wcscpy(lpwResult, lpwFullPath);
+		wcscpy(lpResult, lpFullPath);
 	}
 	else
 	{
-		wcscpy(lpwResult, lpwFile);
+		wcscpy(lpResult, lpFile);
 	}
+}
+
+//Удаление символа новой строки
+SIZE_T TrimNLChr(LPWSTR lpLine)
+{
+	SIZE_T szLineSize = wcslen(lpLine);
+	if (lpLine[szLineSize - 1] == '\n')
+	{
+		lpLine[szLineSize - 1] = '\0';
+		szLineSize--;
+	}
+	return szLineSize;
 }

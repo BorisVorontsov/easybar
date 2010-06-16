@@ -18,7 +18,7 @@
 
 BOOL InitLabelEx(HINSTANCE hInstance)
 {
-	WNDCLASSEX WCEX = { 0 };
+	WNDCLASSEX WCEX = {};
 	WCEX.cbSize = sizeof(WCEX);
 	WCEX.style = CS_HREDRAW | CS_VREDRAW;
 	WCEX.hInstance = hInstance;
@@ -37,11 +37,11 @@ LRESULT CALLBACK LabelExProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 	{
 		pLEP = new LEPROPERTIES;
 		ZeroMemory(pLEP, sizeof(LEPROPERTIES));
-		SetWindowLongPtr(hWnd, GWL_USERDATA, (LONG_PTR)pLEP);
+		SetWindowLongPtr(hWnd, GWLP_USERDATA, (LONG_PTR)pLEP);
 	}
 	else
 	{
-		pLEP = (LPLEPROPERTIES)GetWindowLongPtr(hWnd, GWL_USERDATA);
+		pLEP = (LPLEPROPERTIES)GetWindowLongPtr(hWnd, GWLP_USERDATA);
 	}
 	switch (uMsg)
 	{
@@ -107,7 +107,7 @@ LRESULT CALLBACK LabelExProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 			return (LRESULT)pLEP->bAutoSize;
 		case WM_SETTEXT:
 		{
-			RECT RCW = { 0 }, RCT = { 0 };
+			RECT RCW = {}, RCT = {};
 			_tcscpy(pLEP->lpCurrentText, (PTCHAR)lParam);
 			if (pLEP->bAutoSize)
 			{
@@ -115,14 +115,14 @@ LRESULT CALLBACK LabelExProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 				DrawText(pLEP->hDBDC, pLEP->lpCurrentText, -1, &RCT, DT_LEFT | DT_SINGLELINE |
 					DT_CALCRECT);
 				SelectObject(pLEP->hDBDC, hOldFont);
-				SetWindowPos(hWnd, HWND_TOP, 0, 0, RCT.right, RCT.bottom, SWP_NOMOVE);
+				SetWindowPos(hWnd, 0, 0, 0, RCT.right, RCT.bottom, SWP_NOMOVE | SWP_NOZORDER);
 			}
 			else
 			{
 				GetClientRect(hWnd, &RCT);
 				if ((RCT.right != pLEP->CRC.right) || (RCT.bottom != pLEP->CRC.bottom))
 				{
-					SetWindowPos(hWnd, HWND_TOP, 0, 0, pLEP->CRC.right, pLEP->CRC.bottom, SWP_NOMOVE);
+					SetWindowPos(hWnd, 0, 0, 0, pLEP->CRC.right, pLEP->CRC.bottom, SWP_NOMOVE | SWP_NOZORDER);
 				}
 				else PostMessage(hWnd, LEM_DRAWCONTROL, 0, 0);
 			}
@@ -133,7 +133,7 @@ LRESULT CALLBACK LabelExProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 			break;
 		case WM_MOUSEMOVE:
 		{
-			TRACKMOUSEEVENT TME = { 0 };
+			TRACKMOUSEEVENT TME = {};
 			TME.cbSize = sizeof(TME);
 			TME.dwFlags = TME_HOVER | TME_LEAVE;
 			TME.dwHoverTime = 10;
@@ -229,7 +229,7 @@ LRESULT CALLBACK LabelExProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 			return 1;
 		case WM_PAINT:
 		{
-			PAINTSTRUCT PS = { 0 };
+			PAINTSTRUCT PS = {};
 			HDC hDC = BeginPaint(hWnd, &PS);
 			BitBlt(hDC, 0, 0, pLEP->CRC.right, pLEP->CRC.bottom, pLEP->hDBDC, 0, 0, SRCCOPY);
 			EndPaint(hWnd, &PS);

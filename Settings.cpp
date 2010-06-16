@@ -8,7 +8,8 @@
 #include "settings.h"
 
 DWORD dwMultipleInstances;
-LPWSTR lpwRecentURL;
+LPWSTR lpRecentDir;
+LPWSTR lpRecentURL;
 DWORD dwRememberPlaylist;
 DWORD dwRememberPosition;
 DWORD dwSelectedFileIndex;
@@ -16,6 +17,7 @@ DWORD dwSFPosition;
 DWORD dwSFState;
 DWORD dwWindowBorderIndex;
 DWORD dwMainControls;
+DWORD dwPlaylist;
 DWORD dwTitleBarIndex;
 DWORD dwTBDoNotChangeTitle;
 DWORD dwUseSystemColors;
@@ -26,9 +28,10 @@ DWORD dwBorderColor1;
 DWORD dwBorderColor2;
 DWORD dwTextColor;
 DWORD dwTextShadowColor;
+DWORD dwActiveItemTextColor;
 DWORD dwOnTopIndex;
-DWORD dwMainWindowLeft;
-DWORD dwMainWindowTop;
+POINT ptMainWindowPos;
+RECT rcPlaylistPos;
 DWORD dwPositionAtStartupIndex;
 DWORD dwOpacityLevel;
 DWORD dwOpaqueOnFocus;
@@ -63,7 +66,7 @@ DWORD dwDMOAEFlanger;
 DWORD dwDMOAEChorus;
 DWORD dwDMOAEI3DL2Reverb;
 DWORD dwUseExternalFilters;
-LPWSTR lpwExternalFilters[APP_MAX_STRINGS];
+LPWSTR lpExternalFilters[APP_MAX_STRINGS];
 DWORD dwAfterPlaybackIndex;
 
 //Опциональные настройки
@@ -77,13 +80,15 @@ void SetDefaultValues()
 {
 	ULONG i;
 	dwMultipleInstances = TRUE;
-	lpwRecentURL = 0;
+	lpRecentDir = 0;
+	lpRecentURL = 0;
 	dwRememberPlaylist = TRUE;
 	dwSelectedFileIndex = 0;
 	dwSFPosition = 0;
 	dwSFState = E_STATE_STOPPED;
 	dwWindowBorderIndex = 0;
 	dwMainControls = TRUE;
+	dwPlaylist = FALSE;
 	dwTitleBarIndex = 1;
 	dwTBDoNotChangeTitle = TRUE;
 	dwUseSystemColors = FALSE;
@@ -94,9 +99,11 @@ void SetDefaultValues()
 	dwBorderColor2 = EB_BORDER_COLOR_2;
 	dwTextColor = EB_TEXT_COLOR;
 	dwTextShadowColor = EB_TEXT_SHADOW_COLOR;
+	dwActiveItemTextColor = EB_ACTIVE_ITEM_TEXT_COLOR;
 	dwOnTopIndex = 0;
-	dwMainWindowLeft = 0;
-	dwMainWindowTop = 0;
+	ptMainWindowPos.x = 0;
+	ptMainWindowPos.y = 0;
+	SetRect(&rcPlaylistPos, 0, 0, 200, 560);
 	dwPositionAtStartupIndex = 0;
 	dwOpacityLevel = 100;
 	dwOpaqueOnFocus = FALSE;
@@ -111,8 +118,8 @@ void SetDefaultValues()
 	dwSeekValue3 = EB_SEEK_VALUE_3;
 	dwSeekByKeyFrames = TRUE;
 	dwMute = FALSE;
-	dwVolume = 9000;
-	dwBalance = 10000;
+	dwVolume = 90;
+	dwBalance = 100;
 	dwKeepAspectRatio = TRUE;
 	dwAspectRatioIndex = 0;
 	dwChangeFSVideoMode = FALSE;
@@ -133,7 +140,7 @@ void SetDefaultValues()
 	dwDMOAEI3DL2Reverb = FALSE;
 	dwUseExternalFilters = FALSE;
 	for (i = 0; i < APP_MAX_STRINGS; i++)
-		lpwExternalFilters[i] = 0;
+		lpExternalFilters[i] = 0;
 	dwAfterPlaybackIndex = 6;
 	//-------------------------
 	dwNoOwnerDrawMenu = FALSE;
@@ -148,24 +155,29 @@ void GetSettings()
 	BOOL bNoSettings = FALSE;
 	HKEY hGSKey, hGSSubKey;
 	ULONG i, j, lSubKeys, lValues;
-	WCHAR lpwKeyName[64] = { 0 };
-	WCHAR lpwData[MAX_PATH] = { 0 };
-	DWORD dwDWORDSIZE = 4; //sizeof(DWORD)
-	DWORD dwSZSIZE;
+	WCHAR lpKeyName[64] = {};
+	WCHAR lpData[MAX_PATH] = {};
+	DWORD dwDWORDSIZE = 4/*sizeof(DWORD)*/, dwSZSIZE, dwBINSIZE;
 	if (RegOpenKeyEx(HKEY_CURRENT_USER, EB_REG_GENERAL_PATH, 0, KEY_ALL_ACCESS, &hGSKey) == ERROR_SUCCESS)
 	{
 		RegQueryValueEx(hGSKey, L"MultipleInstances", 0, 0, (LPBYTE)&dwMultipleInstances, &dwDWORDSIZE);
-		ZeroMemory(lpwData, sizeof(lpwData));
-		dwSZSIZE = sizeof(lpwData);
-		RegQueryValueEx(hGSKey, L"RecentURL", 0, 0, (LPBYTE)lpwData, &dwSZSIZE);
-		lpwRecentURL = new WCHAR[MAX_PATH];
-		wcscpy(lpwRecentURL, lpwData);
+		ZeroMemory(lpData, sizeof(lpData));
+		dwSZSIZE = sizeof(lpData);
+		RegQueryValueEx(hGSKey, L"RecentDir", 0, 0, (LPBYTE)lpData, &dwSZSIZE);
+		lpRecentDir = new WCHAR[MAX_PATH];
+		wcscpy(lpRecentDir, lpData);
+		ZeroMemory(lpData, sizeof(lpData));
+		dwSZSIZE = sizeof(lpData);
+		RegQueryValueEx(hGSKey, L"RecentURL", 0, 0, (LPBYTE)lpData, &dwSZSIZE);
+		lpRecentURL = new WCHAR[MAX_PATH];
+		wcscpy(lpRecentURL, lpData);
 		RegQueryValueEx(hGSKey, L"RememberPlaylist", 0, 0, (LPBYTE)&dwRememberPlaylist, &dwDWORDSIZE);
 		RegQueryValueEx(hGSKey, L"SelectedFile", 0, 0, (LPBYTE)&dwSelectedFileIndex, &dwDWORDSIZE);
 		RegQueryValueEx(hGSKey, L"SFPosition", 0, 0, (LPBYTE)&dwSFPosition, &dwDWORDSIZE);
 		RegQueryValueEx(hGSKey, L"SFState", 0, 0, (LPBYTE)&dwSFState, &dwDWORDSIZE);
 		RegQueryValueEx(hGSKey, L"WindowBorderIndex", 0, 0, (LPBYTE)&dwWindowBorderIndex, &dwDWORDSIZE);
 		RegQueryValueEx(hGSKey, L"MainControls", 0, 0, (LPBYTE)&dwMainControls, &dwDWORDSIZE);
+		RegQueryValueEx(hGSKey, L"Playlist", 0, 0, (LPBYTE)&dwPlaylist, &dwDWORDSIZE);
 		RegQueryValueEx(hGSKey, L"TitleBar", 0, 0, (LPBYTE)&dwTitleBarIndex, &dwDWORDSIZE);
 		RegQueryValueEx(hGSKey, L"TBDoNotChangeTitle", 0, 0, (LPBYTE)&dwTBDoNotChangeTitle, &dwDWORDSIZE);
 		RegQueryValueEx(hGSKey, L"UseSystemColors", 0, 0, (LPBYTE)&dwUseSystemColors, &dwDWORDSIZE);
@@ -176,9 +188,12 @@ void GetSettings()
 		RegQueryValueEx(hGSKey, L"BorderColor2", 0, 0, (LPBYTE)&dwBorderColor2, &dwDWORDSIZE);
 		RegQueryValueEx(hGSKey, L"TextColor", 0, 0, (LPBYTE)&dwTextColor, &dwDWORDSIZE);
 		RegQueryValueEx(hGSKey, L"TextShadowColor", 0, 0, (LPBYTE)&dwTextShadowColor, &dwDWORDSIZE);
+		RegQueryValueEx(hGSKey, L"ActiveItemTextColor", 0, 0, (LPBYTE)&dwActiveItemTextColor, &dwDWORDSIZE);
 		RegQueryValueEx(hGSKey, L"OnTop", 0, 0, (LPBYTE)&dwOnTopIndex, &dwDWORDSIZE);
-		RegQueryValueEx(hGSKey, L"MainWindowLeft", 0, 0, (LPBYTE)&dwMainWindowLeft, &dwDWORDSIZE);
-		RegQueryValueEx(hGSKey, L"MainWindowTop", 0, 0, (LPBYTE)&dwMainWindowTop, &dwDWORDSIZE);
+		dwBINSIZE = sizeof(POINT);
+		RegQueryValueEx(hGSKey, L"MainWindowPos", 0, 0, (LPBYTE)&ptMainWindowPos, &dwBINSIZE);
+		dwBINSIZE = sizeof(RECT);
+		RegQueryValueEx(hGSKey, L"PlaylistPos", 0, 0, (LPBYTE)&rcPlaylistPos, &dwBINSIZE);
 		RegQueryValueEx(hGSKey, L"PositionAtStartup", 0, 0, (LPBYTE)&dwPositionAtStartupIndex, &dwDWORDSIZE);
 		RegQueryValueEx(hGSKey, L"Opacity", 0, 0, (LPBYTE)&dwOpacityLevel, &dwDWORDSIZE);
 		RegQueryValueEx(hGSKey, L"OpaqueOnFocus", 0, 0, (LPBYTE)&dwOpaqueOnFocus, &dwDWORDSIZE);
@@ -195,24 +210,24 @@ void GetSettings()
 		RegQueryInfoKey(hGSKey, 0, 0, 0, &lSubKeys, 0, 0, 0, 0, 0, 0, 0);
 		for (i = 0; i < lSubKeys; i++)
 		{
-			swprintf(lpwKeyName, L"File_%i", i);
-			if (RegOpenKeyEx(hGSKey, lpwKeyName, 0, KEY_ALL_ACCESS, &hGSSubKey) == ERROR_SUCCESS)
+			swprintf(lpKeyName, L"File_%i", i);
+			if (RegOpenKeyEx(hGSKey, lpKeyName, 0, KEY_ALL_ACCESS, &hGSSubKey) == ERROR_SUCCESS)
 			{
 				for (j = 0; j < APP_MAX_STRINGS; j++)
 				{
 					if (pFavorites[j] == 0)
 					{
 						pFavorites[j] = new FAVFILE;
-						ZeroMemory(lpwData, sizeof(lpwData));
-						dwSZSIZE = sizeof(lpwData);
-						RegQueryValueEx(hGSSubKey, L"Path", 0, 0, (LPBYTE)lpwData, &dwSZSIZE);
-						pFavorites[j]->lpwPath = new WCHAR[MAX_PATH];
-						wcscpy(pFavorites[j]->lpwPath, lpwData);
-						ZeroMemory(lpwData, sizeof(lpwData));
-						dwSZSIZE = sizeof(lpwData);
-						RegQueryValueEx(hGSSubKey, L"DisplayName", 0, 0, (LPBYTE)lpwData, &dwSZSIZE);
-						pFavorites[j]->lpwDisplayName = new WCHAR[128];
-						wcscpy(pFavorites[j]->lpwDisplayName, lpwData);
+						ZeroMemory(lpData, sizeof(lpData));
+						dwSZSIZE = sizeof(lpData);
+						RegQueryValueEx(hGSSubKey, L"Path", 0, 0, (LPBYTE)lpData, &dwSZSIZE);
+						pFavorites[j]->lpPath = new WCHAR[MAX_PATH];
+						wcscpy(pFavorites[j]->lpPath, lpData);
+						ZeroMemory(lpData, sizeof(lpData));
+						dwSZSIZE = sizeof(lpData);
+						RegQueryValueEx(hGSSubKey, L"DisplayName", 0, 0, (LPBYTE)lpData, &dwSZSIZE);
+						pFavorites[j]->lpDisplayName = new WCHAR[128];
+						wcscpy(pFavorites[j]->lpDisplayName, lpData);
 						break;
 					}
 				}
@@ -279,18 +294,18 @@ void GetSettings()
 		RegQueryInfoKey(hGSKey, 0, 0, 0, 0, 0, 0, &lValues, 0, 0, 0, 0);
 		for (i = 0; i < lValues; i++)
 		{
-			swprintf(lpwKeyName, L"ExternalFilter_%i", i);
-			ZeroMemory(lpwData, sizeof(lpwData));
-			dwSZSIZE = sizeof(lpwData);
-			RegQueryValueEx(hGSKey, lpwKeyName, 0, 0, (LPBYTE)lpwData, &dwSZSIZE);
-			if (wcslen(lpwData))
+			swprintf(lpKeyName, L"ExternalFilter_%i", i);
+			ZeroMemory(lpData, sizeof(lpData));
+			dwSZSIZE = sizeof(lpData);
+			RegQueryValueEx(hGSKey, lpKeyName, 0, 0, (LPBYTE)lpData, &dwSZSIZE);
+			if (wcslen(lpData))
 			{
 				for (j = 0; j < APP_MAX_STRINGS; j++)
 				{
-					if (lpwExternalFilters[j] == 0)
+					if (lpExternalFilters[j] == 0)
 					{
-						lpwExternalFilters[j] = new WCHAR[MAX_PATH];
-						wcscpy(lpwExternalFilters[j], lpwData);
+						lpExternalFilters[j] = new WCHAR[MAX_PATH];
+						wcscpy(lpExternalFilters[j], lpData);
 						break;
 					}
 				}
@@ -326,14 +341,19 @@ void SaveSettings()
 {
 	HKEY hSSKey, hSSSubKey;
 	ULONG i;
-	WCHAR lpwKeyName[64] = { 0 };
+	WCHAR lpKeyName[64] = {};
 	DWORD dwDisposition;
 	RegCreateKeyEx(HKEY_CURRENT_USER, EB_REG_GENERAL_PATH, 0, L"REG_DWORD", REG_OPTION_NON_VOLATILE,
 		KEY_ALL_ACCESS, 0, &hSSKey, &dwDisposition);
 	RegSetValueEx(hSSKey, L"MultipleInstances", 0, REG_DWORD, (CONST LPBYTE)&dwMultipleInstances, 4);
-	if (lpwRecentURL)
+	if (lpRecentDir)
 	{
-		RegSetValueEx(hSSKey, L"RecentURL", 0, REG_SZ, (CONST LPBYTE)lpwRecentURL, (wcslen(lpwRecentURL)
+		RegSetValueEx(hSSKey, L"RecentDir", 0, REG_SZ, (CONST LPBYTE)lpRecentDir, (DWORD)(wcslen(lpRecentDir)
+			+ 1) * sizeof(WCHAR));
+	}
+	if (lpRecentURL)
+	{
+		RegSetValueEx(hSSKey, L"RecentURL", 0, REG_SZ, (CONST LPBYTE)lpRecentURL, (DWORD)(wcslen(lpRecentURL)
 			+ 1) * sizeof(WCHAR));
 	}
 	RegSetValueEx(hSSKey, L"RememberPlaylist", 0, REG_DWORD, (CONST LPBYTE)&dwRememberPlaylist, 4);
@@ -342,6 +362,7 @@ void SaveSettings()
 	RegSetValueEx(hSSKey, L"SFState", 0, REG_DWORD, (CONST LPBYTE)&dwSFState, 4);
 	RegSetValueEx(hSSKey, L"WindowBorderIndex", 0, REG_DWORD, (CONST LPBYTE)&dwWindowBorderIndex, 4);
 	RegSetValueEx(hSSKey, L"MainControls", 0, REG_DWORD, (CONST LPBYTE)&dwMainControls, 4);
+	RegSetValueEx(hSSKey, L"Playlist", 0, REG_DWORD, (CONST LPBYTE)&dwPlaylist, 4);
 	RegSetValueEx(hSSKey, L"TitleBar", 0, REG_DWORD, (CONST LPBYTE)&dwTitleBarIndex, 4);
 	RegSetValueEx(hSSKey, L"TBDoNotChangeTitle", 0, REG_DWORD, (CONST LPBYTE)&dwTBDoNotChangeTitle, 4);
 	RegSetValueEx(hSSKey, L"UseSystemColors", 0, REG_DWORD, (CONST LPBYTE)&dwUseSystemColors, 4);
@@ -352,9 +373,10 @@ void SaveSettings()
 	RegSetValueEx(hSSKey, L"BorderColor2", 0, REG_DWORD, (CONST LPBYTE)&dwBorderColor2, 4);
 	RegSetValueEx(hSSKey, L"TextColor", 0, REG_DWORD, (CONST LPBYTE)&dwTextColor, 4);
 	RegSetValueEx(hSSKey, L"TextShadowColor", 0, REG_DWORD, (CONST LPBYTE)&dwTextShadowColor, 4);
+	RegSetValueEx(hSSKey, L"ActiveItemTextColor", 0, REG_DWORD, (CONST LPBYTE)&dwActiveItemTextColor, 4);
 	RegSetValueEx(hSSKey, L"OnTop", 0, REG_DWORD, (CONST LPBYTE)&dwOnTopIndex, 4);
-	RegSetValueEx(hSSKey, L"MainWindowLeft", 0, REG_DWORD, (CONST LPBYTE)&dwMainWindowLeft, 4);
-	RegSetValueEx(hSSKey, L"MainWindowTop", 0, REG_DWORD, (CONST LPBYTE)&dwMainWindowTop, 4);
+	RegSetValueEx(hSSKey, L"MainWindowPos", 0, REG_BINARY, (CONST LPBYTE)&ptMainWindowPos, sizeof(POINT));
+	RegSetValueEx(hSSKey, L"PlaylistPos", 0, REG_BINARY, (CONST LPBYTE)&rcPlaylistPos, sizeof(RECT));
 	RegSetValueEx(hSSKey, L"PositionAtStartup", 0, REG_DWORD, (CONST LPBYTE)&dwPositionAtStartupIndex, 4);
 	RegSetValueEx(hSSKey, L"Opacity", 0, REG_DWORD, (CONST LPBYTE)&dwOpacityLevel, 4);
 	RegSetValueEx(hSSKey, L"OpaqueOnFocus", 0, REG_DWORD, (CONST LPBYTE)&dwOpaqueOnFocus, 4);
@@ -364,19 +386,19 @@ void SaveSettings()
 		KEY_ALL_ACCESS, 0, &hSSKey, &dwDisposition);
 	for (i = 0; i < APP_MAX_STRINGS; i++)
 	{
-		swprintf(lpwKeyName, L"File_%i", i);
-		RegDeleteKey(hSSKey, lpwKeyName);
+		swprintf(lpKeyName, L"File_%i", i);
+		RegDeleteKey(hSSKey, lpKeyName);
 	}
 	for (i = 0; i < APP_MAX_STRINGS; i++)
 	{
 		if (!pFavorites[i]) break;
-		swprintf(lpwKeyName, L"File_%i", i);
-		RegCreateKeyEx(hSSKey, lpwKeyName, 0, L"REG_DWORD", REG_OPTION_NON_VOLATILE, KEY_ALL_ACCESS, 0,
+		swprintf(lpKeyName, L"File_%i", i);
+		RegCreateKeyEx(hSSKey, lpKeyName, 0, L"REG_DWORD", REG_OPTION_NON_VOLATILE, KEY_ALL_ACCESS, 0,
 			&hSSSubKey, &dwDisposition);
-		RegSetValueEx(hSSSubKey, L"Path", 0, REG_SZ, (CONST LPBYTE)pFavorites[i]->lpwPath,
-			(wcslen(pFavorites[i]->lpwPath) + 1) * sizeof(WCHAR));
-		RegSetValueEx(hSSSubKey, L"DisplayName", 0, REG_SZ, (CONST LPBYTE)pFavorites[i]->lpwDisplayName,
-			(wcslen(pFavorites[i]->lpwDisplayName) + 1) * sizeof(WCHAR));
+		RegSetValueEx(hSSSubKey, L"Path", 0, REG_SZ, (CONST LPBYTE)pFavorites[i]->lpPath,
+			(DWORD)(wcslen(pFavorites[i]->lpPath) + 1) * sizeof(WCHAR));
+		RegSetValueEx(hSSSubKey, L"DisplayName", 0, REG_SZ, (CONST LPBYTE)pFavorites[i]->lpDisplayName,
+			(DWORD)(wcslen(pFavorites[i]->lpDisplayName) + 1) * sizeof(WCHAR));
 		RegCloseKey(hSSSubKey);
 	}
 	RegCloseKey(hSSKey);
@@ -420,15 +442,15 @@ void SaveSettings()
 	RegSetValueEx(hSSKey, L"UseExternalFilters", 0, REG_DWORD, (CONST LPBYTE)&dwUseExternalFilters, 4);
 	for (i = 0; i < APP_MAX_STRINGS; i++)
 	{
-		swprintf(lpwKeyName, L"ExternalFilter_%i", i);
-		RegDeleteValue(hSSKey, lpwKeyName);
+		swprintf(lpKeyName, L"ExternalFilter_%i", i);
+		RegDeleteValue(hSSKey, lpKeyName);
 	}
 	for (i = 0; i < APP_MAX_STRINGS; i++)
 	{
-		if (!lpwExternalFilters[i]) break;
-		swprintf(lpwKeyName, L"ExternalFilter_%i", i);
-		RegSetValueEx(hSSKey, lpwKeyName, 0, REG_SZ, (CONST LPBYTE)lpwExternalFilters[i],
-			(wcslen(lpwExternalFilters[i]) + 1) * sizeof(WCHAR));
+		if (!lpExternalFilters[i]) break;
+		swprintf(lpKeyName, L"ExternalFilter_%i", i);
+		RegSetValueEx(hSSKey, lpKeyName, 0, REG_SZ, (CONST LPBYTE)lpExternalFilters[i],
+			(DWORD)(wcslen(lpExternalFilters[i]) + 1) * sizeof(WCHAR));
 	}
 	RegCloseKey(hSSKey);
 }

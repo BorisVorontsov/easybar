@@ -23,7 +23,7 @@ INT_PTR CALLBACK OpacityDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 			switch (LOWORD(wParam))
 			{
 				case IDC_BTNOK:
-					dwOpacityLevel = SendDlgItemMessage(hWnd, IDC_SLDOL, TBM_GETPOS, 0, 0);
+					dwOpacityLevel = (DWORD)SendDlgItemMessage(hWnd, IDC_SLDOL, TBM_GETPOS, 0, 0);
 					EndDialog(hWnd, 0);
 					break;
 				case IDC_BTNCANCEL:
@@ -42,11 +42,11 @@ INT_PTR CALLBACK OpacityDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 					case TB_THUMBTRACK:
 					case TB_THUMBPOSITION:
 					case TB_ENDTRACK:
-						LPWSTR lpwCL = new WCHAR[64];
-						int intPos = SendDlgItemMessage(hWnd, IDC_SLDOL, TBM_GETPOS, 0, 0);
-						swprintf(lpwCL, L"Custom level: %i%c", intPos, '%');
-						SetDlgItemText(hWnd, IDC_STCCL, lpwCL);
-						delete[] lpwCL;
+						LPWSTR lpCL = new WCHAR[64];
+						int intPos = (int)SendDlgItemMessage(hWnd, IDC_SLDOL, TBM_GETPOS, 0, 0);
+						swprintf(lpCL, L"Custom level: %i%c", intPos, '%');
+						SetDlgItemText(hWnd, IDC_STCCL, lpCL);
+						delete[] lpCL;
 						break;
 				}
 			}

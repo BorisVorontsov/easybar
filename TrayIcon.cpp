@@ -12,29 +12,40 @@
 #include "easybar.h"
 #include "trayicon.h"
 
-WNDCLASSEX WCEX = { 0 };
-HWND hTrayCBWnd = 0;
-HMENU hTrayMenu = 0;
-NOTIFYICONDATA NID = { 0 };
+extern WCHAR lpMutexName[128];
+extern HANDLE hMutex;
+extern HINSTANCE hAppInstance;
+extern HWND hMainWnd;
 
-CEBMenu *pEBMenuTray = 0;
+static CEBMenu *pEBMenuTray = 0;
+
+HWND hTrayCBWnd = 0;
+
+static WNDCLASSEX WCEX = {};
+static HMENU hTrayMenu = 0;
+static NOTIFYICONDATA NID = {};
 
 void InitTrayCBWnd(BOOL bCreate)
 {
-	LONG i, lMMItemCnt, lTMItemCnt;
+	LONG i, lTMItemCnt;
+	HMENU hMainMenu = GetMenu(hMainWnd);
 	if (bCreate)
 	{
-		WCHAR lpwText[MAX_PATH] = { 0 };
+		LONG lMMItemCnt;
+		WCHAR lpText[MAX_PATH] = {};
+		HMENU hTraySubMenu;
 		hTrayMenu = CreatePopupMenu();
 		AppendMenu(hTrayMenu, MF_STRING, IDM_TRAY_HIDESHOW, L"&Hide/Show Player");
 		AppendMenu(hTrayMenu, MF_SEPARATOR, 0, 0);
-		lMMItemCnt = GetMenuItemCount(GetMenu(hMainWnd));
+		lMMItemCnt = GetMenuItemCount(hMainMenu);
 		for (i = 0; i < lMMItemCnt; i++)
 		{
-			GetMenuString(GetMenu(hMainWnd), i, lpwText, MAX_PATH, MF_BYPOSITION);
-			AppendMenu(hTrayMenu, MF_STRING | MF_POPUP, (UINT_PTR)GetSubMenu(GetMenu(hMainWnd),
-				i), lpwText);
+			GetMenuString(hMainMenu, i, lpText, MAX_PATH, MF_BYPOSITION);
+			hTraySubMenu = GetSubMenu(hMainMenu, i);
+			AppendMenu(hTrayMenu, MF_STRING | MF_POPUP, (UINT_PTR)hTraySubMenu, lpText);
 		}
+		AppendMenu(hTrayMenu, MF_SEPARATOR, 0, 0);
+		AppendMenu(hTrayMenu, MF_STRING, IDM_TRAY_EXIT, L"&Exit");
 		SetMenuDefaultItem(hTrayMenu, IDM_TRAY_HIDESHOW, FALSE);
 		WCEX.cbSize = sizeof(WNDCLASSEX); 
 		WCEX.lpfnWndProc = (WNDPROC)TrayCBWndProc;
@@ -56,12 +67,10 @@ void InitTrayCBWnd(BOOL bCreate)
 	else
 	{
 		if (!dwNoOwnerDrawMenu) pEBMenuTray->InitEBMenu(0);
-		lMMItemCnt = GetMenuItemCount(GetMenu(hMainWnd));
 		lTMItemCnt = GetMenuItemCount(hTrayMenu);
-		for (i = (lTMItemCnt - 1); i >= (lTMItemCnt - lMMItemCnt); i--)
-		{
+		for (i = (lTMItemCnt - 1); i >= 0; i--)
 			RemoveMenu(hTrayMenu, i, MF_BYPOSITION);
-		}
+
 		DestroyMenu(hTrayMenu);
 		hTrayMenu = 0;
 		DestroyWindow(hTrayCBWnd);
@@ -87,7 +96,7 @@ static LRESULT CALLBACK TrayCBWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARA
 				case WM_RBUTTONUP:
 				{
 					SetForegroundWindow(hWnd);
-					POINT pt = { 0 };
+					POINT pt = {};
 					GetCursorPos(&pt);
 					TrackPopupMenu(hTrayMenu, 0, pt.x, pt.y, 0, hWnd, 0);
 					PostMessage(hWnd, WM_NULL, 0, 0);
@@ -109,6 +118,27 @@ static LRESULT CALLBACK TrayCBWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARA
 						ShowWindow(hMainWnd, SW_RESTORE);
 						SetForegroundWindow(hMainWnd);
 					}
+					break;
+				case IDM_TRAY_EXIT:
+					if (dwMultipleInstances)
+					{
+						//Предварительно закрываем основной мьютекс
+						CloseHandle(hMutex);
+						hMutex = 0;
+						
+						HANDLE hMutex2 = CreateMutex(0, TRUE, lpMutexName);
+						if (GetLastError() == ERROR_ALREADY_EXISTS)
+						{
+							if (MessageBox(hWnd, L"Close all instances?", APP_NAME, MB_YESNO | MB_ICONQUESTION |
+								MB_DEFBUTTON2) == IDYES)
+							{
+								PostMessage(hMainWnd, WM_COMMAND, MAKEWPARAM(IDM_FILE_EXIT, 0), 0);
+								break;
+							}
+						}
+						CloseHandle(hMutex2);
+					}
+					PostMessage(hMainWnd, WM_COMMAND, MAKEWPARAM(IDM_FILE_CLOSEWINDOW, 0), 0);
 					break;
 				default:
 					PostMessage(hMainWnd, WM_COMMAND, wParam, lParam);
@@ -197,19 +227,19 @@ BOOL InitTrayIcon()
 	return Shell_NotifyIcon(NIM_ADD, &NID);
 }
 
-BOOL UpdateTrayIcon(LPCWSTR lpwTip)
+BOOL UpdateTrayIcon(LPCWSTR lpTip)
 {
 	if (!NID.cbSize) return FALSE;
-	wcsncpy(NID.szTip, lpwTip, (sizeof(NID.szTip) / sizeof(WCHAR)) - 1);
+	wcsncpy(NID.szTip, lpTip, (sizeof(NID.szTip) / sizeof(WCHAR)) - 1);
 	NID.uFlags = NIF_TIP;
 	return Shell_NotifyIcon(NIM_MODIFY, &NID);
 }
 
-BOOL ShowBalloon(LPCWSTR lpwTitle, LPCWSTR lpwText, BALLOONICON bIcon, DWORD dwTimeout)
+BOOL ShowBalloon(LPCWSTR lpTitle, LPCWSTR lpText, BALLOONICON bIcon, DWORD dwTimeout)
 {
 	if (!NID.cbSize) return FALSE;
-	wcsncpy(NID.szInfoTitle, lpwTitle, (sizeof(NID.szInfoTitle) / sizeof(WCHAR)) - 1);
-	wcsncpy(NID.szInfo, lpwText, (sizeof(NID.szInfo) / sizeof(WCHAR)) - 1);
+	wcsncpy(NID.szInfoTitle, lpTitle, (sizeof(NID.szInfoTitle) / sizeof(WCHAR)) - 1);
+	wcsncpy(NID.szInfo, lpText, (sizeof(NID.szInfo) / sizeof(WCHAR)) - 1);
 	switch (bIcon)
 	{
 		case BI_NONE:
@@ -229,7 +259,7 @@ BOOL ShowBalloon(LPCWSTR lpwTitle, LPCWSTR lpwText, BALLOONICON bIcon, DWORD dwT
 	}
 	NID.uTimeout = (dwTimeout < 10000)?10000:dwTimeout;
 	NID.uFlags = NIF_INFO;
-	return Shell_NotifyIcon(NIM_MODIFY, &NID);;
+	return Shell_NotifyIcon(NIM_MODIFY, &NID);
 }
 
 BOOL RemoveTrayIcon()

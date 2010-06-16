@@ -8,7 +8,7 @@
 
 BOOL InitEBFrame(HINSTANCE hInstance)
 {
-	WNDCLASSEX WCEX = { 0 };
+	WNDCLASSEX WCEX = {};
 	WCEX.cbSize = sizeof(WCEX);
 	WCEX.style = CS_HREDRAW | CS_VREDRAW;
 	WCEX.hInstance = hInstance;
@@ -27,11 +27,11 @@ LRESULT CALLBACK EBFrameProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 	{
 		pEBFP = new EBFPROPERTIES;
 		ZeroMemory(pEBFP, sizeof(EBFPROPERTIES));
-		SetWindowLongPtr(hWnd, GWL_USERDATA, (LONG_PTR)pEBFP);
+		SetWindowLongPtr(hWnd, GWLP_USERDATA, (LONG_PTR)pEBFP);
 	}
 	else
 	{
-		pEBFP = (LPEBFPROPERTIES)GetWindowLongPtr(hWnd, GWL_USERDATA);
+		pEBFP = (LPEBFPROPERTIES)GetWindowLongPtr(hWnd, GWLP_USERDATA);
 	}
 	switch (uMsg)
 	{
@@ -73,8 +73,8 @@ LRESULT CALLBACK EBFrameProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 			break;
 		}
 		case EBFM_SETBRCOLORS:
-			pEBFP->crBrColorOne = wParam;
-			pEBFP->crBrColorTwo = lParam;
+			pEBFP->crBrColorOne = (COLORREF)wParam;
+			pEBFP->crBrColorTwo = (COLORREF)lParam;
 			PostMessage(hWnd, EBFM_DRAWCONTROL, 0, 0);
 			break;
 		case EBFM_GETBRCOLORS:
@@ -82,7 +82,7 @@ LRESULT CALLBACK EBFrameProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 			*(PLONG)lParam = pEBFP->crBrColorTwo;
 			break;
 		case EBFM_SETMODE:
-			pEBFP->lMode = lParam;
+			pEBFP->lMode = (LONG)lParam;
 			PostMessage(hWnd, WM_SIZE, 0, 0);
 			break;
 		case EBFM_GETMODE:
@@ -132,7 +132,7 @@ LRESULT CALLBACK EBFrameProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 			return 1;
 		case WM_PAINT:
 		{
-			PAINTSTRUCT PS = { 0 };
+			PAINTSTRUCT PS = {};
 			HDC hDC = BeginPaint(hWnd, &PS);
 			BitBlt(hDC, 0, 0, pEBFP->CRC.right, pEBFP->CRC.bottom, pEBFP->hDBDC, 0, 0, SRCCOPY);
 			EndPaint(hWnd, &PS);
