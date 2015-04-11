@@ -1,0 +1,1 @@
+**EasyBar** is a small and fast media player. It can play audio and video files in most popular formats using DirectShow.
