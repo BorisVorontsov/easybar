@@ -20,7 +20,7 @@
 
 BOOL InitEBButton(HINSTANCE hInstance)
 {
-	WNDCLASSEX WCEX = { 0 };
+	WNDCLASSEX WCEX = {};
 	WCEX.cbSize = sizeof(WCEX);
 	WCEX.style = CS_HREDRAW | CS_VREDRAW;
 	WCEX.hInstance = hInstance;
@@ -39,11 +39,11 @@ LRESULT CALLBACK EBButtonProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam
 	{
 		pEBBP = new EBBPROPERTIES;
 		ZeroMemory(pEBBP, sizeof(EBBPROPERTIES));
-		SetWindowLongPtr(hWnd, GWL_USERDATA, (LONG_PTR)pEBBP);
+		SetWindowLongPtr(hWnd, GWLP_USERDATA, (LONG_PTR)pEBBP);
 	}
 	else
 	{
-		pEBBP = (LPEBBPROPERTIES)GetWindowLongPtr(hWnd, GWL_USERDATA);
+		pEBBP = (LPEBBPROPERTIES)GetWindowLongPtr(hWnd, GWLP_USERDATA);
 	}
 	switch (uMsg)
 	{
@@ -86,8 +86,8 @@ LRESULT CALLBACK EBButtonProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam
 		case EBBM_GETFONT:
 			return (LRESULT)pEBBP->hFont;
 		case EBBM_SETFONTCOLORS:
-			pEBBP->crFontColorOne = wParam;
-			pEBBP->crFontColorTwo = lParam;
+			pEBBP->crFontColorOne = (COLORREF)wParam;
+			pEBBP->crFontColorTwo = (COLORREF)lParam;
 			PostMessage(hWnd, EBBM_DRAWCONTROL, 0, 0);
 			break;
 		case EBBM_GETFONTCOLORS:
@@ -95,8 +95,8 @@ LRESULT CALLBACK EBButtonProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam
 			*(PLONG)lParam = pEBBP->crFontColorTwo;
 			break;
 		case EBBM_SETBKCOLORS:
-			pEBBP->crBkColorOne = wParam;
-			pEBBP->crBkColorTwo = lParam;
+			pEBBP->crBkColorOne = (COLORREF)wParam;
+			pEBBP->crBkColorTwo = (COLORREF)lParam;
 			PostMessage(hWnd, EBBM_DRAWCONTROL, 0, 0);
 			break;
 		case EBBM_GETBKCOLORS:
@@ -104,8 +104,8 @@ LRESULT CALLBACK EBButtonProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam
 			*(PLONG)lParam = pEBBP->crBkColorTwo;
 			break;
 		case EBBM_SETBRCOLORS:
-			pEBBP->crBrColorOne = wParam;
-			pEBBP->crBrColorTwo = lParam;
+			pEBBP->crBrColorOne = (COLORREF)wParam;
+			pEBBP->crBrColorTwo = (COLORREF)lParam;
 			PostMessage(hWnd, EBBM_DRAWCONTROL, 0, 0);
 			break;
 		case EBBM_GETBRCOLORS:
@@ -113,7 +113,7 @@ LRESULT CALLBACK EBButtonProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam
 			*(PLONG)lParam = pEBBP->crBrColorTwo;
 			break;
 		case EBBM_SETTRCOLOR:
-			pEBBP->crTrColor = lParam;
+			pEBBP->crTrColor = (COLORREF)lParam;
 			PostMessage(hWnd, EBBM_DRAWCONTROL, 0, 0);
 			break;
 		case EBBM_GETTRCOLOR:
@@ -143,12 +143,19 @@ LRESULT CALLBACK EBButtonProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam
 			PostMessage(hWnd, EBBM_DRAWCONTROL, 0, 0);
 			break;
 		case WM_LBUTTONUP:
+		{
+			if (pEBBP->EBBMF.dwFlag != EBBMF_DOWN) break;
+			POINT PTMU = { LOWORD(lParam), HIWORD(lParam) };
 			ReleaseCapture();
 			pEBBP->EBBMF.dwFlag = 0;
-			PostMessage(GetParent(hWnd), WM_COMMAND, MAKEWPARAM(GetDlgCtrlID(hWnd), EBBN_CLICKED),
-				(LPARAM)hWnd);
+			if (PtInRect(&pEBBP->CRC, PTMU))
+			{
+				PostMessage(GetParent(hWnd), WM_COMMAND, MAKEWPARAM(GetDlgCtrlID(hWnd), EBBN_CLICKED),
+					(LPARAM)hWnd);
+			}
 			PostMessage(hWnd, EBBM_DRAWCONTROL, 0, 0);
 			break;
+		}
 		case WM_ENABLE:
 			PostMessage(hWnd, EBBM_DRAWCONTROL, 0, 0);
 			break;
@@ -158,11 +165,11 @@ LRESULT CALLBACK EBButtonProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam
 			{
 				HDC hTDC, hEDC;
 				HBITMAP hEBitmap;
-				TRIVERTEX TV[2] = { 0 };
-				GRADIENT_RECT GR = { 0 };
-				RECT RCB = { 0 };
+				TRIVERTEX TV[2] = {};
+				GRADIENT_RECT GR = {};
+				RECT RCB = {};
 				HFONT hOldFont;
-				BITMAPINFO BMI = { 0 }, EBMI = { 0 };
+				BITMAPINFO BMI = {}, EBMI = {};
 				ULONG i, lR, lG, lB, lS;
 				LPBYTE pPixels;
 				LONG lX = 0, lY = 0, lXOffset = (pEBBP->EBBMF.dwFlag == EBBMF_DOWN)?1:0,
@@ -319,8 +326,8 @@ LRESULT CALLBACK EBButtonProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam
 					HDC hLDC;
 					HBRUSH hGlBrush;
 					HBITMAP hTmpBitmap, hOldBitmap;
-					RECT RCGE = { 0 };
-					BLENDFUNCTION BF = { 0 };
+					RECT RCGE = {};
+					BLENDFUNCTION BF = {};
 					CopyRect(&RCGE, &pEBBP->CRC);
 					RCGE.right -= RCGE.left;
 					RCGE.bottom -= RCGE.top;
@@ -350,7 +357,7 @@ LRESULT CALLBACK EBButtonProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam
 			return 1;
 		case WM_PAINT:
 		{
-			PAINTSTRUCT PS = { 0 };
+			PAINTSTRUCT PS = {};
 			HDC hDC = BeginPaint(hWnd, &PS);
 			BitBlt(hDC, 0, 0, pEBBP->CRC.right, pEBBP->CRC.bottom, pEBBP->hDBDC, 0, 0, SRCCOPY);
 			EndPaint(hWnd, &PS);

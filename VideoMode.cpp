@@ -21,7 +21,7 @@ CVideoMode::~CVideoMode()
 //функцию с аргументом 0
 DWORD CVideoMode::EnumVideoModes(LPVIDEOMODE *pVMArr) const
 {
-	DEVMODE DM = { 0 };
+	DEVMODE DM = {};
 	ULONG i = 0;
 	while(EnumDisplaySettings(0, i, &DM))
 	{
@@ -40,7 +40,7 @@ DWORD CVideoMode::EnumVideoModes(LPVIDEOMODE *pVMArr) const
 //¬озвращает текущий видеорежим
 void CVideoMode::GetCurrentVideoMode(LPVIDEOMODE pVM) const
 {
-	DEVMODE DM = { 0 };
+	DEVMODE DM = {};
 	EnumDisplaySettings(0, -1, &DM);
 	pVM->dwPelsWidth = DM.dmPelsWidth;
 	pVM->dwPelsHeight = DM.dmPelsHeight;
@@ -51,7 +51,7 @@ void CVideoMode::GetCurrentVideoMode(LPVIDEOMODE pVM) const
 //¬озвращает индекс указанного видеорежима в массиве видеорежимов (если там таковой имеетс€)
 DWORD CVideoMode::GetVideoModeIndex(VIDEOMODE VM) const
 {
-	DEVMODE DM = { 0 };
+	DEVMODE DM = {};
 	ULONG i = 0;
 	while(EnumDisplaySettings(0, i, &DM))
 	{
@@ -72,7 +72,7 @@ DWORD CVideoMode::GetVideoModeIndex(VIDEOMODE VM) const
 //системном реестре (дл€ текущего пользовател€)
 BOOL CVideoMode::ChangeVideoMode(VIDEOMODE VM, DWORD dwFlag)
 {
-	DEVMODE DM = { 0 };
+	DEVMODE DM = {};
 	DM.dmSize = sizeof(DM);
 	DM.dmPelsWidth = VM.dwPelsWidth;
 	DM.dmPelsHeight = VM.dwPelsHeight;

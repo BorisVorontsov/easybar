@@ -12,12 +12,15 @@
 #include "easybar.h"
 #include "videodlg.h"
 
+extern HWND hMainWnd;
 extern VWDATA VWD;
 
-static POINT PTMM = { 0 };
+static BOOL bProcessOnClick;
+static POINT PTMM = {};
+static BOOL bNoCursorAutoHide = FALSE;
 
-static LONG lOldWndStyle;
-static LONG lOldWndExStyle;
+static LONG_PTR lOldWndStyle;
+static LONG_PTR lOldWndExStyle;
 
 INT_PTR CALLBACK VideoDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
@@ -27,19 +30,20 @@ INT_PTR CALLBACK VideoDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam
 		{
 			//Инициализация диалога
 			//--------------------------------------------------------------------
-			RECT RC = { 0 };
+			RECT RC = {};
 			ScaleVideoWindow(hWnd, 1, &RC);
-			SetWindowPos(hWnd, HWND_TOP, 0, 0, (RC.right - RC.left),
-				(RC.bottom - RC.top), SWP_NOACTIVATE);
+			SetWindowPos(hWnd, 0, 0, 0, (RC.right - RC.left),
+				(RC.bottom - RC.top), SWP_NOACTIVATE | SWP_NOZORDER);
 			MoveToCenter(hWnd, 0, 0);
 			VWD.dwVWPosFlag = VWPF_NORMAL;
 			VWD.dwSMPTimeout = 0;
 			SetTimer(hWnd, 1, 200, 0);
+			SetTimer(hWnd, 2, 100, 0); //Обход проблемы с прорисовкой Logo
 			/*
 			//-------------------------------------------------------------------------------
 			VWD.hPlayerVW = CreateDialogParam(hAppInstance, MAKEINTRESOURCE(IDD_PLAYER_VW),
 				hWnd, PlayerDlgProc, 0);
-			SetWindowPos(VWD.hPlayerVW, HWND_TOP, 100, 100, 0, 0, SWP_NOSIZE);
+			SetWindowPos(VWD.hPlayerVW, 0, 100, 100, 0, 0, SWP_NOSIZE | SWP_NOZORDER);
 			ShowWindow(VWD.hPlayerVW, SW_SHOW);
 			//-------------------------------------------------------------------------------
 			*/
@@ -47,13 +51,17 @@ INT_PTR CALLBACK VideoDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam
 		}
 		case WM_ERASEBKGND:
 		{
-			RECT RCW = { 0 };
+			RECT RCW = {};
 			HDC hDC = (HDC)wParam;
 			GetClientRect(hWnd, &RCW);
-			FillRect(hDC, &RCW, (HBRUSH)GetStockObject(BLACK_BRUSH));
+			PatBlt(hDC, 0, 0, RCW.right - RCW.left, RCW.bottom - RCW.top, BLACKNESS);
 			return TRUE;
 		}
+		case WM_APPCOMMAND:
+			PostMessage(hMainWnd, uMsg, wParam, lParam);
+			return TRUE;
 		case WM_LBUTTONDOWN:
+			bProcessOnClick = TRUE;
 		case WM_MBUTTONDOWN:
 		case WM_RBUTTONDOWN:
 			if (VWD.dwVWPosFlag == VWPF_FULLSCREEN)
@@ -72,20 +80,30 @@ INT_PTR CALLBACK VideoDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam
 				{
 					ShowMousePointer(TRUE);
 					VWD.dwSMPTimeout = GetTickCount();
+					/* отображение панели управления в полном экране */
 				}
+			}
+			if (((wParam & MK_LBUTTON) == MK_LBUTTON) && (VWD.dwVWPosFlag == VWPF_NORMAL))
+			{
+				ReleaseCapture();
+				PostMessage(hWnd, WM_NCLBUTTONDOWN, HTCAPTION, 0);
+				bProcessOnClick = FALSE;
 			}
 			return TRUE;
 		case WM_LBUTTONUP:
-			PostMessage(hMainWnd, WM_COMMAND, MAKEWPARAM(IDC_EBBPP, 0), 0);
+			if (bProcessOnClick)
+			{
+				PostMessage(hMainWnd, WM_COMMAND, MAKEWPARAM(IDC_EBBPP, 0), 0);
+			}
 			return TRUE;
 		case WM_MBUTTONUP:
 			PostMessage(hMainWnd, WM_COMMAND, MAKEWPARAM(IDM_FULLSCREEN_FULLSCREENNORMAL, 0), 0);
 			return TRUE;
 		case WM_RBUTTONUP:
 		{
-			if (VWD.dwVWPosFlag == VWPF_NORMAL)
+			/*if (VWD.dwVWPosFlag == VWPF_NORMAL)
 			{
-				LONG lCurWndStyle = GetWindowLong(hWnd, GWL_STYLE);
+				LONG lCurWndStyle = GetWindowLongPtr(hWnd, GWL_STYLE);
 				if ((lCurWndStyle & WS_CAPTION) == WS_CAPTION)
 				{
 					lCurWndStyle ^= WS_CAPTION;
@@ -94,19 +112,47 @@ INT_PTR CALLBACK VideoDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam
 				{
 					lCurWndStyle |= WS_CAPTION;
 				}
-				SetWindowLong(hWnd, GWL_STYLE, lCurWndStyle);
-				SetWindowPos(hWnd, HWND_TOP, 0, 0, 0, 0, SWP_FRAMECHANGED |
-					SWP_NOSIZE | SWP_NOMOVE);
+				SetWindowLongPtr(hWnd, GWL_STYLE, lCurWndStyle);
+				SetWindowPos(hWnd, 0, 0, 0, 0, 0, SWP_FRAMECHANGED |
+					SWP_NOSIZE | SWP_NOMOVE | SWP_NOZORDER);
 			}
 			else
 			{
-				MessageBeep(0);
+				MessageBeep(-1);
+			}*/
+			POINT PTM = {};
+			HMENU hMainMenu, hSMPlayback;
+			LONG i, lMMItemCnt, lSMPlaybackIndex;
+			WCHAR lpMenuText[128] = {};
+			hMainMenu = GetMenu(hMainWnd);
+			lMMItemCnt = GetMenuItemCount(hMainMenu);
+			for (i = 0; i < lMMItemCnt; i++)
+			{
+				GetMenuString(hMainMenu, i, lpMenuText, sizeof(lpMenuText) / sizeof(WCHAR),
+					MF_BYPOSITION);
+				if (_wcsicmp(lpMenuText, L"&Playback") == 0)
+				{
+					lSMPlaybackIndex = i;
+					break;
+				}
+				else
+				{
+					if (i == (lMMItemCnt - 1))
+						return TRUE;
+				}
 			}
+			hSMPlayback = GetSubMenu(hMainMenu, lSMPlaybackIndex);	
+			GetCursorPos(&PTM);
+			bNoCursorAutoHide = TRUE;
+			TrackPopupMenu(hSMPlayback, 0, PTM.x, PTM.y, 0, hMainWnd, 0);
+			bNoCursorAutoHide = FALSE;
+
 			return TRUE;
 		}
+		case VWM_UPDATEASPECTRATIO:
 		case WM_WINDOWPOSCHANGED:
 		{
-			RECT RCW = { 0 }, RCS = { 0 }, RCV = { 0 };
+			RECT RCW = {}, RCS = {}, RCV = {};
 			GetClientRect(hWnd, &RCW);
 			GetClientRect(GetDlgItem(hWnd, IDC_STCLOGO), &RCS);
 			RedrawWindow(hWnd, 0, 0, RDW_ERASE | RDW_INVALIDATE);
@@ -115,7 +161,7 @@ INT_PTR CALLBACK VideoDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam
 			if (dwKeepAspectRatio)
 			{
 				double dblAspectRatio;
-				SIZE SZ = { 0 };
+				SIZE SZ = {};
 				switch (dwAspectRatioIndex)
 				{
 					case 0:
@@ -179,8 +225,8 @@ INT_PTR CALLBACK VideoDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam
 			return TRUE;
 		case VWM_CHANGESTATE:
 		{
-			LONG lCurWndStyle = GetWindowLong(hWnd, GWL_STYLE);
-			LONG lCurWndExStyle = GetWindowLong(hWnd, GWL_EXSTYLE);
+			LONG_PTR lCurWndStyle = GetWindowLongPtr(hWnd, GWL_STYLE);
+			LONG_PTR lCurWndExStyle = GetWindowLongPtr(hWnd, GWL_EXSTYLE);
 			switch (wParam)
 			{
 				case VWS_FULLSCREEN:
@@ -189,12 +235,12 @@ INT_PTR CALLBACK VideoDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam
 					int intSY = GetSystemMetrics(SM_CYSCREEN);
 					lOldWndStyle = lCurWndStyle;
 					lOldWndExStyle = lCurWndExStyle;
-					if ((lCurWndStyle & WS_CAPTION) == WS_CAPTION) lCurWndStyle ^= WS_CAPTION;
+					//if ((lCurWndStyle & WS_CAPTION) == WS_CAPTION) lCurWndStyle ^= WS_CAPTION;
 					if ((lCurWndStyle & WS_OVERLAPPED) == WS_OVERLAPPED) lCurWndStyle ^= WS_OVERLAPPED;
 					if ((lCurWndStyle & WS_THICKFRAME) == WS_THICKFRAME) lCurWndStyle ^= WS_THICKFRAME;
 					if ((lCurWndExStyle & WS_EX_WINDOWEDGE) == WS_EX_WINDOWEDGE) lCurWndExStyle ^= WS_EX_WINDOWEDGE;
-					SetWindowLong(hWnd, GWL_STYLE, lCurWndStyle);
-					SetWindowLong(hWnd, GWL_EXSTYLE, lCurWndExStyle);
+					SetWindowLongPtr(hWnd, GWL_STYLE, lCurWndStyle);
+					SetWindowLongPtr(hWnd, GWL_EXSTYLE, lCurWndExStyle);
 					if (pEngine->GetState() == E_STATE_STOPPED)
 					{
 						ShowWindow(GetDlgItem(hWnd, IDC_STCLOGO), SW_HIDE);
@@ -209,8 +255,8 @@ INT_PTR CALLBACK VideoDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam
 					break;
 				}
 				case VWS_NORMAL:
-					SetWindowLong(hWnd, GWL_STYLE, lOldWndStyle);
-					SetWindowLong(hWnd, GWL_EXSTYLE, lOldWndExStyle);
+					SetWindowLongPtr(hWnd, GWL_STYLE, lOldWndStyle);
+					SetWindowLongPtr(hWnd, GWL_EXSTYLE, lOldWndExStyle);
 					if (pEngine->GetState() == E_STATE_STOPPED)
 					{
 						ShowWindow(GetDlgItem(hWnd, IDC_STCLOGO), SW_HIDE);
@@ -241,47 +287,52 @@ INT_PTR CALLBACK VideoDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam
 			PostMessage(hMainWnd, uMsg, wParam, lParam);
 			return TRUE;
 		case WM_TIMER:
-			if (wParam == 1)
+			switch (wParam)
 			{
-				if (pEngine->GetState() == E_STATE_STOPPED)
-				{
-					if (pEngine->GetVideoVisible())
+				case 1:
+					if (pEngine->GetState() == E_STATE_STOPPED)
 					{
-						pEngine->SetVideoVisible(FALSE);
+						if (pEngine->GetVideoVisible())
+						{
+							pEngine->SetVideoVisible(FALSE);
+						}
+						if (!IsWindowVisible(GetDlgItem(hWnd, IDC_STCLOGO)))
+						{
+							ShowWindow(GetDlgItem(hWnd, IDC_STCLOGO), SW_SHOW);
+						}
 					}
-					if (!IsWindowVisible(GetDlgItem(hWnd, IDC_STCLOGO)))
+					else
 					{
-						ShowWindow(GetDlgItem(hWnd, IDC_STCLOGO), SW_SHOW);
+						if (IsWindowVisible(GetDlgItem(hWnd, IDC_STCLOGO)))
+						{
+							ShowWindow(GetDlgItem(hWnd, IDC_STCLOGO), SW_HIDE);
+						}
+						if (!pEngine->GetVideoVisible())
+						{
+							pEngine->SetVideoVisible(TRUE);
+						}
 					}
-				}
-				else
-				{
-					if (IsWindowVisible(GetDlgItem(hWnd, IDC_STCLOGO)))
+					if (VWD.dwSMPTimeout && (VWD.dwVWPosFlag == VWPF_FULLSCREEN) && !bNoCursorAutoHide)
 					{
-						ShowWindow(GetDlgItem(hWnd, IDC_STCLOGO), SW_HIDE);
+						if ((GetTickCount() - VWD.dwSMPTimeout) >= 2000)
+						{
+							ShowMousePointer(FALSE);
+							VWD.dwSMPTimeout = 0;
+						}
 					}
-					if (!pEngine->GetVideoVisible())
-					{
-						pEngine->SetVideoVisible(TRUE);
-					}
-				}
-				if (VWD.dwSMPTimeout && (VWD.dwVWPosFlag == VWPF_FULLSCREEN))
-				{
-					if ((GetTickCount() - VWD.dwSMPTimeout) >= 2000)
-					{
-						ShowMousePointer(FALSE);
-						VWD.dwSMPTimeout = 0;
-					}
-				}
+					break;
+				case 2:
+					InvalidateRect(GetDlgItem(hWnd, IDC_STCLOGO), NULL, FALSE);
+					KillTimer(hWnd, 2);
+					break;
 			}
 			return TRUE;
-		case WM_CLOSE:
+		case WM_DESTROY:
 			if (VWD.dwVWPosFlag == VWPF_FULLSCREEN) ShowMousePointer(TRUE);
 			KillTimer(hWnd, 1);
 			/*
 			DestroyWindow(VWD.hPlayerVW);
 			*/
-			DestroyWindow(hWnd);
 			return TRUE;
 	}
 	return FALSE;
@@ -293,8 +344,8 @@ INT_PTR CALLBACK VideoDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam
 void ScaleVideoWindow(HWND hWnd, DWORD dwZoomIndex, LPRECT pVWRC)
 {
 	double dblAspectRatio;
-	SIZE SZ = { 0 }, SZA = { 0 };
-	RECT RC = { 0 };
+	SIZE SZ = {}, SZA = {};
+	RECT RC = {};
 	pEngine->GetOriginalVideoSize(&SZ);
 	GetWindowRect(hWnd, &RC);
 	if (dwKeepAspectRatio)
@@ -355,6 +406,65 @@ void ScaleVideoWindow(HWND hWnd, DWORD dwZoomIndex, LPRECT pVWRC)
 	}
 	else
 	{
-		SetWindowPos(hWnd, HWND_TOP, 0, 0, SZ.cx, SZ.cy, SWP_NOMOVE | SWP_NOACTIVATE);
+		SetWindowPos(hWnd, 0, 0, 0, SZ.cx, SZ.cy, SWP_NOMOVE | SWP_NOACTIVATE | SWP_NOZORDER);
 	}
+}
+
+//Обход проблемы с перекрыванием главного окна окном видео (идея Jenya)
+BOOL AutoMoveVideoDlg(HWND hWnd)
+{
+	RECT rcVideoDlg, rcMain, rcResult;
+	int nVideoHeight, nVideoWidth;
+	if (hWnd == NULL)
+		return FALSE;
+
+	GetWindowRect(hWnd,&rcVideoDlg);
+	GetWindowRect(hMainWnd,&rcMain);
+
+	//Если окно видео никак не закрывает главное -- ничего не делаем
+	if (!IntersectRect(&rcResult, &rcVideoDlg, &rcMain)) return FALSE;
+	
+	nVideoHeight = rcVideoDlg.bottom - rcVideoDlg.top;
+	nVideoWidth = rcVideoDlg.right - rcVideoDlg.left;
+	
+	//Позиционируем главное окно
+	if (nVideoWidth >= nVideoHeight)
+	{
+		int nScreenHeight = GetSystemMetrics(SM_CYSCREEN);
+		int nMainHeight = rcMain.bottom - rcMain.top;
+
+		//Проверяем, поместится ли все по высоте
+		if (nVideoHeight + nMainHeight > nScreenHeight) return FALSE;
+
+		if (rcMain.top <= (nScreenHeight / 2))
+		{
+			SetWindowPos(hMainWnd, NULL, rcMain.left, rcVideoDlg.top - nMainHeight,
+				0, 0, SWP_NOSIZE | SWP_NOZORDER);
+		}
+		else
+		{
+			SetWindowPos(hMainWnd, NULL, rcMain.left, rcVideoDlg.bottom, 0, 0,
+				SWP_NOSIZE | SWP_NOZORDER);
+		}
+	}
+	else
+	{
+		int nScreenWidth = GetSystemMetrics(SM_CXSCREEN);
+		int nMainWidth = rcMain.right - rcMain.left;
+
+		//Проверяем, поместится ли все по ширине
+		if (nVideoWidth + nMainWidth > nScreenWidth) return FALSE;
+
+		if (rcMain.left <= (nScreenWidth / 2))
+		{
+			SetWindowPos(hMainWnd, NULL, rcMain.top, rcVideoDlg.left - nMainWidth,
+				0, 0, SWP_NOSIZE | SWP_NOZORDER);
+		}
+		else
+		{
+			SetWindowPos(hMainWnd, NULL, rcMain.top, rcVideoDlg.right, 0, 0,
+				SWP_NOSIZE | SWP_NOZORDER);
+		}
+	}
+	return TRUE;
 }

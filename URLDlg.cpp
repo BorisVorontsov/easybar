@@ -1,4 +1,5 @@
 #include <windows.h>
+#include <shlwapi.h>
 
 #include "resource.h"
 #include "strparser.h"
@@ -10,6 +11,7 @@
 #include "urldlg.h"
 
 #pragma comment (lib, "urlmon.lib")
+#pragma comment (lib, "shlwapi.lib")
 
 INT_PTR CALLBACK URLDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
@@ -18,8 +20,10 @@ INT_PTR CALLBACK URLDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 		case WM_INITDIALOG:
 			//Инициализация диалога
 			//--------------------------------------------------------------------
-			SetDlgItemText(hWnd, IDC_EDTURL, lpwRecentURL);
+			CoInitialize(NULL);
+			SetDlgItemText(hWnd, IDC_EDTURL, lpRecentURL);
 			PostMessage(hWnd, WM_COMMAND, MAKEWPARAM(IDC_EDTURL, EN_CHANGE), 0);
+			SHAutoComplete(GetDlgItem(hWnd, IDC_EDTURL), SHACF_URLALL);
 			return TRUE;
 		case WM_COMMAND:
 			switch (LOWORD(wParam))
@@ -28,37 +32,37 @@ INT_PTR CALLBACK URLDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 				{
 					if (HIWORD(wParam) == EN_CHANGE)
 					{
-						WCHAR lpwText[MAX_PATH] = { 0 };
-						GetDlgItemText(hWnd, IDC_EDTURL, lpwText, MAX_PATH);
-						EnableWindow(GetDlgItem(hWnd, IDC_BTNOK), IsURL(lpwText));
+						WCHAR lpText[MAX_PATH] = {};
+						GetDlgItemText(hWnd, IDC_EDTURL, lpText, MAX_PATH);
+						EnableWindow(GetDlgItem(hWnd, IDC_BTNOK), IsURL(lpText));
 					}
 					break;
 				}
 				case IDC_BTNOK:
 				{
-					WCHAR lpwText[MAX_PATH] = { 0 };
-					WCHAR lpwExt[64] = { 0 };
+					WCHAR lpText[MAX_PATH] = {};
+					WCHAR lpExt[64] = {};
 					ULONG lFileCnt = 0;
-					GetDlgItemText(hWnd, IDC_EDTURL, lpwText, MAX_PATH);
-					SP_ExtractRightPart(lpwText, lpwExt, '.');
-					if (SFT_IsMemberOfCategory(lpwExt, SFTC_PLAYLIST))
+					GetDlgItemText(hWnd, IDC_EDTURL, lpText, MAX_PATH);
+					SP_ExtractRightPart(lpText, lpExt, '.');
+					if (SFT_IsMemberOfCategory(lpExt, SFTC_PLAYLIST))
 					{
-						WCHAR lpwPath[MAX_PATH] = { 0 };
-						ExpandEnvironmentStrings(L"%tmp%\\playlist.tmp", lpwPath, MAX_PATH);
-						if (SUCCEEDED(URLDownloadToFile(0, lpwText, lpwPath, 0, 0)))
+						WCHAR lpPath[MAX_PATH] = {};
+						ExpandEnvironmentStrings(L"%tmp%\\playlist.tmp", lpPath, MAX_PATH);
+						if (SUCCEEDED(URLDownloadToFile(0, lpText, lpPath, 0, NULL)))
 						{
-							lFileCnt += LoadPlaylist(lpwPath);
+							lFileCnt += LoadPlaylist(lpPath);
 						}
-						DeleteFile(lpwPath);
+						DeleteFile(lpPath);
 					}
 					else
 					{
-						pFileCollection->AppendFile(lpwText);
+						pFileCollection->AppendFile(lpText);
 						lFileCnt++;
 					}
 					if (lFileCnt)
 					{
-						if (!pEngine->m_lpwFileName)
+						if (!pEngine->m_lpFileName)
 						{
 							if (dwShuffle)
 							{
@@ -71,9 +75,9 @@ INT_PTR CALLBACK URLDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 						}
 						else
 						{
-							pFileCollection->SetRecentFile(pEngine->m_lpwFileName);
+							pFileCollection->SetRecentFile(pEngine->m_lpFileName);
 						}
-						wcscpy(lpwRecentURL, lpwText);
+						wcscpy(lpRecentURL, lpText);
 					}
 					EndDialog(hWnd, 0);
 					break;
@@ -82,6 +86,9 @@ INT_PTR CALLBACK URLDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 					EndDialog(hWnd, 0);
 					break;
 			}
+			return TRUE;
+		case WM_DESTROY:
+			CoUninitialize();
 			return TRUE;
 		case WM_CLOSE:
 			EndDialog(hWnd, 0);

@@ -13,10 +13,12 @@ INT_PTR CALLBACK PlayerVWDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPa
 			return TRUE;
 		}
 		case WM_COMMAND:
-			switch (LOWORD(wParam))
+			/*switch (LOWORD(wParam))
 			{
-				//
-			}
+				default:
+					//
+					break;
+			}*/
 			return TRUE;
 
 	}

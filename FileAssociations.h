@@ -5,9 +5,9 @@
 
 typedef struct _FACUSTOMACTION
 {
-	WCHAR lpwRegCmdKey[64];
-	WCHAR lpwMenuName[128];
-	WCHAR lpwCmdLine[MAX_PATH];
+	WCHAR lpRegCmdKey[64];
+	WCHAR lpMenuName[128];
+	WCHAR lpCmdLine[MAX_PATH];
 	BOOL bDefault;
 	DWORD dwReserved;
 } FACUSTOMACTION, *LPFACUSTOMACTION;
@@ -17,17 +17,17 @@ class CFileAssociations
 public:
 	CFileAssociations();
 	~CFileAssociations();
-	BOOL AddCustomAction(LPCWSTR lpwRegCmdKey, LPCWSTR lpwMenuName,
-		                 LPCWSTR lpwCmdLine, BOOL bDefault = FALSE);
+	BOOL AddCustomAction(LPCWSTR lpRegCmdKey, LPCWSTR lpMenuName,
+		                 LPCWSTR lpCmdLine, BOOL bDefault = FALSE);
 	void ClearCustomActions();
-	void AddAssociation(LPCWSTR lpwExtension, BOOL bCreateStdAction = TRUE);
-	void RemoveAssociation(LPCWSTR lpwExtension, BOOL bCompletely = FALSE);
-	BOOL IsAssociated(LPCWSTR lpwExtension);
+	void AddAssociation(LPCWSTR lpExtension, BOOL bCreateStdAction = TRUE);
+	void RemoveAssociation(LPCWSTR lpExtension, BOOL bCompletely = FALSE);
+	BOOL IsAssociated(LPCWSTR lpExtension);
 	void UpdateShell();
-	WCHAR m_lpwAppPath[MAX_PATH];
+	WCHAR m_lpAppPath[MAX_PATH];
 	DWORD m_dwIconIndex;
-	WCHAR m_lpwRegAppKey[64];
-	WCHAR m_lpwFileDesc[128];
+	WCHAR m_lpRegAppKey[64];
+	WCHAR m_lpFileDesc[128];
 protected:
 	//
 private:

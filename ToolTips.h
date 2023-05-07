@@ -7,8 +7,8 @@ public:
 	CToolTips();
 	~CToolTips();
 	int Initialize();
-	int AddToolTip(HWND hCtrl, LPCWSTR lpwText);
-	void GetToolTip(HWND hCtrl, LPWSTR lpwText);
+	int AddToolTip(HWND hCtrl, LPCWSTR lpText);
+	void GetToolTip(HWND hCtrl, LPWSTR lpText);
 	int RemoveToolTip(HWND hCtrl);
 	int Destroy();
 	HINSTANCE m_hInstance;

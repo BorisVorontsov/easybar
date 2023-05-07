@@ -19,28 +19,28 @@ INT_PTR CALLBACK ExtFltDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 			DWORD dwFASize = 0;
 			pEngine->UpdateDSFiltersArray(DSF_CATEGORY_LEGACY_AM_FILTER);
 			pEngine->GetDSFiltersNames(0, &dwFASize, 0);
-			LPWSTR *lpwDSFilters = new LPWSTR[dwFASize];
+			LPWSTR *lpDSFilters = new LPWSTR[dwFASize];
 			for (i = 0; i < dwFASize; i++)
-				lpwDSFilters[i] = new WCHAR[MAX_PATH];
-			if (pEngine->GetDSFiltersNames(&lpwDSFilters[0], &dwFASize, MAX_PATH) >= 0)
+				lpDSFilters[i] = new WCHAR[MAX_PATH];
+			if (pEngine->GetDSFiltersNames(&lpDSFilters[0], &dwFASize, MAX_PATH) >= 0)
 			{
 				SendDlgItemMessage(hWnd, IDC_LSTAF, LB_RESETCONTENT, 0, 0);
 				for (i = 0; i < dwFASize; i++)
 				{
 					SendDlgItemMessage(hWnd, IDC_LSTAF, LB_ADDSTRING, 0,
-						(LPARAM)lpwDSFilters[i]);
+						(LPARAM)lpDSFilters[i]);
 				}
 				SendDlgItemMessage(hWnd, IDC_LSTAF, LB_SETCURSEL, 0, 0);
 				SetLBHorizontalExtent(GetDlgItem(hWnd, IDC_LSTAF));
 			}
 			for (i = 0; i < dwFASize; i++)
-				delete[] lpwDSFilters[i];
-			delete[] lpwDSFilters;
+				delete[] lpDSFilters[i];
+			delete[] lpDSFilters;
 			for (i = 0; i < APP_MAX_STRINGS; i++)
 			{
-				if (!lpwExternalFilters[i]) break;
+				if (!lpExternalFilters[i]) break;
 				SendDlgItemMessage(hWnd, IDC_LSTSF, LB_ADDSTRING, 0,
-					(LPARAM)lpwExternalFilters[i]);
+					(LPARAM)lpExternalFilters[i]);
 			}
 			SendDlgItemMessage(hWnd, IDC_LSTSF, LB_SETCURSEL, 0, 0);
 			SetLBHorizontalExtent(GetDlgItem(hWnd, IDC_LSTSF));
@@ -59,40 +59,40 @@ INT_PTR CALLBACK ExtFltDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 					{
 						case LBN_SELCHANGE:
 						{
-							WCHAR lpwText[MAX_PATH] = { 0 }, lpwMerit[64] = { 0 };
-							LPWSTR lpwCLSID = 0;
-							DSFILTERINFO DSFI = { 0 };
-							DWORD dwSelItem = SendDlgItemMessage(hWnd, IDC_LSTAF, LB_GETCURSEL, 0, 0);
-							SendDlgItemMessage(hWnd, IDC_LSTAF, LB_GETTEXT, dwSelItem, (LPARAM)lpwText);
-							pEngine->GetDSFilterInfo(lpwText, &DSFI);
-							StringFromCLSID(DSFI.cCLSID, &lpwCLSID);
-							SetDlgItemText(hWnd, IDC_EDTFCLSID, lpwCLSID);
-							CoTaskMemFree(lpwCLSID);
+							WCHAR lpText[MAX_PATH] = {}, lpMerit[64] = {};
+							LPWSTR lpCLSID = 0;
+							DSFILTERINFO DSFI = {};
+							DWORD dwSelItem = (DWORD)SendDlgItemMessage(hWnd, IDC_LSTAF, LB_GETCURSEL, 0, 0);
+							SendDlgItemMessage(hWnd, IDC_LSTAF, LB_GETTEXT, dwSelItem, (LPARAM)lpText);
+							pEngine->GetDSFilterInfo(lpText, &DSFI);
+							StringFromCLSID(DSFI.cCLSID, &lpCLSID);
+							SetDlgItemText(hWnd, IDC_EDTFCLSID, lpCLSID);
+							CoTaskMemFree(lpCLSID);
 							switch (DSFI.dwMerit)
 							{
 								case MERIT_PREFERRED:
-									swprintf(lpwMerit, L"MERIT_PREFERRED (0x%x)", MERIT_PREFERRED);
+									swprintf(lpMerit, L"MERIT_PREFERRED (0x%x)", MERIT_PREFERRED);
 									break;
 								case MERIT_NORMAL:
-									swprintf(lpwMerit, L"MERIT_NORMAL (0x%x)", MERIT_NORMAL);
+									swprintf(lpMerit, L"MERIT_NORMAL (0x%x)", MERIT_NORMAL);
 									break;
 								case MERIT_UNLIKELY:
-									swprintf(lpwMerit, L"MERIT_UNLIKELY (0x%x)", MERIT_UNLIKELY);
+									swprintf(lpMerit, L"MERIT_UNLIKELY (0x%x)", MERIT_UNLIKELY);
 									break;
 								case MERIT_DO_NOT_USE:
-									swprintf(lpwMerit, L"MERIT_DO_NOT_USE (0x%x)", MERIT_DO_NOT_USE);
+									swprintf(lpMerit, L"MERIT_DO_NOT_USE (0x%x)", MERIT_DO_NOT_USE);
 									break;
 								case MERIT_SW_COMPRESSOR:
-									swprintf(lpwMerit, L"MERIT_SW_COMPRESSOR (0x%x)", MERIT_SW_COMPRESSOR);
+									swprintf(lpMerit, L"MERIT_SW_COMPRESSOR (0x%x)", MERIT_SW_COMPRESSOR);
 									break;
 								case MERIT_HW_COMPRESSOR:
-									swprintf(lpwMerit, L"MERIT_SW_COMPRESSOR (0x%x)", MERIT_HW_COMPRESSOR);
+									swprintf(lpMerit, L"MERIT_SW_COMPRESSOR (0x%x)", MERIT_HW_COMPRESSOR);
 									break;
 								default:
-									swprintf(lpwMerit, L"UNKNOWN (0x%x)", DSFI.dwMerit);
+									swprintf(lpMerit, L"UNKNOWN (0x%x)", DSFI.dwMerit);
 									break;
 							}
-							SetDlgItemText(hWnd, IDC_EDTFM, lpwMerit);
+							SetDlgItemText(hWnd, IDC_EDTFM, lpMerit);
 							break;
 						}
 						case LBN_DBLCLK:
@@ -111,18 +111,18 @@ INT_PTR CALLBACK ExtFltDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 					break;
 				case IDC_BTNADD:
 				{
-					WCHAR lpwText[MAX_PATH] = { 0 };
-					DWORD dwSelItem = SendDlgItemMessage(hWnd, IDC_LSTAF, LB_GETCURSEL, 0, 0);
-					SendDlgItemMessage(hWnd, IDC_LSTAF, LB_GETTEXT, dwSelItem, (LPARAM)lpwText);
-					SendDlgItemMessage(hWnd, IDC_LSTSF, LB_ADDSTRING, 0, (LPARAM)lpwText);
-					DWORD dwSFCount = SendDlgItemMessage(hWnd, IDC_LSTSF, LB_GETCOUNT, 0, 0);
+					WCHAR lpText[MAX_PATH] = {};
+					DWORD dwSelItem = (DWORD)SendDlgItemMessage(hWnd, IDC_LSTAF, LB_GETCURSEL, 0, 0);
+					SendDlgItemMessage(hWnd, IDC_LSTAF, LB_GETTEXT, dwSelItem, (LPARAM)lpText);
+					SendDlgItemMessage(hWnd, IDC_LSTSF, LB_ADDSTRING, 0, (LPARAM)lpText);
+					DWORD dwSFCount = (DWORD)SendDlgItemMessage(hWnd, IDC_LSTSF, LB_GETCOUNT, 0, 0);
 					SendDlgItemMessage(hWnd, IDC_LSTSF, LB_SETCURSEL, dwSFCount - 1, 0);
 					SetLBHorizontalExtent(GetDlgItem(hWnd, IDC_LSTSF));
 					break;
 				}
 				case IDC_BTNREM:
 				{
-					DWORD dwSelItem = SendDlgItemMessage(hWnd, IDC_LSTSF, LB_GETCURSEL, 0, 0);
+					DWORD dwSelItem = (DWORD)SendDlgItemMessage(hWnd, IDC_LSTSF, LB_GETCURSEL, 0, 0);
 					SendDlgItemMessage(hWnd, IDC_LSTSF, LB_DELETESTRING, dwSelItem, 0);
 					if (dwSelItem > 1)
 					{
@@ -137,27 +137,27 @@ INT_PTR CALLBACK ExtFltDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 				}
 				case IDC_CHKUEF:
 				{
-					BOOL bFlag = SendDlgItemMessage(hWnd, IDC_CHKUEF, BM_GETCHECK, 0, 0);
+					BOOL bFlag = (BOOL)SendDlgItemMessage(hWnd, IDC_CHKUEF, BM_GETCHECK, 0, 0);
 					EnableWindow(GetDlgItem(hWnd, IDC_LSTSF), bFlag);
 					break;
 				}
 				case IDC_BTNOK:
 				{
 					ULONG i = 0;
-					WCHAR lpwText[MAX_PATH] = { 0 };
-					for (; (i < APP_MAX_STRINGS) && (lpwExternalFilters[i]); i++)
+					WCHAR lpText[MAX_PATH] = {};
+					for (; (i < APP_MAX_STRINGS) && (lpExternalFilters[i]); i++)
 					{
-						delete[] lpwExternalFilters[i];
-						lpwExternalFilters[i] = 0;
+						delete[] lpExternalFilters[i];
+						lpExternalFilters[i] = 0;
 					}
-					DWORD dwSFCount = SendDlgItemMessage(hWnd, IDC_LSTSF, LB_GETCOUNT, 0, 0);
+					DWORD dwSFCount = (DWORD)SendDlgItemMessage(hWnd, IDC_LSTSF, LB_GETCOUNT, 0, 0);
 					for (i = 0; i < dwSFCount; i++)
 					{
-						SendDlgItemMessage(hWnd, IDC_LSTSF, LB_GETTEXT, i, (LPARAM)lpwText);
-						lpwExternalFilters[i] = new WCHAR[MAX_PATH];
-						wcscpy(lpwExternalFilters[i], lpwText);
+						SendDlgItemMessage(hWnd, IDC_LSTSF, LB_GETTEXT, i, (LPARAM)lpText);
+						lpExternalFilters[i] = new WCHAR[MAX_PATH];
+						wcscpy(lpExternalFilters[i], lpText);
 					}
-					dwUseExternalFilters = SendDlgItemMessage(hWnd, IDC_CHKUEF, BM_GETCHECK, 0, 0);
+					dwUseExternalFilters = (DWORD)SendDlgItemMessage(hWnd, IDC_CHKUEF, BM_GETCHECK, 0, 0);
 					EndDialog(hWnd, 0);
 					break;
 				}

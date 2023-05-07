@@ -20,7 +20,7 @@
 
 BOOL InitEBDisplay(HINSTANCE hInstance)
 {
-	WNDCLASSEX WCEX = { 0 };
+	WNDCLASSEX WCEX = {};
 	WCEX.cbSize = sizeof(WCEX);
 	WCEX.style = CS_HREDRAW | CS_VREDRAW | CS_DBLCLKS;
 	WCEX.hInstance = hInstance;
@@ -39,11 +39,11 @@ LRESULT CALLBACK EBDisplayProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 	{
 		pEBDP = new EBDPROPERTIES;
 		ZeroMemory(pEBDP, sizeof(EBDPROPERTIES));
-		SetWindowLongPtr(hWnd, GWL_USERDATA, (LONG_PTR)pEBDP);
+		SetWindowLongPtr(hWnd, GWLP_USERDATA, (LONG_PTR)pEBDP);
 	}
 	else
 	{
-		pEBDP = (LPEBDPROPERTIES)GetWindowLongPtr(hWnd, GWL_USERDATA);
+		pEBDP = (LPEBDPROPERTIES)GetWindowLongPtr(hWnd, GWLP_USERDATA);
 	}
 	switch (uMsg)
 	{
@@ -85,8 +85,8 @@ LRESULT CALLBACK EBDisplayProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 		case EBDM_GETFONT:
 			return (LRESULT)pEBDP->hFont;
 		case EBDM_SETFONTCOLORS:
-			pEBDP->crFontColorOne = wParam;
-			pEBDP->crFontColorTwo = lParam;
+			pEBDP->crFontColorOne = (COLORREF)wParam;
+			pEBDP->crFontColorTwo = (COLORREF)lParam;
 			PostMessage(hWnd, EBDM_DRAWCONTROL, 0, 0);
 			break;
 		case EBDM_GETFONTCOLORS:
@@ -94,8 +94,8 @@ LRESULT CALLBACK EBDisplayProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 			*(PLONG)lParam = pEBDP->crFontColorTwo;
 			break;
 		case EBDM_SETBKCOLORS:
-			pEBDP->crBkColorOne = wParam;
-			pEBDP->crBkColorTwo = lParam;
+			pEBDP->crBkColorOne = (COLORREF)wParam;
+			pEBDP->crBkColorTwo = (COLORREF)lParam;
 			PostMessage(hWnd, EBDM_DRAWCONTROL, 0, 0);
 			break;
 		case EBDM_GETBKCOLORS:
@@ -103,8 +103,8 @@ LRESULT CALLBACK EBDisplayProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 			*(PLONG)lParam = pEBDP->crBkColorTwo;
 			break;
 		case EBDM_SETBRCOLORS:
-			pEBDP->crBrColorOne = wParam;
-			pEBDP->crBrColorTwo = lParam;
+			pEBDP->crBrColorOne = (COLORREF)wParam;
+			pEBDP->crBrColorTwo = (COLORREF)lParam;
 			PostMessage(hWnd, EBDM_DRAWCONTROL, 0, 0);
 			break;
 		case EBDM_GETBRCOLORS:
@@ -145,9 +145,9 @@ LRESULT CALLBACK EBDisplayProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 		{
 			if (pEBDP->hDBDC)
 			{
-				TRIVERTEX TV[2] = { 0 };
-				GRADIENT_RECT GR = { 0 };
-				RECT RCB = { 0 }, RCT = { 0 };
+				TRIVERTEX TV[2] = {};
+				GRADIENT_RECT GR = {};
+				RECT RCB = {}, RCT = {};
 				HFONT hOldFont;
 				SetBkMode(pEBDP->hDBDC, TRANSPARENT);
 				hOldFont = (HFONT)SelectObject(pEBDP->hDBDC, pEBDP->hFont);
@@ -201,15 +201,15 @@ LRESULT CALLBACK EBDisplayProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 				GradientFill(pEBDP->hDBDC, &TV[0], 2, (PVOID)&GR, 1, GRADIENT_FILL_RECT_V);
 				if (_tcslen(pEBDP->lpCurrentText))
 				{
-					DrawText(pEBDP->hDBDC, pEBDP->lpCurrentText, -1, &RCT, DT_SINGLELINE | DT_CALCRECT);
-					if (RCT.right >= (pEBDP->CRC.right - 2))
+					DrawText(pEBDP->hDBDC, pEBDP->lpCurrentText, -1, &RCT, DT_SINGLELINE/* | DT_CALCRECT*/ | DT_END_ELLIPSIS);
+					/*if (RCT.right >= (pEBDP->CRC.right - 2))
 					{
-						DWORD dwTextSize = _tcslen(pEBDP->lpCurrentText);
-						if (dwTextSize > 3)
+						SIZE_T szTextSize = _tcslen(pEBDP->lpCurrentText);
+						if (szTextSize > 3)
 						{
-							LPTSTR lpTmp = new TCHAR[dwTextSize + 1];
-							ZeroMemory(lpTmp, (dwTextSize + 1) * sizeof(TCHAR));
-							for (DWORD i = 1; i <= dwTextSize; i++)
+							LPTSTR lpTmp = new TCHAR[szTextSize + 1];
+							ZeroMemory(lpTmp, (szTextSize + 1) * sizeof(TCHAR));
+							for (SIZE_T i = 1; i <= szTextSize; i++)
 							{
 								_tcsncpy(lpTmp, pEBDP->lpCurrentText, i);
 								DrawText(pEBDP->hDBDC, lpTmp, -1, &RCT, DT_SINGLELINE | DT_CALCRECT);
@@ -223,7 +223,7 @@ LRESULT CALLBACK EBDisplayProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 							_tcscpy(pEBDP->lpCurrentText, lpTmp);
 							delete[] lpTmp;
 						}
-					}
+					}*/
 					if (IsWindowEnabled(hWnd))
 					{
 						SetTextColor(pEBDP->hDBDC, pEBDP->crFontColorTwo);
@@ -273,8 +273,8 @@ LRESULT CALLBACK EBDisplayProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 					HDC hLDC;
 					HBRUSH hGlBrush;
 					HBITMAP hTmpBitmap, hOldBitmap;
-					RECT RCGE = { 0 };
-					BLENDFUNCTION BF = { 0 };
+					RECT RCGE = {};
+					BLENDFUNCTION BF = {};
 					CopyRect(&RCGE, &pEBDP->CRC);
 					RCGE.right -= RCGE.left;
 					RCGE.bottom -= RCGE.top;
@@ -304,7 +304,7 @@ LRESULT CALLBACK EBDisplayProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 			return 1;
 		case WM_PAINT:
 		{
-			PAINTSTRUCT PS = { 0 };
+			PAINTSTRUCT PS = {};
 			HDC hDC = BeginPaint(hWnd, &PS);
 			BitBlt(hDC, 0, 0, pEBDP->CRC.right, pEBDP->CRC.bottom, pEBDP->hDBDC, 0, 0, SRCCOPY);
 			EndPaint(hWnd, &PS);

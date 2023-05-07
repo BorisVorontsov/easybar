@@ -3,10 +3,15 @@
 #include <windows.h>
 
 #ifdef UNICODE
+
+#ifndef _UNICODE
 #define _UNICODE
 #endif
 
+#endif
+
 #include <tchar.h>
+#include <locale.h>
 
 #include "strparser.h"
 
@@ -16,7 +21,7 @@
 //Возвращаемое значение - длина обработанной строки
 SIZE_T SP_ExtractDirectory(LPCTSTR lpFullPath, LPTSTR lpResult)
 {
-    SIZE_T szPathSize = _tcslen(lpFullPath);
+	SIZE_T szPathSize = _tcslen(lpFullPath);
 	BOOL bS = FALSE;
 	if (szPathSize <= 1) return 0;
 	if ((_tcschr(lpFullPath, '\\') == 0) && (_tcschr(lpFullPath, '/') == 0)) return 0;
@@ -34,7 +39,7 @@ SIZE_T SP_ExtractDirectory(LPCTSTR lpFullPath, LPTSTR lpResult)
 //Возвращаемое значение - длина обработанной строки
 SIZE_T SP_ExtractName(LPCTSTR lpPath, LPTSTR lpResult)
 {
-    SIZE_T szPathSize = _tcslen(lpPath);
+	SIZE_T szPathSize = _tcslen(lpPath);
 	BOOL bS = FALSE;
 	if (szPathSize <= 1) return 0;
 	if ((_tcschr(lpPath, '\\') == 0) && (_tcschr(lpPath, '/') == 0)) return 0;
@@ -164,30 +169,81 @@ DWORD SP_Split(LPCTSTR lpString, LPTSTR *pArray, TCHAR chDelimiter, DWORD dwMaxN
 	return dwArgNum;
 }
 
+//Функция производит поиск подстроки в строке начиная с указанной позиции
+//Возвращаемое значение - позиция подстроки в строке, -1 в случае неудачи
+SIZE_T SP_Find(LPCTSTR lpString, LPCTSTR lpFind, SIZE_T szStartPos, BOOL bMatchCase,
+			   LPCTSTR lpLocale)
+{
+	SIZE_T szStrSize = _tcslen(lpString), szFindSize = _tcslen(lpFind),
+		szResult = -1;
+	if ((szStrSize <= 1) || (szFindSize < 1)) return -1;
+	TCHAR lpOldLoc[64] = {0};
+	if (lpLocale)
+	{
+		_tcsncpy(lpOldLoc, _tsetlocale(LC_CTYPE, NULL), 63);
+		_tsetlocale(LC_CTYPE, lpLocale);
+	}
+	LPTSTR lpOrigStringTemp = new TCHAR[szStrSize + 1];
+	LPTSTR lpStringTemp = lpOrigStringTemp;
+	LPTSTR lpFindTemp = new TCHAR[szFindSize + 1];
+	BOOL bMatch;
+	//ZeroMemory(lpStringTemp, (szStrSize + 1) * sizeof(TCHAR));
+	_tcscpy(lpStringTemp, lpString);
+	lpStringTemp += szStartPos;
+	do
+	{
+		//ZeroMemory(lpFindTemp, (szFindSize + 1) * sizeof(TCHAR));
+		_tcsncpy(lpFindTemp, lpStringTemp, szFindSize);
+		lpFindTemp[szFindSize] = '\0';
+		bMatch = (bMatchCase)?(_tcscmp(lpFindTemp, lpFind) == 0):
+			(_tcsicmp(lpFindTemp, lpFind) == 0);
+		if (bMatch)
+		{
+			szResult = (lpStringTemp - lpOrigStringTemp);
+			break;
+		}
+		else lpStringTemp++;
+	}
+	while (lpStringTemp[0] != '\0');
+	delete[] lpOrigStringTemp;
+	delete[] lpFindTemp;
+	if (lpLocale)
+		_tsetlocale(LC_CTYPE, lpOldLoc);
+	return szResult;
+}
+
 //Функция производит в строке замену одной подстроки на другую
 //Если заменяющая подстрока длиннее заменяемой, то результирующая строка будет
 //длиннее исходной. Вызывающий должен это учесть перед вызовом функции
 //Возвращаемое значение - длина обработанной строки
 SIZE_T SP_Replace(LPCTSTR lpString, LPTSTR lpResult, LPCTSTR lpFind, LPCTSTR lpReplace,
-				 BOOL bMatchCase)
+				  BOOL bMatchCase, LPCTSTR lpLocale)
 {
 	SIZE_T szStrSize = _tcslen(lpString), szResultSize = _tcslen(lpResult),
 		szFindSize = _tcslen(lpFind), szReplaceSize = _tcslen(lpReplace);
 	if ((szStrSize <= 1) || (szFindSize < 1) || (szReplaceSize < 1)) return 0;
+	TCHAR lpOldLoc[64] = {0};
+	if (lpLocale)
+	{
+		_tcsncpy(lpOldLoc, _tsetlocale(LC_CTYPE, NULL), 63);
+		_tsetlocale(LC_CTYPE, lpLocale);
+	}
 	LPTSTR lpOrigStringTemp = new TCHAR[szStrSize + 1];
 	LPTSTR lpStringTemp = lpOrigStringTemp;
 	LPTSTR lpFindTemp = new TCHAR[szFindSize + 1];
 	BOOL bMatch;
-	ZeroMemory(lpStringTemp, (szStrSize + 1) * sizeof(TCHAR));
+	//ZeroMemory(lpStringTemp, (szStrSize + 1) * sizeof(TCHAR));
 	_tcscpy(lpStringTemp, lpString);
 	if (szResultSize)
 	{
-		ZeroMemory(lpResult, (szResultSize + 1) * sizeof(TCHAR));
+		//ZeroMemory(lpResult, (szResultSize + 1) * sizeof(TCHAR));
+		lpResult[0] = '\0';
 	}
 	do
 	{
-		ZeroMemory(lpFindTemp, (szFindSize + 1) * sizeof(TCHAR));
+		//ZeroMemory(lpFindTemp, (szFindSize + 1) * sizeof(TCHAR));
 		_tcsncpy(lpFindTemp, lpStringTemp, szFindSize);
+		lpFindTemp[szFindSize] = '\0';
 		bMatch = (bMatchCase)?(_tcscmp(lpFindTemp, lpFind) == 0):
 			(_tcsicmp(lpFindTemp, lpFind) == 0);
 		if (bMatch)
@@ -204,5 +260,7 @@ SIZE_T SP_Replace(LPCTSTR lpString, LPTSTR lpResult, LPCTSTR lpFind, LPCTSTR lpR
 	while (lpStringTemp[0] != '\0');
 	delete[] lpOrigStringTemp;
 	delete[] lpFindTemp;
+	if (lpLocale)
+		_tsetlocale(LC_CTYPE, lpOldLoc);
 	return _tcslen(lpResult);
 }
